@@ -22,7 +22,7 @@ class Tower:
 
         参数:
         info (TowerInfo): 杆塔自描述信息对象
-        wires (Wires): 杆塔线段对象集合
+        wires (Wires): 杆塔切分后线段对象集合
         tubeWire (TubeWire): 管状线段(杆塔中的管状线段唯一, 此处留存初始未切分的管状线段, 方便后续使用, 切分后的多个管状线存储于wires中)
         lump (Circuit): 集中参数对象集合
         ground (Ground): 杆塔地线对象集合

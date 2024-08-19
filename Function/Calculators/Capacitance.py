@@ -47,3 +47,17 @@ def calculate_sheath_capacitance(end_node_z, sheath_epr, Ls):
     else:
         Cs = 0
     return Cs
+
+
+def calculate_OHL_capcitance(Lm):
+    """
+    【函数功能】电感矩阵参数计算
+    【入参】
+    Lm(numpy.ndarray:n*n)：n条线互感矩阵
+
+    【出参】
+    C(numpy.ndarray:n*n)：n条线电容矩阵
+    """
+    Vair = 3e8
+    C = np.linalg.inv(Lm) / Vair ** 2
+    return C

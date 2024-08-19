@@ -6,6 +6,8 @@ from scipy.special import iv as besseli
 from scipy.special import kv as besselk
 from Utils.Math import Bessel_IK, Bessel_K2
 
+frq_default = np.logspace(0, 9, 37)
+
 def calculate_coreWires_impedance(core_wires_r, core_wires_offset, core_wires_angle, core_wires_mur,
                                   core_wires_sig, sheath_mur, sheath_sig, sheath_inner_radius, Frq):
     """
@@ -223,3 +225,102 @@ def calculate_ground_impedance(ground_mur, ground_epr, ground_sig, end_node_z, s
             Zg[i1, i1, :] = 2 * km * np.log((1 + R0) / R0)
 
     return Zg
+
+
+def calculate_OHL_wire_impedance(radius, mur, sig, epr, frq=frq_default):
+    """
+    【函数功能】架空线阻抗参数计算
+    【入参】
+    radius (numpy.ndarray,n*1): n条线线的半径
+    sig (numpy.ndarray,n*1): n条线线的电导率
+    mur (numpy.ndarray,n*1): n条线线的磁导率
+    epr (numpy.ndarray,n*1): n条线线的相对介电常数
+    frq(numpy.ndarray，1*Nf):Nf个频率组成的频率矩阵
+
+    【出参】
+    Zc(numpy.ndarray:n*n*Nf)：n条线在Nf个频率下的阻抗矩阵
+    """
+    mu0 = 4 * np.pi * 1e-7
+    ep0 = 8.854187818e-12
+    Emax = 350
+    Ncon = np.array([radius]).reshape(-1).shape[0]
+    Nf = np.array([frq]).reshape(-1).shape[0]
+    Zc = np.zeros((Ncon, Ncon, Nf), dtype='complex')
+    omega = 2 * np.pi * frq
+    for i in range(Nf):
+        gamma = np.sqrt(1j * mu0 * mur * omega[i] * sig + 1j * omega[i] * ep0 * epr)
+        Ri = radius * gamma
+        I0i = besseli(0, Ri)
+        I1i = besseli(1, Ri)
+        out = gamma / (2 * np.pi * radius * sig)
+        low = np.where(abs(Ri) < Emax)
+        out[low] = 1j * mu0 * mur[low] * omega[i] * I0i[low] / (2 * np.pi * Ri[low] * I1i[low])
+        Zc[:, :, i] = np.diag(out)
+    return Zc
+
+
+def calculate_OHL_ground_impedance(sig_g, mur_g, epr_g, radius, offset, height, frq=frq_default):
+    """
+    【函数功能】架空线大地阻抗参数计算
+    【入参】
+    offset (numpy.ndarray,n*1): n条线的偏置
+    radius (numpy.ndarray,n*1): n条线的半径
+    sig_g (float): 大地的电导率
+    mur_g (float): 大地的磁导率
+    epr_g (float): 大地的相对介电常数
+    frq(numpy.ndarray，1*Nf):Nf个频率组成的频率矩阵
+
+    【出参】
+    Zg(numpy.ndarray:n*n*Nf)：n条线对应的大地阻抗矩阵
+    """
+    mu0 = 4 * np.pi * 1e-7
+    ep0 = 8.854187818e-12
+    Sig_g = sig_g
+    Mur_g = mur_g * mu0
+    Eps_g = epr_g * ep0
+    Ncon = np.array([radius]).reshape(-1).shape[0]
+    Nf = np.array([frq]).reshape(-1).shape[0]
+    Zg = np.zeros((Ncon, Ncon, Nf), dtype='complex')
+    omega = 2 * np.pi * frq
+    gamma = np.sqrt(1j * Mur_g * omega * (Sig_g + 1j * omega * Eps_g))
+    km = 1j * omega * Mur_g / 4 / np.pi
+    for i in range(Ncon):
+        for j in range(i, Ncon):
+            d = abs(offset[i] - offset[j])
+            h1 = height[i]
+            h2 = height[j]
+            Zg[i, j, :] = km * np.log(((1 + gamma * (h1 + h2) / 2) ** 2 + (d * gamma / 2) ** 2) / (
+                    (gamma * (h1 + h2) / 2) ** 2 + (d * gamma / 2) ** 2))
+            Zg[j, i, :] = np.copy(Zg[i, j, :])
+    for i in range(Ncon):
+        h = height[i]
+        Zg[i, i, :] = km * np.log(((1 + gamma * h) ** 2) / ((gamma * h) ** 2))
+    return Zg
+
+
+def calculate_OHL_impedance(radius, mur, sig, epr, offset, height, sig_g, mur_g, epr_g, Lm, frq=frq_default):
+    """
+    【函数功能】阻抗矩阵参数计算
+    【入参】
+    height(numpy.ndarray,n*1):n条线高
+    offset (numpy.ndarray,n*1): n条线的偏置
+    radius (numpy.ndarray,n*1): n条线的半径
+    sig (numpy.ndarray,n*1): n条线的电导率
+    mur (numpy.ndarray,n*1): n条线的磁导率
+    epr (numpy.ndarray,n*1): 线n条的相对介电常数
+    sig_g (float): 大地的电导率
+    mur_g (float): 大地的磁导率
+    epr_g (float): 大地的相对介电常数
+    Lm(numpy.ndarray:n*n)：n条线的互感矩阵
+    frq(numpy.ndarray，1*Nf):Nf个频率组成的频率矩阵
+
+    【出参】
+    Z(numpy.ndarray:n*n)：n条线的阻抗矩阵
+    """
+    Zc = calculate_OHL_wire_impedance(radius, mur, sig, epr, frq)
+    Zg = calculate_OHL_ground_impedance(sig_g, mur_g, epr_g, radius, offset, height, frq)
+    Nf = np.array([frq]).reshape(-1).shape[0]
+    Z = Zc + Zg
+    for i in range(Nf):
+        Z[:, :, i] += 1j * 2 * np.pi * frq[i] * Lm
+    return Z
