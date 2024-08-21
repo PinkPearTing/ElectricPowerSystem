@@ -13,7 +13,6 @@ import numpy as np
 from scipy.linalg import block_diag
 from Utils.Matrix import expand_matrix, copy_and_expand_matrix, update_matrix, update_and_sum_matrix
 
-
 class Tower:
     def __init__(self, Info: Info, Wires: Wires, tubeWire: TubeWire, Lump, Ground: Ground, Device: Device,
                  MeasurementNode: MeasurementNode):
@@ -48,6 +47,7 @@ class Tower:
         self.nodesList = Wires.get_node_names()
         self.nodesPositions = Wires.get_node_coordinates()
         self.bransList = Wires.get_bran_coordinates()
+        self.wires_name = []
         # 以下是参数矩阵，是Tower建模最终输出的参数
         # 邻接矩阵
         self.incidence_matrix = np.zeros((self.wires.count(), self.wires.count_distinct_points()))
@@ -77,18 +77,20 @@ class Tower:
         node_to_index = {node: i for i, node in enumerate(all_nodes)}
         for wire_list in [self.wires.air_wires, self.wires.ground_wires]:
             for wire in wire_list:
-                start_node_index = node_to_index[wire.start_node]
-                end_node_index = node_to_index[wire.end_node]
+                start_node_index = node_to_index[wire.start_node.name]
+                end_node_index = node_to_index[wire.end_node.name]
                 self.incidence_matrix[wire_index][start_node_index] = -1
                 self.incidence_matrix[wire_index][end_node_index] = 1
                 wire_index += 1
+                self.wires_name.append(wire.name)
         for tube_wire in self.wires.tube_wires:
             for core_wire in tube_wire.core_wires:
-                start_node_index = node_to_index[core_wire.start_node]
-                end_node_index = node_to_index[core_wire.end_node]
+                start_node_index = node_to_index[core_wire.start_node.name]
+                end_node_index = node_to_index[core_wire.end_node.name]
                 self.incidence_matrix[wire_index][start_node_index] = -1
                 self.incidence_matrix[wire_index][end_node_index] = 1
                 wire_index += 1
+                self.wires_name.append(core_wire.name)
 
     def initialize_resistance_matrix(self):
         """
@@ -183,3 +185,6 @@ class Tower:
         for i in range(len(indices)):
             # 将C矩阵相应位置的点 更新为C0相应位置的数据
             self.capacitance_matrix = update_matrix(self.capacitance_matrix, indices[i], 0.5*C0 if i==0 or i==len(indices)-1 else C0)#与外界相连接的部分，需要折半
+
+
+

@@ -45,3 +45,12 @@ class MeasurementNode(Node):
         返回测量节点对象的字符串表示形式。
         """
         return f"Node(name='{self.name}', x={self.x}, y={self.y}, z={self.z}, type={self.type})"
+
+
+    def __eq__(self, other):
+        if isinstance(other, Node):
+            return self.name == other.name
+        return False
+
+    def __hash__(self):
+        return hash(self.name)

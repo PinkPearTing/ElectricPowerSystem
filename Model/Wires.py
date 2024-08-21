@@ -413,7 +413,6 @@ class Wires:
         for wire in self.air_wires:
             all_points.add(wire.start_node)
             all_points.add(wire.end_node)
-
         return len(all_points)
 
 
@@ -464,15 +463,15 @@ class Wires:
         all_nodes = collections.OrderedDict()
         for wire_list in [self.air_wires, self.ground_wires, self.a2g_wires, self.short_wires]:
             for wire in wire_list:
-                all_nodes[wire.start_node] = True
-                all_nodes[wire.end_node] = True
+                all_nodes[wire.start_node.name] = True
+                all_nodes[wire.end_node.name] = True
 
         for tubewire in self.tube_wires:
-            all_nodes[tubewire.sheath.start_node] = True
-            all_nodes[tubewire.sheath.end_node] = True
+            all_nodes[tubewire.sheath.start_node.name] = True
+            all_nodes[tubewire.sheath.end_node.name] = True
             for core_wire in tubewire.core_wires:
-                all_nodes[core_wire.start_node] = True
-                all_nodes[core_wire.end_node] = True
+                all_nodes[core_wire.start_node.name] = True
+                all_nodes[core_wire.end_node.name] = True
 
         return list(all_nodes)
     
@@ -492,15 +491,15 @@ class Wires:
         indices = []
         for tubewire in self.tube_wires:
             index = []
-            index.append(node_to_index[tubewire.sheath.start_node])
+            index.append(node_to_index[tubewire.sheath.start_node.name])
 
             for core_wire in tubewire.core_wires:
-                index.append(node_to_index[core_wire.start_node])
+                index.append(node_to_index[core_wire.start_node.name])
             indices.append(index)
         index = []
-        index.append(node_to_index[self.tube_wires[len(self.tube_wires)-1].sheath.end_node])
+        index.append(node_to_index[self.tube_wires[len(self.tube_wires)-1].sheath.end_node.name])
         for core_wire in self.tube_wires[len(self.tube_wires)-1].core_wires:
-                index.append(node_to_index[core_wire.end_node])
+                index.append(node_to_index[core_wire.end_node.name])
         indices.append(index)
         return indices
 

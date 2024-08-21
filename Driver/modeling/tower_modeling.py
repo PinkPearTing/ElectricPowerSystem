@@ -4,20 +4,24 @@ from Function.Calculators.Capacitance import calculate_coreWires_capacitance, ca
 from Function.Calculators.Impedance import calculate_coreWires_impedance, calculate_sheath_impedance, calculate_multual_impedance
 from Model.Contant import Constant
 from scipy.linalg import block_diag
+import pandas as pd
 
-
+# A
 def build_incidence_matrix(tower):
     # A矩阵
     print("------------------------------------------------")
     print("A matrix is building...")
-
+    # 初始化A矩阵
     tower.initialize_incidence_matrix()
 
-    print(tower.incidence_matrix)
+    #构建A矩阵df表，便于后续索引
+    df_A = pd.DataFrame(tower.incidence_matrix, index=tower.wires_name, columns=tower.wires.get_all_nodes())
+    print(df_A)
+    #print(tower.incidence_matrix)
     print("A matrix is built successfully")
     print("------------------------------------------------")
 
-
+# R
 def build_resistance_matrix(tower, Rin, Rx):
     # R矩阵
     print("------------------------------------------------")
@@ -29,11 +33,14 @@ def build_resistance_matrix(tower, Rin, Rx):
 
     tower.update_resistance_matrix_by_tubeWires(Rin, Rx)
 
-    print(tower.resistance_matrix)
+    #构建R矩阵df表，便于后续索引
+    df_R = pd.DataFrame(tower.resistance_matrix, index=tower.wires_name, columns=tower.wires_name)
+    print(df_R)
+    #print(tower.resistance_matrix)
     print("R matrix is built successfully")
     print("------------------------------------------------")
 
-
+# L
 def build_inductance_matrix(tower, L, Lin, Lx):
     # L矩阵
     print("------------------------------------------------")
@@ -48,12 +55,14 @@ def build_inductance_matrix(tower, L, Lin, Lx):
     sheath_inductance_matrix = tower.update_inductance_matrix_by_coreWires()
 
     tower.update_inductance_matrix_by_tubeWires(sheath_inductance_matrix, Lin, Lx)
-
-    print(tower.inductance_matrix)
+    #构建L矩阵df表，便于后续索引
+    df_R = pd.DataFrame(tower.inductance_matrix, index=tower.wires_name, columns=tower.wires_name)
+    print(df_R)
+    #print(tower.inductance_matrix)
     print("L matrix is built successfully")
     print("------------------------------------------------")
 
-
+# P
 def build_potential_matrix(tower, P):
     # P矩阵
     print("------------------------------------------------")
@@ -63,6 +72,9 @@ def build_potential_matrix(tower, P):
 
     tower.add_potential_matrix(P)
 
+    #构建P矩阵df表，便于后续索引
+    # df_R = pd.DataFrame(tower.potential_matrix, index=tower.wires_name, columns=tower.wires_name)
+    # print(df_R)
     print(tower.potential_matrix)
     print("P matrix is built successfully")
     print("------------------------------------------------")
@@ -76,8 +88,10 @@ def build_capacitance_matrix(tower, Cin):
     tower.initialize_capacitance_matrix()
 
     tower.update_capacitance_matrix_by_tubeWires(Cin)
-
-    print(tower.capacitance_matrix)
+    #构建P矩阵df表，便于后续索引
+    df_R = pd.DataFrame(tower.capacitance_matrix, index=tower.wires.get_all_nodes(), columns=tower.wires.get_all_nodes())
+    print(df_R)
+    #print(tower.capacitance_matrix)
     print("C matrix is built successfully")
     print("------------------------------------------------")
 
@@ -153,7 +167,7 @@ def tower_building(tower, frequency, max_length):
     # 3. 构建L矩阵
     build_inductance_matrix(tower, L, Lin, Lx)
 
-    # 4. 构建P矩阵
+    # 4. 构建P矩阵, node*node
     build_potential_matrix(tower, P)
 
     # 5. 构建C矩阵

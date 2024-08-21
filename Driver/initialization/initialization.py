@@ -5,12 +5,7 @@ from Model.Wires import Wire, Wires, CoreWire, TubeWire
 from Model.Ground import Ground
 from Model.Tower import Tower
 
-def connect_nodes(nodes, node1):
-    for node in nodes:
-        name = node.name
-        if node1.name == name:
-            return node
-    return False
+
 
 # initialize wire in tower
 def initialize_wire(wire, nodes):
@@ -19,20 +14,9 @@ def initialize_wire(wire, nodes):
     pos_start = wire['pos_1']
     node_name_end = wire['node2']
     pos_end = wire['pos_2']
-    node_start = Node(node_name_start, pos_start[0], pos_start[1], pos_start[2])
-    node_end = Node(node_name_end, pos_end[0], pos_end[1], pos_end[2])
-    connect_start = connect_nodes(nodes,node_start)
-    connect_end = connect_nodes(nodes, node_end)
+    node_start = Node(name=node_name_start, x=pos_start[0], y=pos_start[1], z=pos_start[2])
+    node_end = Node(name=node_name_end, x=pos_end[0], y=pos_end[1], z=pos_end[2])
 
-    if connect_start:
-        node_start = connect_start
-    else:
-        nodes.append(node_start)
-
-    if connect_end:
-        node_end = connect_end
-    else:
-        nodes.append(node_end)
 
     offset = wire['oft']
     radius = wire['r0']
@@ -118,3 +102,11 @@ def initialize_tower(file_name, max_length):
     tower = Tower(None, wires, tube_wire, None, ground, None, None)
     print("Tower loaded.")
     return tower
+
+
+def initialize_measurement(file_name):
+    json_file_path = "Data/" + file_name + ".json"
+    # 0. read json file
+    with open(json_file_path, 'r') as j:
+        load_dict = json.load(j)
+
