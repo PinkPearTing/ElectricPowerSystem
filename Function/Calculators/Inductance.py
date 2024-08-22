@@ -565,19 +565,19 @@ def calculate_wires_inductance_potential_with_ground(wires, ground, constants):
     return L0, P0
 
 
-def calculate_OHL_mutual_inductance(radius, height, end_node_y):
+def calculate_OHL_mutual_inductance(radius, height, end_node_y, constants):
     """
     【函数功能】架空线电感电容矩阵参数计算
     【入参】
     end_node_y (numpy.ndarray,n*1): n条线的第二个节点的y值
     height(numpy.ndarray,n*1):n条线高
     radius (numpy.ndarray,n*1): n条线的半径
+    constants(Constant类)：常数类
 
     【出参】
     Lm(numpy.ndarray:n*n)：n条线互感矩阵
     """
-    mu0 = 4 * np.pi * 1e-7
-    km = mu0 / (2 * np.pi)
+    km, mu0 = constants.km, constants.mu0
     Ncon = np.array([radius]).reshape(-1).shape[0]
     out = np.log(2 * height / radius)
     Lm = np.diag(out.reshape(-1))
@@ -601,5 +601,5 @@ def calculate_OHL_inductance(inductance, Lm):
     【出参】
     L(numpy.ndarray:n*n)：n条线的电感矩阵
     """
-    L = Lm + np.diag(inductance)
+    L = Lm + np.diag(inductance.reshape((-1)))
     return L

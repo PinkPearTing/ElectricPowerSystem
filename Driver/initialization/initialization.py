@@ -4,6 +4,7 @@ from Model.Node import Node
 from Model.Wires import Wire, Wires, CoreWire, TubeWire
 from Model.Ground import Ground
 from Model.Tower import Tower
+from Model.OHL import OHL
 
 
 
@@ -40,6 +41,42 @@ def initialize_wire(wire, nodes):
     elif wire['type'] == 'core':
         return CoreWire(bran, node_start, node_end, offset, radius, R, L, sig, mur, epr, VF, wire['rs2'], wire['rs3'])
 
+# initialize wire in OHL
+def initialize_OHL_wire(wire):
+    cir_id = wire['cir_id']
+    if wire['type'] == 'SW':
+        bran = 'Y' + str(cir_id) + 'S'
+    elif wire['type'] == 'CIRO':
+        bran = 'Y' + str(cir_id) + wire['phase']
+    else:
+        bran = wire['bran']
+    node_name_start = wire['node1']
+    pos_start = wire['node1_pos']
+    node_name_end = wire['node2']
+    pos_end = wire['node2_pos']
+    node_start = Node(name=node_name_start, x=pos_start[0], y=pos_start[1], z=pos_start[2])
+    node_end = Node(name=node_name_end, x=pos_end[0], y=pos_end[1], z=pos_end[2])
+
+
+    offset = wire['offset']
+    radius = wire['r0']
+    R = wire['r']
+    L = wire['l']
+    sig = wire['sig']
+    mur = wire['mur']
+    epr = wire['epr']
+    # 自定义一个VF
+    # 初始化向量拟合参数
+    frq = np.concatenate([
+        np.arange(1, 91, 10),
+        np.arange(100, 1000, 100),
+        np.arange(1000, 10000, 1000),
+        np.arange(10000, 100000, 10000),
+    ])
+    VF = {'odc': 10,
+          'frq': frq}
+
+    return Wire(bran, node_start, node_end, offset, radius, R, L, sig, mur, epr, VF)
 
 # initialize ground in tower
 def initialize_ground(ground_dic):
@@ -103,6 +140,31 @@ def initialize_tower(file_name, max_length):
     print("Tower loaded.")
     return tower
 
+def initialize_OHL(file_name, max_length):
+
+    json_file_path = "Data/" + file_name + ".json"
+    # 0. read json file
+    with open(json_file_path, 'r') as j:
+        load_dict = json.load(j)
+
+    # 1. initialize wires
+    wires = Wires()
+    for wire in load_dict['OHL']['Wire']:
+
+        #  initialize air wire
+            wire_air = initialize_OHL_wire(wire)
+            wires.add_air_wire(wire_air)  # add air wire in wires
+
+    wires.display()
+
+    # 2. initialize ground
+    ground_dic = load_dict['OHL']['ground']
+    ground = initialize_ground(ground_dic)
+
+    # 3. initalize tower
+    ohl = OHL(None, None, wires, None, None, ground)
+    print("OHL loaded.")
+    return ohl
 
 def initialize_measurement(file_name):
     json_file_path = "Data/" + file_name + ".json"

@@ -227,7 +227,7 @@ def calculate_ground_impedance(ground_mur, ground_epr, ground_sig, end_node_z, s
     return Zg
 
 
-def calculate_OHL_wire_impedance(radius, mur, sig, epr, frq=frq_default):
+def calculate_OHL_wire_impedance(radius, mur, sig, epr, constants, frq=frq_default):
     """
     【函数功能】架空线阻抗参数计算
     【入参】
@@ -235,13 +235,13 @@ def calculate_OHL_wire_impedance(radius, mur, sig, epr, frq=frq_default):
     sig (numpy.ndarray,n*1): n条线线的电导率
     mur (numpy.ndarray,n*1): n条线线的磁导率
     epr (numpy.ndarray,n*1): n条线线的相对介电常数
+    constants(Constant类)：常数类
     frq(numpy.ndarray，1*Nf):Nf个频率组成的频率矩阵
 
     【出参】
     Zc(numpy.ndarray:n*n*Nf)：n条线在Nf个频率下的阻抗矩阵
     """
-    mu0 = 4 * np.pi * 1e-7
-    ep0 = 8.854187818e-12
+    ep0, mu0 = constants.ep0, constants.mu0
     Emax = 350
     Ncon = np.array([radius]).reshape(-1).shape[0]
     Nf = np.array([frq]).reshape(-1).shape[0]
@@ -259,7 +259,7 @@ def calculate_OHL_wire_impedance(radius, mur, sig, epr, frq=frq_default):
     return Zc
 
 
-def calculate_OHL_ground_impedance(sig_g, mur_g, epr_g, radius, offset, height, frq=frq_default):
+def calculate_OHL_ground_impedance(sig_g, mur_g, epr_g, radius, offset, height, constants, frq=frq_default):
     """
     【函数功能】架空线大地阻抗参数计算
     【入参】
@@ -268,13 +268,13 @@ def calculate_OHL_ground_impedance(sig_g, mur_g, epr_g, radius, offset, height, 
     sig_g (float): 大地的电导率
     mur_g (float): 大地的磁导率
     epr_g (float): 大地的相对介电常数
+    constants(Constant类)：常数类
     frq(numpy.ndarray，1*Nf):Nf个频率组成的频率矩阵
 
     【出参】
     Zg(numpy.ndarray:n*n*Nf)：n条线对应的大地阻抗矩阵
     """
-    mu0 = 4 * np.pi * 1e-7
-    ep0 = 8.854187818e-12
+    ep0, mu0 = constants.ep0, constants.mu0
     Sig_g = sig_g
     Mur_g = mur_g * mu0
     Eps_g = epr_g * ep0
@@ -298,7 +298,7 @@ def calculate_OHL_ground_impedance(sig_g, mur_g, epr_g, radius, offset, height, 
     return Zg
 
 
-def calculate_OHL_impedance(radius, mur, sig, epr, offset, height, sig_g, mur_g, epr_g, Lm, frq=frq_default):
+def calculate_OHL_impedance(radius, mur, sig, epr, offset, height, sig_g, mur_g, epr_g, Lm, constants, frq=frq_default):
     """
     【函数功能】阻抗矩阵参数计算
     【入参】
@@ -312,13 +312,14 @@ def calculate_OHL_impedance(radius, mur, sig, epr, offset, height, sig_g, mur_g,
     mur_g (float): 大地的磁导率
     epr_g (float): 大地的相对介电常数
     Lm(numpy.ndarray:n*n)：n条线的互感矩阵
+    constants(Constant类)：常数类
     frq(numpy.ndarray，1*Nf):Nf个频率组成的频率矩阵
 
     【出参】
     Z(numpy.ndarray:n*n)：n条线的阻抗矩阵
     """
-    Zc = calculate_OHL_wire_impedance(radius, mur, sig, epr, frq)
-    Zg = calculate_OHL_ground_impedance(sig_g, mur_g, epr_g, radius, offset, height, frq)
+    Zc = calculate_OHL_wire_impedance(radius, mur, sig, epr, constants, frq)
+    Zg = calculate_OHL_ground_impedance(sig_g, mur_g, epr_g, radius, offset, height, constants, frq)
     Nf = np.array([frq]).reshape(-1).shape[0]
     Z = Zc + Zg
     for i in range(Nf):

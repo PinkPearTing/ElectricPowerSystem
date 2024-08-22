@@ -1952,8 +1952,8 @@ class Lumps:
             del all_brans['---']
         if 'ref' in all_nodes:
             del all_nodes['ref']
-        self.branList = list(all_brans)
-        self.nodeList = list(all_nodes)
+        self.brans_name = list(all_brans)
+        self.nodes_name = list(all_nodes)
 
     def lump_measurement_initial(self, Nt: int):
         """
@@ -1979,22 +1979,22 @@ class Lumps:
         capacitance_martix(pandas.Dataframe:Nnode*Nnode)：电容矩阵（Nnode：节点数）
         """
         #邻接矩阵A初始化
-        self.incidence_matrix_A = pd.DataFrame(0, index=self.branList, columns=self.nodeList, dtype=float)
+        self.incidence_matrix_A = pd.DataFrame(0, index=self.brans_name, columns=self.nodes_name, dtype=float)
 
         # 邻接矩阵B初始化
-        self.incidence_matrix_B = pd.DataFrame(0, index=self.branList, columns=self.nodeList, dtype=float)
+        self.incidence_matrix_B = pd.DataFrame(0, index=self.brans_name, columns=self.nodes_name, dtype=float)
 
         # 电阻矩阵R初始化
-        self.resistance_matrix = pd.DataFrame(0, index=self.branList, columns=self.branList, dtype=float)
+        self.resistance_matrix = pd.DataFrame(0, index=self.brans_name, columns=self.brans_name, dtype=float)
 
         # 电感矩阵L初始化
-        self.inductance_matrix = pd.DataFrame(0, index=self.branList, columns=self.branList, dtype=float)
+        self.inductance_matrix = pd.DataFrame(0, index=self.brans_name, columns=self.brans_name, dtype=float)
 
         # 电导矩阵G初始化
-        self.conductance_martix = pd.DataFrame(0, index=self.nodeList, columns=self.nodeList, dtype=float)
+        self.conductance_martix = pd.DataFrame(0, index=self.nodes_name, columns=self.nodes_name, dtype=float)
 
         # 电容矩阵C初始化
-        self.capacitance_martix = pd.DataFrame(0, index=self.nodeList, columns=self.nodeList, dtype=float)
+        self.capacitance_martix = pd.DataFrame(0, index=self.nodes_name, columns=self.nodes_name, dtype=float)
 
     def lump_voltage_source_martix_initial(self, calculate_time, dt):
         """
@@ -2010,7 +2010,7 @@ class Lumps:
         """
         calculate_num = int(np.ceil(calculate_time / dt))
         # 电源矩阵初始化
-        self.voltage_source_martix = pd.DataFrame(0, index=self.branList, columns=range(calculate_num))
+        self.voltage_source_martix = pd.DataFrame(0, index=self.brans_name, columns=range(calculate_num))
 
         for voltage_source_list in [self.voltage_sources_cosine, self.voltage_sources_empirical]:
             for voltage_source in voltage_source_list:
@@ -2031,7 +2031,7 @@ class Lumps:
         """
         calculate_num = int(np.ceil(calculate_time / dt))
         # 电源矩阵初始化
-        self.current_source_martix = pd.DataFrame(0, index=self.nodeList, columns=range(calculate_num))
+        self.current_source_martix = pd.DataFrame(0, index=self.nodes_name, columns=range(calculate_num))
 
         for current_source_list in [self.current_sources_cosine, self.current_sources_empirical]:
             for current_source in current_source_list:
