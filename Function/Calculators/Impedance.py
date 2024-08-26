@@ -9,7 +9,7 @@ from Utils.Math import Bessel_IK, Bessel_K2
 frq_default = np.logspace(0, 9, 37)
 
 def calculate_coreWires_impedance(core_wires_r, core_wires_offset, core_wires_angle, core_wires_mur,
-                                  core_wires_sig, sheath_mur, sheath_sig, sheath_inner_radius, Frq):
+                                  core_wires_sig, sheath_mur, sheath_sig, sheath_inner_radius, Frq, constants):
     """
     【函数功能】芯线阻抗计算
     【入参】
@@ -26,8 +26,7 @@ def calculate_coreWires_impedance(core_wires_r, core_wires_offset, core_wires_an
     【出参】
     Zc(numpy.ndarray:n*n*Nf): n条芯线在Nf个频率下的阻抗矩阵
     """
-    mu0 = 4 * np.pi * 1e-7
-    ep0 = 8.854187818e-12
+    mu0, ep0 = constants.mu0, constants.ep0
     Besl_Max = 200
     Nbesl = 15
     frq = np.array([Frq]).reshape(-1)
@@ -79,7 +78,7 @@ def calculate_coreWires_impedance(core_wires_r, core_wires_offset, core_wires_an
     return Zc
 
 
-def calculate_sheath_impedance(sheath_mur, sheath_sig, sheath_inner_radius, sheath_r, Frq):
+def calculate_sheath_impedance(sheath_mur, sheath_sig, sheath_inner_radius, sheath_r, Frq, constants):
     """
     【函数功能】套管阻抗计算
     【入参】
@@ -92,8 +91,7 @@ def calculate_sheath_impedance(sheath_mur, sheath_sig, sheath_inner_radius, shea
     【出参】
     Zs(numpy.ndarray:1*1*Nf): Nf个频率下的套管阻抗矩阵
     """
-    mu0 = 4 * np.pi * 1e-7
-    ep0 = 8.854187818e-12
+    mu0, ep0 = constants.mu0, constants.ep0
     Besl_Max = 200
     frq = np.array([Frq]).reshape(-1)
     Mu_s = mu0 * sheath_mur
@@ -124,7 +122,7 @@ def calculate_sheath_impedance(sheath_mur, sheath_sig, sheath_inner_radius, shea
     return Zs
 
 
-def calculate_multual_impedance(core_wires_r, sheath_mur, sheath_sig, sheath_inner_radius, sheath_r, Frq):
+def calculate_multual_impedance(core_wires_r, sheath_mur, sheath_sig, sheath_inner_radius, sheath_r, Frq, constants):
     """
     【函数功能】互阻抗计算
     【入参】
@@ -139,8 +137,7 @@ def calculate_multual_impedance(core_wires_r, sheath_mur, sheath_sig, sheath_inn
     Zcs(numpy.ndarray:n*1*Nf): Nf个频率下的芯线和表皮之间的互阻抗矩阵, n为芯线数量
     Zsc(numpy.ndarray:1*n*Nf): Nf个频率下的表皮和芯线之间的互阻抗矩阵, n为芯线数量
     """
-    mu0 = 4 * np.pi * 1e-7
-    ep0 = 8.854187818e-12
+    mu0, ep0 = constants.mu0, constants.ep0
     Besl_Max = 200
     frq = np.array([Frq]).reshape(-1)
     # Npha 表示芯线数量
@@ -176,7 +173,8 @@ def calculate_multual_impedance(core_wires_r, sheath_mur, sheath_sig, sheath_inn
     return Zcs, Zsc
 
 
-def calculate_ground_impedance(ground_mur, ground_epr, ground_sig, end_node_z, sheath_outer_radius, Dist, Frq):
+def calculate_ground_impedance(ground_mur, ground_epr, ground_sig, end_node_z, sheath_outer_radius, Dist, Frq,
+                               constants):
     """
     【函数功能】地阻抗计算
     【入参】
@@ -191,8 +189,7 @@ def calculate_ground_impedance(ground_mur, ground_epr, ground_sig, end_node_z, s
     【出参】
     Zg(numpy.ndarray:1*1*Nf): Nf个频率下的地阻抗矩阵
     """
-    mu0 = 4 * np.pi * 1e-7
-    ep0 = 8.854187818e-12
+    mu0, ep0 = constants.mu0, constants.ep0
     Mur_g = ground_mur * mu0
     Epr_g = ground_epr * ep0
     frq = np.array([Frq]).reshape(-1)

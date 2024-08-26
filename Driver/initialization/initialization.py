@@ -5,6 +5,7 @@ from Model.Wires import Wire, Wires, CoreWire, TubeWire
 from Model.Ground import Ground
 from Model.Tower import Tower
 from Model.OHL import OHL
+from Model.Cable import Cable
 
 
 
@@ -39,7 +40,7 @@ def initialize_wire(wire, nodes):
     if wire['type'] == 'air' or wire['type'] == 'sheath' or wire['type'] == 'ground':
         return Wire(bran, node_start, node_end, offset, radius, R, L, sig, mur, epr, VF)
     elif wire['type'] == 'core':
-        return CoreWire(bran, node_start, node_end, offset, radius, R, L, sig, mur, epr, VF, wire['rs2'], wire['rs3'])
+        return CoreWire(bran, node_start, node_end, offset, radius, R, L, sig, mur, epr, VF, wire['oft'], wire['angle'])
 
 # initialize wire in OHL
 def initialize_OHL_wire(wire):
@@ -140,7 +141,7 @@ def initialize_tower(file_name, max_length):
     print("Tower loaded.")
     return tower
 
-def initialize_OHL(file_name, max_length):
+def initialize_OHL(file_name, maxlength):
 
     json_file_path = "Data/" + file_name + ".json"
     # 0. read json file
@@ -151,9 +152,9 @@ def initialize_OHL(file_name, max_length):
     wires = Wires()
     for wire in load_dict['OHL']['Wire']:
 
-        #  initialize air wire
-            wire_air = initialize_OHL_wire(wire)
-            wires.add_air_wire(wire_air)  # add air wire in wires
+        #  initialize ohl wire
+        wire = initialize_OHL_wire(wire)
+        wires.add_air_wire(wire)  # add air wire in wires
 
     wires.display()
 
@@ -165,6 +166,34 @@ def initialize_OHL(file_name, max_length):
     ohl = OHL(None, None, wires, None, None, ground)
     print("OHL loaded.")
     return ohl
+
+def initialize_cable(file_name, max_length):
+
+    json_file_path = "Data/" + file_name + ".json"
+    # 0. read json file
+    with open(json_file_path, 'r') as j:
+        load_dict = json.load(j)
+
+    # 1. initialize wires
+    wire = load_dict['Cable']
+    nodes = []
+    sheath_wire = initialize_wire(wire['TubeWire']['sheath'], nodes)
+    tube_wire = TubeWire(sheath_wire, wire['TubeWire']['sheath']['rs1'], wire['TubeWire']['sheath']['rs3'],
+                         wire['info']['core_num'])
+
+    for core in wire['TubeWire']['core']:
+        core_wire = initialize_wire(core, nodes)
+        tube_wire.add_core_wire(core_wire)
+
+
+    # 2. initialize ground
+    ground_dic = load_dict['Cable']['ground']
+    ground = initialize_ground(ground_dic)
+
+    # 3. initalize tower
+    cable = Cable(None, tube_wire, ground)
+    print("Cable loaded.")
+    return cable
 
 def initialize_measurement(file_name):
     json_file_path = "Data/" + file_name + ".json"

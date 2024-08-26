@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def calculate_coreWires_capacitance(sheath_outer_radius, sheath_inner_radius, core_wires_epr, Lc):
+def calculate_coreWires_capacitance(sheath_outer_radius, sheath_inner_radius, core_wires_epr, Lc, constants):
     """
     【函数功能】芯线电容计算
     【入参】
@@ -13,7 +13,7 @@ def calculate_coreWires_capacitance(sheath_outer_radius, sheath_inner_radius, co
     【出参】
     Cc(numpy.ndarray:n*n): n条芯线电容矩阵
     """
-    V0 = 3e8
+    V0 = constants.Vair
     if sheath_outer_radius / sheath_inner_radius < 10:
         Vc = V0 / np.sqrt(core_wires_epr[0])
     else:
@@ -22,7 +22,7 @@ def calculate_coreWires_capacitance(sheath_outer_radius, sheath_inner_radius, co
     return Cc
 
 
-def calculate_sheath_capacitance(end_node_z, sheath_epr, Ls):
+def calculate_sheath_capacitance(end_node_z, sheath_epr, Ls, constants):
     """
     【函数功能】套管电容计算
     【入参】
@@ -33,7 +33,7 @@ def calculate_sheath_capacitance(end_node_z, sheath_epr, Ls):
     【出参】
     Cs(float)：套管电容
     """
-    V0 = 3e8
+    V0 = constants.Vair
     Vduct = 1e6
     if end_node_z[0] >= Vduct:
         Cs = 0

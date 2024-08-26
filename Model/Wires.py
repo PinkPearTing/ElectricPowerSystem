@@ -114,7 +114,6 @@ class TubeWire():
             raise ValueError("TubeWire can only have {} inner wires, but {} is added.".format(self.inner_num, len(self.core_wires) + 1))
         self.core_wires.append(wire)
 
-
     def display(self):
         """
         打印管状线段信息。
@@ -122,7 +121,6 @@ class TubeWire():
         print(f"TubeWire(sheath={self.sheath}, inner_radius={self.inner_radius}, outer_radius={self.outer_radius}, inner_num={self.inner_num})\n")
         for corewire in self.core_wires:
             corewire.display()
-
 
     def get_coreWires_radii(self):
         """
@@ -207,6 +205,64 @@ class TubeWire():
         for i, wire in enumerate(self.core_wires):
             inner_angle[i] = wire.inner_angle
         return inner_angle
+
+    def get_all_wires(self):
+        """
+        返回 TubeWire 对象中所有线段的所有线的集合。
+
+        参数:
+        TubeWire (TubeWire): TubeWire 对象
+
+        返回:
+        all_wires(OrderedDict): 所有不重复线的有序集合
+        """
+        # 获取所有不重复的节点(包含管状线段内部线段的起始点和终止点)
+        all_wires = collections.OrderedDict()
+
+        all_wires[self.sheath.name] = True
+        for core_wire in self.core_wires:
+            all_wires[core_wire.name] = True
+
+        return list(all_wires)
+
+    def get_all_start_nodes(self):
+        """
+        返回 TubeWire 对象中所有线段的所有起始点的集合。
+
+        参数:
+        TubeWire (TubeWire): TubeWire 对象
+
+        返回:
+        all_start_nodes(OrderedDict): 所有不重复起始点的有序集合
+        """
+        # 获取所有不重复的起始节点(包含管状线段内部线段的起始点)
+        all_start_nodes = collections.OrderedDict()
+
+        all_start_nodes[self.sheath.start_node.name] = True
+        for core_wire in self.core_wires:
+            all_start_nodes[core_wire.start_node.name] = True
+
+        return list(all_start_nodes)
+
+    def get_all_end_nodes(self):
+        """
+        返回 TubeWire 对象中所有线段的所有终止点的集合。
+
+        参数:
+        TubeWire (TubeWire): TubeWire 对象
+
+        返回:
+        all_end_nodes(OrderedDict): 所有不重复终止点的有序集合
+        """
+        # 获取所有不重复的终止节点(包含管状线段内部线段的终止点)
+        all_end_nodes = collections.OrderedDict()
+
+        all_end_nodes[self.sheath.end_node.name] = True
+        for core_wire in self.core_wires:
+            all_end_nodes[core_wire.end_node.name] = True
+
+        return list(all_end_nodes)
+
 
 
 class OHLWire(Wire):

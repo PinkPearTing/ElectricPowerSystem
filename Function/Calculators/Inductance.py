@@ -3,7 +3,7 @@ import numpy.matlib
 from Utils.Math import calculate_direction_cosines, calculate_distances
 
 
-def calculate_coreWires_inductance(core_wires_r, core_wires_offset, core_wires_angle, sheath_inner_radius):
+def calculate_coreWires_inductance(core_wires_r, core_wires_offset, core_wires_angle, sheath_inner_radius, constants):
     """
     【函数功能】芯线电感计算
     【入参】
@@ -15,7 +15,7 @@ def calculate_coreWires_inductance(core_wires_r, core_wires_offset, core_wires_a
     【出参】
     Lc(numpy.ndarray:n*n): n条芯线电感矩阵
     """
-    mu0 = 4 * np.pi * 1e-7
+    mu0 = constants.mu0
     Npha = core_wires_r.shape[0]
     tmat = np.tile(core_wires_angle, (1, Npha)) # tmat is
     cost = np.cos((tmat - tmat.T) * np.pi / 180)
@@ -28,12 +28,13 @@ def calculate_coreWires_inductance(core_wires_r, core_wires_offset, core_wires_a
     tmp0 = np.sqrt(tmp1 / tmp2)
     Lc = mu0 / (2 * np.pi) * np.log(tmp0 / sheath_inner_radius)
     Lc_diag = mu0 / (2 * np.pi) * np.log(
-        (sheath_inner_radius * sheath_inner_radius - core_wires_offset * core_wires_offset) / (core_wires_r * sheath_inner_radius))
+        (sheath_inner_radius * sheath_inner_radius - core_wires_offset * core_wires_offset) / (
+                    core_wires_r * sheath_inner_radius))
     np.fill_diagonal(Lc, Lc_diag)
     return Lc
 
 
-def calculate_sheath_inductance(end_node_z, sheath_r, sheath_outer_radius):
+def calculate_sheath_inductance(end_node_z, sheath_r, sheath_outer_radius, constants):
     """
     【函数功能】套管电感计算
     【入参】
@@ -44,7 +45,7 @@ def calculate_sheath_inductance(end_node_z, sheath_r, sheath_outer_radius):
     【出参】
     Ls(float)：套管电感
     """
-    mu0 = 4 * np.pi * 1e-7
+    mu0 = constants.mu0
     Vduct = 1e6
     if end_node_z[0] >= Vduct:
         Ls = 0

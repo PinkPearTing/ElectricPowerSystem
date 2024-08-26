@@ -96,43 +96,50 @@ def build_capacitance_matrix(tower, Cin):
     print("------------------------------------------------")
 
 
-def build_impedance_matrix(tubeWire, frequency):
+def build_impedance_matrix(tubeWire, frequency, constants):
     # 计算套管和芯线内部的阻抗矩阵
     # Core wires impedance
-    Zc = calculate_coreWires_impedance(tubeWire.get_coreWires_radii(), tubeWire.get_coreWires_innerOffset(), tubeWire.get_coreWires_innerAngle(), tubeWire.get_coreWires_mur(),
-                                       tubeWire.get_coreWires_sig(), tubeWire.sheath.mur, tubeWire.sheath.sig, tubeWire.inner_radius, frequency)
+    Zc = calculate_coreWires_impedance(tubeWire.get_coreWires_radii(), tubeWire.get_coreWires_innerOffset(),
+                                       tubeWire.get_coreWires_innerAngle(), tubeWire.get_coreWires_mur(),
+                                       tubeWire.get_coreWires_sig(), tubeWire.sheath.mur, tubeWire.sheath.sig,
+                                       tubeWire.inner_radius, frequency, constants)
 
     # Sheath impedance
-    Zs = calculate_sheath_impedance(tubeWire.sheath.mur, tubeWire.sheath.sig, tubeWire.inner_radius, tubeWire.sheath.r, frequency)
+    Zs = calculate_sheath_impedance(tubeWire.sheath.mur, tubeWire.sheath.sig, tubeWire.inner_radius, tubeWire.sheath.r,
+                                    frequency, constants)
 
     # Multual impedance
-    Zcs, Zsc = calculate_multual_impedance(tubeWire.get_coreWires_radii(), tubeWire.sheath.mur, tubeWire.sheath.sig, tubeWire.inner_radius, tubeWire.sheath.r, frequency)
-    
+    Zcs, Zsc = calculate_multual_impedance(tubeWire.get_coreWires_radii(), tubeWire.sheath.mur, tubeWire.sheath.sig,
+                                           tubeWire.inner_radius, tubeWire.sheath.r, frequency, constants)
+
     # 构成套管和芯线内部的阻抗矩阵，其中实部为电阻、虚部为电感，后续将会按照实部和虚部分别取出
     Zin = np.block([[Zs, Zsc],
                     [Zcs, Zc]])
     return Zin, Zcs, Zsc
 
 
-def build_tubeWire_inductance_capacitance(tubeWire):
+def build_tubeWire_inductance_capacitance(tubeWire, constants):
     # Core wires inductance
-    Lc = calculate_coreWires_inductance(tubeWire.get_coreWires_radii(), tubeWire.get_coreWires_innerOffset(), tubeWire.get_coreWires_innerAngle(), tubeWire.sheath.r)
+    Lc = calculate_coreWires_inductance(tubeWire.get_coreWires_radii(), tubeWire.get_coreWires_innerOffset(),
+                                        tubeWire.get_coreWires_innerAngle(), tubeWire.sheath.r, constants)
 
     # Core wires capacitance
-    Cc = calculate_coreWires_capacitance(tubeWire.outer_radius, tubeWire.inner_radius, tubeWire.get_coreWires_epr(), Lc)
+    Cc = calculate_coreWires_capacitance(tubeWire.outer_radius, tubeWire.inner_radius, tubeWire.get_coreWires_epr(), Lc,
+                                         constants)
 
     # Sheath inductance
-    Ls = calculate_sheath_inductance(tubeWire.get_coreWires_endNodeZ(), tubeWire.sheath.r, tubeWire.outer_radius)
+    Ls = calculate_sheath_inductance(tubeWire.get_coreWires_endNodeZ(), tubeWire.sheath.r, tubeWire.outer_radius,
+                                     constants)
 
     # Sheath capacitance
-    Cs = calculate_sheath_capacitance(tubeWire.get_coreWires_endNodeZ(), tubeWire.sheath.epr, Ls)
+    Cs = calculate_sheath_capacitance(tubeWire.get_coreWires_endNodeZ(), tubeWire.sheath.epr, Ls, constants)
 
     return Lc, Cc, Ls, Cs
 
 
-def prepare_building_parameters(tubeWire, max_length, frequency):
-    Zin, Zcs, Zsc = build_impedance_matrix(tubeWire, frequency)
-    Lc, Cc, Ls, Cs = build_tubeWire_inductance_capacitance(tubeWire)
+def prepare_building_parameters(tubeWire, max_length, frequency, constants):
+    Zin, Zcs, Zsc = build_impedance_matrix(tubeWire, frequency, constants)
+    Lc, Cc, Ls, Cs = build_tubeWire_inductance_capacitance(tubeWire, constants)
     # 构成套管和芯线内部的电阻矩阵
     Rin = np.real(Zin) * max_length
 
@@ -143,7 +150,8 @@ def prepare_building_parameters(tubeWire, max_length, frequency):
     Cin = block_diag(Cs, Cc)
 
     # 计算套管和芯线的电感矩阵
-    Lx = block_diag(0, (np.tile(np.imag(Zcs) / (2 * np.pi * frequency), (1, 3)) + np.tile(np.imag(Zsc) / (2 * np.pi * frequency), (3, 1))) * max_length)
+    Lx = block_diag(0, (np.tile(np.imag(Zcs) / (2 * np.pi * frequency), (1, 3)) + np.tile(
+        np.imag(Zsc) / (2 * np.pi * frequency), (3, 1))) * max_length)
     # 计算套管和芯线的电阻矩阵
     Rx = block_diag(0, (np.real(Zsc) + np.real(Zcs)) * max_length)
 
@@ -155,7 +163,7 @@ def tower_building(tower, frequency, max_length):
     print("Tower building...")
     # 0.参数准备
     constants = Constant()
-    Rin, Rx, Lin, Lx, Cin = prepare_building_parameters(tower.tubeWire, max_length, frequency)
+    Rin, Rx, Lin, Lx, Cin = prepare_building_parameters(tower.tubeWire, max_length, frequency, constants)
     L, P = calculate_wires_inductance_potential_with_ground(tower.wires, tower.ground, constants)
 
     # 1. 构建A矩阵

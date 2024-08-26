@@ -266,7 +266,130 @@
     ]
   },
   "Cable":{
+    "info": {
+      "name": "Cable No.1",
+      "id": "1",
+      "type": "01",
+      "T_head": "T005",
+      "T_tail": "T007",
+      "core_num": 3,
+      "armor_num": 1,
+      "delta_L": 10,
+      "mode_con": 0,
+      "mode_gnd": 0
+    },
+    "ground": {
+      "glb": 1,
+      "sig": 1e-2,
+      "mur": 1,
+      "epr": 10,
+      "gnd_model": "Lossy",
+      "ionisation_intensity": "weak",
+      "ionisation_model": "isolational"
+    },
+    "TubeWire": {
+        "sheath":  {
+          "type": "sheath",
+          "prob": null,
+          "bran": "Y10",
+          "node1": "X03",
+          "node2": "X56",
+          "pos_1": [
+            0,
+            0,
+            -1
+          ],
+          "pos_2": [
+            100,
+            0,
+            -1
+          ],
+          "oft": 0,
+          "r0": 0.0425,
+          "r": 0,
+          "l": 0,
+          "sig": 1e7,
+          "mur": 50,
+          "epr": 1,
+          "rs1": 0.04,
+          "rs3": 0.045
+        },
+        "core":[
+            {
+              "type": "core",
+              "bran": "Y11",
+              "node1": "X53",
+              "node2": "X57",
+              "pos_1": [
+                0,
+                0,
+                -1
+              ],
+              "pos_2": [
+                100,
+                0,
+                -1
+              ],
+              "oft": 0.02,
+              "r0": 0.01,
+              "r": 0,
+              "l": 0,
+              "sig": 58000000,
+              "mur": 1,
+              "epr": 1,
+              "angle": -120
+          },
+            {
+              "type": "core",
+              "bran": "Y12",
+              "node1": "X54",
+              "node2": "X58",
+              "pos_1": [
+                0,
+                0,
+                -1
+              ],
+              "pos_2": [
+                100,
+                0,
+                -1
+              ],
+              "oft": 0.02,
+              "r0": 0.01,
+              "r": 0,
+              "l": 0,
+              "sig": 58000000,
+              "mur": 1,
+              "epr": 1,
+              "angle": 0
+            },
+            {
+              "type": "core",
+              "bran": "Y13",
+              "node1": "X55",
+              "node2": "X59",
+              "pos_1": [
+                0,
+                0,
+                -1
+              ],
+              "pos_2": [
+                100,
+                0,
+                -1
+              ],
+              "oft": 0.02,
+              "r0": 0.01,
+              "r": 0,
+              "l": 0,
+              "sig": 58000000,
+              "mur": 1,
+              "epr": 1,
+              "angle": 120
+            }
+        ]
 
+      }
   },
   "OHL": {
     "Info": {
