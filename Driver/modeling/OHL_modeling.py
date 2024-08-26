@@ -111,10 +111,10 @@ def OHL_building(OHL, frequency, segment_num, segment_length):
     constants = Constant()
     OHL_r = OHL.wires.get_radii()
     OHL_height = OHL.wires.get_heights()
-    end_node = OHL.wires.get_end_points()
+    start_node = OHL.wires.get_start_points()
 
     OHL.get_brans_nodes_list(segment_num)
-    Lm = calculate_OHL_mutual_inductance(OHL_r, OHL_height, end_node[:, 1], constants)
+    Lm = calculate_OHL_mutual_inductance(OHL_r, OHL_height, start_node[:, 1], constants)
 
     # 1. 构建A矩阵
     build_incidence_matrix(OHL)

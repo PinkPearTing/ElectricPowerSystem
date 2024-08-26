@@ -578,7 +578,8 @@ def calculate_OHL_mutual_inductance(radius, height, end_node_y, constants):
     【出参】
     Lm(numpy.ndarray:n*n)：n条线互感矩阵
     """
-    km, mu0 = constants.km, constants.mu0
+    mu0 = constants.mu0
+    km = mu0 / (2 * np.pi)
     Ncon = np.array([radius]).reshape(-1).shape[0]
     out = np.log(2 * height / radius)
     Lm = np.diag(out.reshape(-1))

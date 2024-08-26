@@ -252,7 +252,7 @@ def calculate_OHL_wire_impedance(radius, mur, sig, epr, constants, frq=frq_defau
         out = gamma / (2 * np.pi * radius * sig)
         low = np.where(abs(Ri) < Emax)
         out[low] = 1j * mu0 * mur[low] * omega[i] * I0i[low] / (2 * np.pi * Ri[low] * I1i[low])
-        Zc[:, :, i] = np.diag(out)
+        Zc[:, :, i] = np.diag(out.reshape((-1)))
     return Zc
 
 
