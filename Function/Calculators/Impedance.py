@@ -78,7 +78,7 @@ def calculate_coreWires_impedance(core_wires_r, core_wires_offset, core_wires_an
     return Zc
 
 
-def calculate_sheath_impedance(sheath_mur, sheath_sig, sheath_inner_radius, sheath_r, Frq, constants):
+def calculate_sheath_impedance(sheath_mur, sheath_sig, sheath_inner_radius, sheath_r, Frq,constants):
     """
     【函数功能】套管阻抗计算
     【入参】

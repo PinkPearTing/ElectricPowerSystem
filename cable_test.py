@@ -1,4 +1,5 @@
 import numpy as np
+import json
 
 from Driver.initialization.initialization import initialize_cable
 from Driver.modeling.cable_modeling import cable_building
@@ -26,17 +27,22 @@ if __name__ == '__main__':
 # （1）--------------------------初始化---------------------------
     print("------------------初始化中--------------------")
     file_name = "01_2"
+    json_file_path = "Data/" + file_name + ".json"
+    # 0. read json file
+    with open(json_file_path, 'r') as j:
+        load_dict = json.load(j)
 
-    # 1. OHL 初始化
-    cable = initialize_cable(file_name, max_length)
+    for cable_dict in load_dict['Cable']:
+            # 1. OHL 初始化
+        cable = initialize_cable(cable_dict, max_length)
 
-    print("------------------初始化结束--------------------")
+        print("------------------初始化结束--------------------")
 
 
-# （2）--------------------------计算矩阵---------------------------
-    segment_num = int(3) #正常情况下，segment_num由segment_length和线长反算，但matlab中线长参数位于Tower中，在python中如何修改？
-    segment_length = 20 #预设的参数
-    cable_building(cable, f0, frq_default, segment_num, segment_length, max_length)
+    # （2）--------------------------计算矩阵---------------------------
+        segment_num = int(2) #正常情况下，segment_num由segment_length和线长反算，但matlab中线长参数位于Tower中，在python中如何修改？
+        segment_length = 20 #预设的参数
+        cable_building(cable, f0, frq_default)
 
 
     print(1)

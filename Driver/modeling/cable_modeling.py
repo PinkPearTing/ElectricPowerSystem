@@ -12,37 +12,45 @@ def build_incidence_matrix(cable):
     print("------------------------------------------------")
     print("A matrix is building...")
     # 初始化A矩阵
-    incidence_martix = np.zeros((len(cable.wires_name), len(cable.nodes_name)))
-    wires_num = cable.TubeWire.inner_num+1
+    wires_name = cable.wires_name
+    nodes_name = cable.nodes_name
+    incidence_martix = np.zeros((len(wires_name), len(nodes_name)))
+    wires_num = cable.wires.tube_wires[0].inner_num+1
 
-    for i in range(len(cable.wires_name)):
+    segment_num = len(cable.wires.tube_wires)
+
+    for i in range(segment_num):
         incidence_martix[i, i] = -1
         incidence_martix[i, i+wires_num] = 1
 
-    cable.incidence_matrix = pd.DataFrame(incidence_martix, index=cable.wires_name, columns=cable.nodes_name)
+    cable.incidence_matrix = pd.DataFrame(incidence_martix, index=wires_name, columns=nodes_name)
 
     print(cable.incidence_matrix)
     print("A matrix is built successfully")
     print("------------------------------------------------")
 
-def build_resistance_matrix(cable, Zin, Zcs, Zsc, segment_num, segment_length):
+def build_resistance_matrix(cable, Zin, Zcs, Zsc):
     # R矩阵
     print("------------------------------------------------")
     print("R matrix is building...")
+
     Rin = np.real(Zin)
     Rcs = np.real(Zcs)
     Rsc = np.real(Zsc)
     Rss = Rin[0, 0]
     Rin[0, 0] = 0
-    Npha = cable.TubeWire.inner_num
+    Npha = cable.wires.tube_wires[0].inner_num
     Rx = np.zeros((1 + Npha, 1 + Npha))
     Rx[1:, 1:] = np.tile(Rsc, (Npha, 1)) + np.tile(Rcs, (1, Npha))
     R = Rin + Rx + Rss
 
     resistance_martix = np.zeros((len(cable.wires_name), len(cable.wires_name)))
 
+    segment_num = len(cable.wires.tube_wires)
+
     for i in range(segment_num):
-        resistance_martix[i*(Npha+1):(i+1)*(Npha+1), i*(Npha+1):(i+1)*(Npha+1)] = R*segment_length
+        length = cable.wires.tube_wires[i].sheath.length()
+        resistance_martix[i*(Npha+1):(i+1)*(Npha+1), i*(Npha+1):(i+1)*(Npha+1)] = R * length
 
     cable.resistance_matrix = pd.DataFrame(resistance_martix, index=cable.wires_name, columns=cable.wires_name, dtype=float)
 
@@ -50,11 +58,11 @@ def build_resistance_matrix(cable, Zin, Zcs, Zsc, segment_num, segment_length):
     print("R matrix is built successfully")
     print("------------------------------------------------")
 
-def build_inductance_matrix(cable, Zin, Zcs, Zsc, Lc, Ls, frequency, segment_num, segment_length):
+def build_inductance_matrix(cable, Zin, Zcs, Zsc, Lc, Ls, frequency):
     # L矩阵
     print("------------------------------------------------")
     print("L matrix is building...")
-    Npha = cable.TubeWire.inner_num
+    Npha = cable.wires.tube_wires[0].inner_num
     Lcs = np.imag(Zcs) / (2 * np.pi * frequency)
     Lsc = np.imag(Zsc) / (2 * np.pi * frequency)
     Ld = np.imag(Zin) / (2 * np.pi * frequency) + np.block(
@@ -67,8 +75,11 @@ def build_inductance_matrix(cable, Zin, Zcs, Zsc, Lc, Ls, frequency, segment_num
 
     inductance_martix = np.zeros((len(cable.wires_name), len(cable.wires_name)))
 
+    segment_num = len(cable.wires.tube_wires)
+
     for i in range(segment_num):
-        inductance_martix[i * (Npha+1):(i + 1) * (Npha+1), i * (Npha+1):(i + 1) * (Npha+1)] = L * segment_length
+        length = cable.wires.tube_wires[i].sheath.length()
+        inductance_martix[i * (Npha+1):(i + 1) * (Npha+1), i * (Npha+1):(i + 1) * (Npha+1)] = L * length
 
     cable.inductance_matrix = pd.DataFrame(inductance_martix, index=cable.wires_name, columns=cable.wires_name, dtype=float)
 
@@ -76,14 +87,15 @@ def build_inductance_matrix(cable, Zin, Zcs, Zsc, Lc, Ls, frequency, segment_num
     print("L matrix is built successfully")
     print("------------------------------------------------")
 
-def build_capacitance_matrix(cable, Lc, Ls, constants, segment_num, segment_length):
+def build_capacitance_matrix(cable, Lc, Ls, constants):
     # C矩阵
     print("------------------------------------------------")
     print("C matrix is building...")
-    Npha = cable.TubeWire.inner_num
-    C0 = calculate_coreWires_capacitance(cable.TubeWire.outer_radius, cable.TubeWire.inner_radius,
-                                         cable.TubeWire.get_coreWires_epr(), Lc, constants)
-    C0se = calculate_sheath_capacitance(cable.TubeWire.get_coreWires_endNodeZ(), cable.TubeWire.sheath.epr, Ls,
+    tube_wire = cable.wires.tube_wires[0]
+    Npha = tube_wire.inner_num
+    C0 = calculate_coreWires_capacitance(tube_wire.outer_radius, tube_wire.inner_radius,
+                                         tube_wire.get_coreWires_epr(), Lc, constants)
+    C0se = calculate_sheath_capacitance(tube_wire.get_coreWires_endNodeZ(), tube_wire.sheath.epr, Ls,
                                         constants)
     C = np.block([[C0se, np.zeros((1, C0.shape[1]))], [np.zeros((C0.shape[0], 1)), C0]])
     for jk in range(Npha):
@@ -91,12 +103,15 @@ def build_capacitance_matrix(cable, Lc, Ls, constants, segment_num, segment_leng
         C[jk + 1, 0] = -sum(C[jk + 1, 1:])
     C[0, 0] = C[0, 0] - 0.5 * (sum(C[0, 1:]) + sum(C[1:, 0]))
 
-    cable.Cw.C0 = C * (0.5 * segment_length)  # 不知道有什么用途，杜老师说暂时保留
+    cable.Cw.C0 = C * (0.5 * cable.wires.tube_wires[0].sheath.length())  # 不知道有什么用途，杜老师说暂时保留
 
     capacitance_martix = np.zeros((len(cable.nodes_name), len(cable.nodes_name)))
 
-    for i in range(segment_num + 1):
-        capacitance_martix[i * (Npha+1):(i + 1) * (Npha+1), i * (Npha+1):(i + 1) * (Npha+1)] = 0.5 * C * segment_length if i == 0 or i == segment_num else C * segment_length
+    segment_num = len(cable.wires.tube_wires)
+
+    for i in range(segment_num):
+        length = cable.wires.tube_wires[i].sheath.length()
+        capacitance_martix[i * (Npha+1):(i + 1) * (Npha+1), i * (Npha+1):(i + 1) * (Npha+1)] = 0.5 * C * length if i == 0 or i == segment_num else C * length
         # 与外界相连接的部分，需要折半
 
     cable.capacitance_matrix = pd.DataFrame(capacitance_martix, index=cable.nodes_name, columns=cable.nodes_name, dtype=float)
@@ -122,22 +137,23 @@ def build_impedance_matrix(cable, Lc, Ls, constants, varied_frequency):
     print("------------------------------------------------")
     print("Z matrix is building...")
     Nf = varied_frequency.size
-    Npha = cable.TubeWire.inner_num
+    tube_wire = cable.wires.tube_wires[0]
+    Npha = tube_wire.inner_num
 
     Zgf = calculate_ground_impedance(cable.ground.mur, cable.ground.epr, cable.ground.sig,
-                                     cable.TubeWire.get_coreWires_endNodeZ(), cable.TubeWire.outer_radius,
+                                     tube_wire.get_coreWires_endNodeZ(), tube_wire.outer_radius,
                                      np.zeros((Npha, 1)), varied_frequency, constants)
-    Zcf = calculate_coreWires_impedance(cable.TubeWire.get_coreWires_radii(),
-                                        cable.TubeWire.get_coreWires_innerOffset(),
-                                        cable.TubeWire.get_coreWires_innerAngle(), cable.TubeWire.get_coreWires_mur(),
-                                        cable.TubeWire.get_coreWires_sig(), cable.TubeWire.sheath.mur,
-                                        cable.TubeWire.sheath.sig, cable.TubeWire.inner_radius, varied_frequency,
+    Zcf = calculate_coreWires_impedance(tube_wire.get_coreWires_radii(),
+                                        tube_wire.get_coreWires_innerOffset(),
+                                        tube_wire.get_coreWires_innerAngle(), tube_wire.get_coreWires_mur(),
+                                        tube_wire.get_coreWires_sig(), tube_wire.sheath.mur,
+                                        tube_wire.sheath.sig, tube_wire.inner_radius, varied_frequency,
                                         constants)
-    Zsf = calculate_sheath_impedance(cable.TubeWire.sheath.mur, cable.TubeWire.sheath.sig, cable.TubeWire.inner_radius,
-                                     cable.TubeWire.sheath.r, varied_frequency, constants)
-    Zcsf, Zscf = calculate_multual_impedance(cable.TubeWire.get_coreWires_radii(), cable.TubeWire.sheath.mur,
-                                             cable.TubeWire.sheath.sig, cable.TubeWire.inner_radius,
-                                             cable.TubeWire.sheath.r, varied_frequency, constants)
+    Zsf = calculate_sheath_impedance(tube_wire.sheath.mur, tube_wire.sheath.sig, tube_wire.inner_radius,
+                                     tube_wire.sheath.r, varied_frequency, constants)
+    Zcsf, Zscf = calculate_multual_impedance(tube_wire.get_coreWires_radii(), tube_wire.sheath.mur,
+                                             tube_wire.sheath.sig, tube_wire.inner_radius,
+                                             tube_wire.sheath.r, varied_frequency, constants)
     Zssf = Zsf + Zgf
 
     Z = np.zeros((Npha + 1, Npha + 1, Nf), dtype='complex')
@@ -177,34 +193,33 @@ def build_core_sheath_merged_impedance_matrix(tubeWire, frequency, constants):
     return Zin, Zcs, Zsc
 
 
-def cable_building(cable, frequency, varied_frequency, segment_num, segment_length, max_length):
+def cable_building(cable, frequency, varied_frequency):
     print("------------------------------------------------")
     print("Cable building...")
     # 0.参数准备
     constants = Constant()
+    tube_wire = cable.wires.tube_wires[0]
 
-    cable.get_brans_nodes_list(segment_num)
+    Zin, Zcs, Zsc = build_core_sheath_merged_impedance_matrix(tube_wire, frequency, constants)
+    Lc = calculate_coreWires_inductance(tube_wire.get_coreWires_radii(),
+                                        tube_wire.get_coreWires_innerOffset(),
+                                        tube_wire.get_coreWires_innerAngle(),
+                                        tube_wire.inner_radius, constants)
 
-    Zin, Zcs, Zsc = build_core_sheath_merged_impedance_matrix(cable.TubeWire, frequency, constants)
-    Lc = calculate_coreWires_inductance(cable.TubeWire.get_coreWires_radii(),
-                                        cable.TubeWire.get_coreWires_innerOffset(),
-                                        cable.TubeWire.get_coreWires_innerAngle(),
-                                        cable.TubeWire.inner_radius, constants)
-
-    Ls = calculate_sheath_inductance(cable.TubeWire.get_coreWires_endNodeZ(), cable.TubeWire.sheath.r,
-                                     cable.TubeWire.outer_radius, constants)
+    Ls = calculate_sheath_inductance(tube_wire.get_coreWires_endNodeZ(), tube_wire.sheath.r,
+                                     tube_wire.outer_radius, constants)
 
     # 1. 构建A矩阵
     build_incidence_matrix(cable)
 
     # 2. 构建R矩阵
-    build_resistance_matrix(cable, Zin, Zcs, Zsc, segment_num, segment_length)
+    build_resistance_matrix(cable, Zin, Zcs, Zsc)
 
     # 3. 构建L矩阵
-    build_inductance_matrix(cable, Zin, Zcs, Zsc, Lc, Ls, frequency, segment_num, segment_length)
+    build_inductance_matrix(cable, Zin, Zcs, Zsc, Lc, Ls, frequency)
 
     # 4. 构建C矩阵
-    build_capacitance_matrix(cable, Lc, Ls, constants, segment_num, segment_length)
+    build_capacitance_matrix(cable, Lc, Ls, constants)
 
     # 5. 构建G矩阵
     build_conductance_matrix(cable)

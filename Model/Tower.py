@@ -14,8 +14,9 @@ import numpy as np
 from scipy.linalg import block_diag
 from Utils.Matrix import expand_matrix, copy_and_expand_matrix, update_matrix, update_and_sum_matrix
 
+
 class Tower:
-    def __init__(self, Info: Info, Wires: Wires, tubeWire: TubeWire, Lump, Ground: Ground, Device: Device,
+    def __init__(self, name, Wires: Wires, tubeWire: TubeWire, Lump, Ground: Ground, Device: Device,
                  MeasurementNode: MeasurementNode):
         """
         初始化杆塔对象
@@ -38,7 +39,7 @@ class Tower:
         potential_matrix (numpy.ndarray, Num(points) * Num(points)): 电位矩阵
         capacitance_matrix (numpy.ndarray, Num(points) * Num(points)): 电容矩阵
         """
-        self.info = Info
+        self.name = name
         self.wires = Wires
         self.tubeWire = tubeWire
         self.lump = Lump
@@ -63,6 +64,7 @@ class Tower:
                                           self.wires.count_distinct_airPoints() + self.wires.count_distinct_gndPoints()))
         # 电容矩阵
         self.capacitance_matrix = np.zeros((self.wires.count_distinct_points(), self.wires.count_distinct_points()))
+
 
 
     def initialize_incidence_matrix(self):
@@ -187,7 +189,7 @@ class Tower:
             # 将C矩阵相应位置的点 更新为C0相应位置的数据
             self.capacitance_matrix = update_matrix(self.capacitance_matrix, indices[i], 0.5*C0 if i==0 or i==len(indices)-1 else C0)#与外界相连接的部分，需要折半
 
-    def combine_parameter_martix(self):
+    def combine_parameter_matrix(self):
         """
         【函数功能】 合并Lumps和Tower的参数矩阵
         """
@@ -203,11 +205,14 @@ class Tower:
         df_C = pd.DataFrame(self.capacitance_matrix, index=node_name_list, columns=node_name_list)
         df_G = pd.DataFrame(0, index=node_name_list, columns=node_name_list)
 
-        self.incidence_matrix = df_A.add(self.lump.incidence_matrix, fill_value=0).fillna(0)
+        self.incidence_matrix_A = df_A.add(self.lump.incidence_matrix_A, fill_value=0).fillna(0)
+        self.incidence_matrix_B = df_A.add(self.lump.incidence_matrix_B, fill_value=0).fillna(0)
         self.resistance_matrix = df_R.add(self.lump.resistance_matrix, fill_value=0).fillna(0)
         self.inductance_matrix = df_L.add(self.lump.inductance_matrix, fill_value=0).fillna(0)
         self.capacitance_matrix = df_C.add(self.lump.capacitance_matrix, fill_value=0).fillna(0)
-        self.conductance_martix = df_G.add(self.lump.conductance_martix, fill_value=0).fillna(0)
+        self.conductance_matrix = df_G.add(self.lump.conductance_matrix, fill_value=0).fillna(0)
+
+
 
 
 

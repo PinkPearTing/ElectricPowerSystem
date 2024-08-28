@@ -8,17 +8,18 @@ from Info import Info
 frq_default = np.logspace(0, 9, 37)
 
 class OHL:
-    def __init__(self, name: str, Info: Info, Wires: Wires, Phase, phase_num: int, ground: Ground):
+    def __init__(self, name: str, Info: Info, Wires: Wires, Wires_split: Wires, Phase, phase_num: int, ground: Ground):
         """
         初始化架空线对象。
         name (str): 线的名称
-        info (TowerInfo): 自描述信息对象
+        info (Info): 自描述信息对象
         Phase (str): 线圈相线
         phase_num (int): 线圈相数
         ground(Ground类)：大地类
         """
         self.name = name
         self.wires = Wires
+        self.wires_split = Wires_split
         self.info = Info
         self.Phase = Phase
         self.phase_num = phase_num
