@@ -8,15 +8,13 @@ from Function.Calculators.Resistance import calculate_OHL_resistance
 from Model.Contant import Constant
 
 
-def build_incidence_matrix(OHL):
+def build_incidence_matrix(OHL, segment_num):
     # A矩阵
     print("------------------------------------------------")
     print("A matrix is building...")
     # 初始化A矩阵
     incidence_martix = np.zeros((len(OHL.wires_name), len(OHL.nodes_name)))
     wires_num = OHL.phase_num
-
-    segment_num = len(OHL.wires_name) / wires_num
 
     for i in range(segment_num):
         incidence_martix[i, i] = -1
@@ -28,7 +26,7 @@ def build_incidence_matrix(OHL):
     print("A matrix is built successfully")
     print("------------------------------------------------")
 
-def build_resistance_matrix(OHL):
+def build_resistance_matrix(OHL, segment_num, segment_length):
     # R矩阵
     print("------------------------------------------------")
     print("R matrix is building...")
@@ -36,11 +34,8 @@ def build_resistance_matrix(OHL):
     R = calculate_OHL_resistance(OHL.wires.get_resistance_not_split())
     resistance_martix = np.zeros((len(OHL.wires_name), len(OHL.wires_name)))
 
-    segment_num = len(OHL.wires_name) / wires_num
-    length = OHL.wires.get_lengths_not_split()
-
     for i in range(segment_num):
-        resistance_martix[i*wires_num:(i+1)*wires_num, i*wires_num:(i+1)*wires_num] = R * length[i]
+        resistance_martix[i*wires_num:(i+1)*wires_num, i*wires_num:(i+1)*wires_num] = R * segment_length
 
     OHL.resistance_matrix = pd.DataFrame(resistance_martix, index=OHL.wires_name, columns=OHL.wires_name, dtype=float)
 
@@ -48,7 +43,7 @@ def build_resistance_matrix(OHL):
     print("R matrix is built successfully")
     print("------------------------------------------------")
 
-def build_inductance_matrix(OHL, Lm):
+def build_inductance_matrix(OHL, Lm, segment_num, segment_length):
     # L矩阵
     print("------------------------------------------------")
     print("L matrix is building...")
@@ -56,12 +51,9 @@ def build_inductance_matrix(OHL, Lm):
     L = calculate_OHL_inductance(OHL.wires.get_inductance_not_split(), Lm)
 
     inductance_martix = np.zeros((len(OHL.wires_name), len(OHL.wires_name)))
-    segment_num = len(OHL.wires_name) / wires_num
-    length = OHL.wires.get_lengths_not_split()
-
 
     for i in range(segment_num):
-        inductance_martix[i * wires_num:(i + 1) * wires_num, i * wires_num:(i + 1) * wires_num] = L * length
+        inductance_martix[i * wires_num:(i + 1) * wires_num, i * wires_num:(i + 1) * wires_num] = L * segment_length
 
     OHL.inductance_matrix = pd.DataFrame(inductance_martix, index=OHL.wires_name, columns=OHL.wires_name, dtype=float)
 
@@ -69,7 +61,7 @@ def build_inductance_matrix(OHL, Lm):
     print("L matrix is built successfully")
     print("------------------------------------------------")
 
-def build_capacitance_matrix(OHL, Lm, constant):
+def build_capacitance_matrix(OHL, Lm, segment_num, segment_length, constant):
     # C矩阵
     print("------------------------------------------------")
     print("C matrix is building...")
@@ -79,11 +71,8 @@ def build_capacitance_matrix(OHL, Lm, constant):
 
     capacitance_martix = np.zeros((len(OHL.nodes_name), len(OHL.nodes_name)))
 
-    segment_num = len(OHL.wires_name) / wires_num
-    length = OHL.wires.get_lengths_not_split()
-
     for i in range(segment_num + 1):
-        capacitance_martix[i * wires_num:(i + 1) * wires_num, i * wires_num:(i + 1) * wires_num] = 0.5 * C * length if i == 0 or i == segment_num else C * length
+        capacitance_martix[i * wires_num:(i + 1) * wires_num, i * wires_num:(i + 1) * wires_num] = 0.5 * C * segment_length if i == 0 or i == segment_num else C * segment_length
         # 与外界相连接的部分，需要折半
 
     OHL.capacitance_matrix = pd.DataFrame(capacitance_martix, index=OHL.nodes_name, columns=OHL.nodes_name, dtype=float)
@@ -115,7 +104,7 @@ def build_impedance_matrix(OHL, Lm, constants, frequency):
     print("Z matrix is built successfully")
     print("------------------------------------------------")
 
-def OHL_building(OHL, frequency):
+def OHL_building(OHL, length, max_length, frequency):
     print("------------------------------------------------")
     print("OHL building...")
     # 0.参数准备
@@ -124,19 +113,24 @@ def OHL_building(OHL, frequency):
     OHL_height = OHL.wires.get_heights_not_split()
     start_node = OHL.wires.get_start_points_not_split()
 
+    segment_num = int(np.ceil(length / max_length))
+    segment_length = length/segment_num
+
     Lm = calculate_OHL_mutual_inductance(OHL_r, OHL_height, start_node[:, 1], constants)
 
+    OHL.get_brans_nodes_list(segment_num)
+
     # 1. 构建A矩阵
-    build_incidence_matrix(OHL)
+    build_incidence_matrix(OHL, segment_num)
 
     # 2. 构建R矩阵
-    build_resistance_matrix(OHL)
+    build_resistance_matrix(OHL, segment_num, segment_length)
 
     # 3. 构建L矩阵
     build_inductance_matrix(OHL, Lm, segment_num, segment_length)
 
     # 4. 构建C矩阵
-    build_capacitance_matrix(OHL, Lm, constants, segment_num, segment_length)
+    build_capacitance_matrix(OHL, Lm, segment_num, segment_length, constants)
 
     # 5. 构建G矩阵
     build_conductance_matrix(OHL)

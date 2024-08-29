@@ -1,7 +1,7 @@
 import copy
 import json
 import numpy as np
-
+import copy
 from Model.Lump import Lumps, Resistor_Inductor, Measurement_Linear, Conductor_Capacitor, Measurement_GC, \
     Voltage_Source_Cosine, Voltage_Source_Empirical, Current_Source_Cosine, Str2matrix, Current_Source_Empirical, \
     Voltage_Control_Voltage_Source, Current_Control_Voltage_Source, Voltage_Control_Current_Source, \
@@ -12,11 +12,12 @@ from Model.Wires import Wire, Wires, CoreWire, TubeWire
 from Model.Ground import Ground
 from Model.Tower import Tower
 from Model.OHL import OHL
-from Model.Lightning import Stroke
+from Model.Lightning import Stroke, Lightning, Channel
 from Model.Contant import Constant
-# from Function.Calculators.InducedVoltage_calculate import InducedVoltage_calculate, Current_source_generate
+from Function.Calculators.InducedVoltage_calculate import InducedVoltage_calculate, LightningCurrrent_calculate
 import pandas as pd
 from Model.Cable import Cable
+from Model.Info import OHLInfo
 
 
 
@@ -153,7 +154,7 @@ def initialize_tower(tower_dict, max_length):
     print("Tower loaded.")
     return tower
 
-def initialize_OHL(OHL_dict, max_length):
+def initialize_OHL(OHL_dict):
 
 
     # 1. initialize wires
@@ -165,17 +166,17 @@ def initialize_OHL(OHL_dict, max_length):
             wires.add_air_wire(wire_air)  # add air wire in wires
 
     wires.display()
-    wires2 = copy.deepcopy(wires)
-    wires.split_long_wires_all(max_length)
 
     # 2. initialize ground
     ground_dic = OHL_dict['ground']
     ground = initialize_ground(ground_dic)
 
+    info = OHLInfo()
+
     # 3. initalize ohl
-    ohl = OHL(None, None, wires2, wires, None, None, ground)
-    ohl.wires_name = ohl.wires.get_all_wires()
-    ohl.nodes_name = ohl.wires.get_all_nodes()
+    ohl = OHL(None, None, wires, None, None, ground)
+   # ohl.wires_name = list(ohl.wires.get_all_wires().keys())
+   # ohl.nodes_name = ohl.wires.get_all_nodes()
     print("OHL loaded.")
     return ohl
 
@@ -423,22 +424,30 @@ def initial_lump(lump_data):
     return lumps
 
 def initial_source(network, nodes, file_name):
-    json_file_path = "Data/" + file_name + ".json"
+    json_file_path = "../Data/" + file_name + ".json"
     # 0. read json file
     with open(json_file_path, 'r') as j:
         load_dict = json.load(j)
 
-    stroke = Stroke('Heidler', duration=0.1, is_calculated=True, hit_pos=[500, 50, 0], parameter_set=None, parameters=None)
+    stroke = Stroke('Heidler', duration=1.0e-3, is_calculated=True, parameter_set='0.25/100us', parameters=None)
+    stroke.calculate()
+    channel = Channel(hit_pos=[500, 50, 0])
+    lightning =Lightning(id=1, type='Direct', strokes=[stroke], channel=channel)
     pt_start = np.array(network.starts)
     pt_end = np.array(network.ends)
-    i_sr = pd.read_excel('i_sr.xlsx', header=None)
-    i_sr = i_sr.to_numpy()
-    stroke.current_waveform = i_sr
     constants = Constant()
     constants.ep0 = 8.85e-12
 
-    U_out = InducedVoltage_calculate(pt_start, pt_end, stroke, constants)
-    I_out = Current_source_generate(load_dict["Source"]["area"],load_dict["Source"]["wire"],load_dict["Source"]["position"],network, nodes)
+    U_out = InducedVoltage_calculate(pt_start, pt_end, list(network.branches.keys()), lightning, stroke_sequence=0, constants=constants)
+    I_out = LightningCurrrent_calculate(load_dict["Source"]["area"], load_dict["Source"]["wire"], load_dict["Source"]["position"], network, nodes, lightning, stroke_sequence=0)
+   # Source_Matrix = pd.concat([I_out, U_out], axis=0)
+    lumps = [tower.lump for tower in network.towers]
+
+    for lump in lumps:
+        U_out = U_out.add(lump.voltage_source_matrix, fill_value=0).fillna(0)
+        I_out = I_out.add(lump.current_source_matrix, fill_value=0).fillna(0)
+    Source_Matrix = pd.concat([I_out, U_out], axis=0)
+    return Source_Matrix
 
 def initialize_cable(cable, max_length):
 
