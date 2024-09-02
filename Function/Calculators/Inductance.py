@@ -514,7 +514,7 @@ def calculate_wires_inductance_potential_with_ground(wires, ground, constants):
         Pai = calculate_potential(start_points[rb1, :], end_points[rb1, :], lengths[rb1, 0], radii[rb1, 0], pf1[rb1, :], pf2[rb1, :], lengths[rb1, 0], radii[rb1, 0], At[rb1, :], Nna)
 
         Lgi = calculate_inductance(start_points[rb2, :], end_points[rb2, :], radii[rb2, 0], pf1[rb2, :], pf2[rb2, :], radii[rb2, 0])
-        Pgi = calculate_potential(start_points[rb2, :], end_points[rb2, :], lengths[rb2, 0], radii[rb2, 0], pf1[rb2, :], pf2[rb2, :], lengths[rb2, 0], radii[rb2, 0], At[rb2, :], Nng)
+        Pgi = calculate_potential(start_points[rb2, :], end_points[rb2, :], lengths[rb2, 0], radii[rb2, 0], pf1[rb2, :], pf2[rb2, :], lengths[rb2, 0], radii[rb2, 0], At[rb2, :], Nng) if Ngn != 0 else 0
 
     # (2bi) perfect ground
     if ground.gnd_model == "Perfect":

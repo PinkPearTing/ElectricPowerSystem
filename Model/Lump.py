@@ -1052,6 +1052,17 @@ class Nolinear_Element(Component):
         # elif self.default == 0:
 
 
+class Nolinear_Element_Parameters:
+    NLE01 = {
+        'vi_characteristics': lambda i: (0.09 * np.log10(i) + 0.75) * 42.5 * 10 ** 3,
+        'ri_characteristic': lambda i: 42.5 * 10 ** 3 * (0.09 * np.log10(i) + 0.78) / i
+    }
+    NLE02 = {
+        'vi_characteristics': lambda i: (0.08*np.log10(i)+0.61)*42.5*10**3,
+        'ri_characteristic': lambda i: 42.5*10**3*(0.08*np.log10(i)+0.61)/i
+    }
+
+
 class Switch_Disruptive_Effect_Model(Component):
     def __init__(self, name: str, bran: str, node1: str, node2: str, resistance: float, type_of_data: int,
                  DE_max: float, v_initial: float=168.6e3, k: float=1):

@@ -57,16 +57,16 @@ class Network:
 
     # initialize internal network elements
     def initialize_network(self,f0,frq_default,max_length):
-        file_name = "01_2"
+        file_name = "lump_connect_ground"
         json_file_path = "../Data/" + file_name + ".json"
         # 0. read json file
         with open(json_file_path, 'r') as j:
             load_dict = json.load(j)
 
         # 1. initialize all elements in the network
-        self.towers = [initialize_tower(tower, max_length=max_length) for tower in load_dict['Tower']]
-        self.OHLs = [initialize_OHL(ohl, max_length=max_length) for ohl in load_dict['OHL']]
-        self.cables = [initialize_cable(cable, max_length=max_length) for cable in load_dict['Cable']]
+        self.towers = [initialize_tower(tower, max_length=max_length) for tower in load_dict['Tower']] if 'Tower' in load_dict else []
+        self.OHLs = [initialize_OHL(ohl, max_length=max_length) for ohl in load_dict['OHL']] if 'OHL' in load_dict else []
+        self.cables = [initialize_cable(cable, max_length=max_length) for cable in load_dict['Cable']] if 'Cable' in load_dict else []
 
         # 2. build dedicated matrix for all elements
         segment_num = int(3)  # 正常情况下，segment_num由segment_length和线长反算，但matlab中线长参数位于Tower中，在python中如何修改？
@@ -141,4 +141,4 @@ if __name__ == '__main__':
     network.calculate_branches()
     Network.initialize_source(network)
 
-    #print(network.incidence_matrix_A)
+    print(network.incidence_matrix_A)
