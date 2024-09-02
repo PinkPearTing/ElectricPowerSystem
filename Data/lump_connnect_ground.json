@@ -254,7 +254,7 @@
           "pos_1": [
             0,
             0.6,
-            10
+            9.8
           ],
           "pos_2": [
             0,
@@ -335,7 +335,7 @@
           "value5": null,
           "pointer": null,
           "comments": null
-        },
+        }
       ]
     },
     {
@@ -590,7 +590,7 @@
           "pos_1": [
             0,
             0.6,
-            10
+            9.8
           ],
           "pos_2": [
             0,
@@ -671,7 +671,7 @@
           "value5": null,
           "pointer": null,
           "comments": null
-        },
+        }
       ]
     }
   ],

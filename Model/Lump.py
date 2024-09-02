@@ -933,8 +933,8 @@ class A2G(Component):
         【入参】
         ima(pandas.Dataframe:Nbran*Nnode)：关联矩阵A（Nbran：支路数，Nnode：节点数）
         '''
-        super().assign_incidence_matrix_value(ima, self.bran[0], self.node1[0], -1)
-        super().assign_incidence_matrix_value(ima, self.bran[0], self.node2[0], 1)
+        super().assign_incidence_matrix_value(ima, self.bran, self.node1, -1)
+        super().assign_incidence_matrix_value(ima, self.bran, self.node2, 1)
 
     def imb_parameter_assign(self, imb):
         '''
@@ -942,8 +942,8 @@ class A2G(Component):
         【入参】
         imb(pandas.Dataframe:Nbran*Nnode)：关联矩阵B（Nbran：支路数，Nnode：节点数）
         '''
-        super().assign_incidence_matrix_value(imb, self.bran[0], self.node1[0], -1)
-        super().assign_incidence_matrix_value(imb, self.bran[0], self.node2[0], 1)
+        super().assign_incidence_matrix_value(imb, self.bran, self.node1, -1)
+        super().assign_incidence_matrix_value(imb, self.bran, self.node2, 1)
 
     def r_parameter_assign(self, r):
         '''
@@ -1822,7 +1822,7 @@ class Lumps:
         all_nodes = collections.OrderedDict()
         all_brans = collections.OrderedDict()
 
-        for component_list in [self.resistor_inductors, self.conductor_capacitors, self.current_sources_cosine,
+        for component_list in [self.a2gs, self.resistor_inductors, self.conductor_capacitors, self.current_sources_cosine,
                                self.current_sources_empirical, self.voltage_sources_cosine,
                                self.voltage_sources_empirical]:
             for component in component_list:

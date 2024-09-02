@@ -84,41 +84,41 @@ def calculate_potential(ps1, ps2, ls, rs, pf1, pf2, lf, rf, At, Nnode):
     npf2 = np.zeros((N, 3))
     ncom = np.zeros((Nnode, 1))
 
-    for ik in range(int(np.min(At)), int(np.min(At))+Nnode):  # size of node segments for source
-        pt1 = np.where(At[:, 0] == ik)[0]  # pos of ith node in branch
-        pt2 = np.where(At[:, 1] == ik)[0]  # pos of ith node in branch
+    for ik in range(Nnode):  # size of node segments for source
+        pt1 = np.where(At[:, 0] == ik+1)[0]  # pos of ith node in branch
+        pt2 = np.where(At[:, 1] == ik+1)[0]  # pos of ith node in branch
         d1 = len(pt1)  # total # of common nodes for ith node
         d2 = len(pt2)  # total # of common nodes for ith node
 
         # (2a) 1st half segment
         if d1 != 0:
-            indices = slice(ofs, ofs + d1)
-            nrs[indices, 0:1] = rs[pt1]  # radius (n1)-source
-            nls[indices, 0:1] = ls[pt1] / 2  # length (n1)
-            nps1[indices, 0:3] = ps1[pt1, 0:3]  # start points
-            nps2[indices, 0:3] = ps0[pt1, 0:3]  # end points
+            # indices = slice(ofs, ofs + d1)
+            nrs[ofs:ofs+d1, 0:1] = rs[pt1]  # radius (n1)-source
+            nls[ofs:ofs+d1, 0:1] = ls[pt1] / 2  # length (n1)
+            nps1[ofs:ofs+d1, 0:3] = ps1[pt1, 0:3]  # start points
+            nps2[ofs:ofs+d1, 0:3] = ps0[pt1, 0:3]  # end points
 
-            nrf[indices, 0:1] = rf[pt1]  # radius(n1)-field
-            nlf[indices, 0:1] = lf[pt1] / 2  # length(n1)
-            npf1[indices, 0:3] = pf1[pt1, 0:3]  # start points
-            npf2[indices, 0:3] = pf0[pt1, 0:3]  # end points
+            nrf[ofs:ofs+d1, 0:1] = rf[pt1]  # radius(n1)-field
+            nlf[ofs:ofs+d1, 0:1] = lf[pt1] / 2  # length(n1)
+            npf1[ofs:ofs+d1, 0:3] = pf1[pt1, 0:3]  # start points
+            npf2[ofs:ofs+d1, 0:3] = pf0[pt1, 0:3]  # end points
 
         ofs += d1
         # (2b) 2nd half segment
         if d2 != 0:
-            indices = slice(ofs, ofs + d2)
-            nrs[indices, 0:1] = rs[pt2]  # radius (n2)
-            nls[indices, 0:1] = ls[pt2] / 2  # length (n2)
-            nps1[indices, 0:3] = ps0[pt2, 0:3]  # start points
-            nps2[indices, 0:3] = ps2[pt2, 0:3]  # end points
+            # indices = slice(ofs, ofs + d2)
+            nrs[ofs:ofs+d2, 0:1] = rs[pt2]  # radius (n2)
+            nls[ofs:ofs+d2, 0:1] = ls[pt2] / 2  # length (n2)
+            nps1[ofs:ofs+d2, 0:3] = ps0[pt2, 0:3]  # start points
+            nps2[ofs:ofs+d2, 0:3] = ps2[pt2, 0:3]  # end points
 
-            nrf[indices, 0:1] = rf[pt2]  # radius(n1)
-            nlf[indices, 0:1] = lf[pt2] / 2  # length(n2)
-            npf1[indices, 0:3] = pf0[pt2, 0:3]  # start points
-            npf2[indices, 0:3] = pf2[pt2, 0:3]  # end points
+            nrf[ofs:ofs+d2, 0:1] = rf[pt2]  # radius(n1)
+            nlf[ofs:ofs+d2, 0:1] = lf[pt2] / 2  # length(n2)
+            npf1[ofs:ofs+d2, 0:3] = pf0[pt2, 0:3]  # start points
+            npf2[ofs:ofs+d2, 0:3] = pf2[pt2, 0:3]  # end points
 
         ofs += d2
-        ncom[ik - int(np.min(At)) - 1] = d1 + d2  # of segments for each node
+        ncom[ik] = d1 + d2  # of segments for each node
 
     # (4) Calculating potential matrix
     PROD_MOD = 2  # matrix product
@@ -170,7 +170,7 @@ def calculate_inductance(ps1, ps2, rs, pf1, pf2, rf):
     INT(numpy.ndarray: n*n): n条线段的电感矩阵
     """
     PROD_MOD = 2  # matrix product
-    COEF_MOD = 2  # inductance
+    COEF_MOD = 1  # inductance
     return INT_SLAN_2D(ps1, ps2, rs, pf1, pf2, rf, PROD_MOD, COEF_MOD)
 
 
@@ -440,7 +440,6 @@ def INT_SLAN_2D(ps1, ps2, rs, pf1, pf2, rf, PROD_MOD, COEF_MOD):
 def calculate_wires_inductance_potential_with_ground(wires, ground, constants):
     # （0) Intial constants
     ep0, mu0, ke, km = constants.ep0, constants.mu0, constants.ke, constants.km
-
     # Nba所有空气中支路的数量
     Nba = wires.count_airWires()
     # Ngn所有地面支路的数量
@@ -501,20 +500,25 @@ def calculate_wires_inductance_potential_with_ground(wires, ground, constants):
         pf2[:, 2] = -pf2[:, 2]  # image for gnd segments
 
         # 计算tmp  
-        tmp = 0.5 * np.abs(pf1[:, 2] + pf2[:, 2])  # 注意MATLAB的索引从1开始，Python从0开始，所以这里是[:, 2]  
+        tmp = pf1[:, 2] + pf2[:, 2]  # 注意MATLAB的索引从1开始，Python从0开始，所以这里是[:, 2]
         
-        # 遍历tmp和rs的索引  
-        for ik in range(len(tmp)):  
-            if tmp[ik] < radii[ik]:  
-                pf1[ik, 2] = -2.2 * radii[ik]  # 设置间隔为2*rs  
-                pf2[ik, 2] = -2.2 * radii[ik]  # 设置间隔为2*rs  
+        # 遍历tmp和rs的索引
+
+        # if np.all(tmp < min(radii)):
+        #     pf1[:, 2] = -2 * max(radii)
+        #     pf2[:, 2] = -2 * max(radii) #改1
+
+        # for ik in range(len(tmp)):
+        #     if tmp[ik] < radii[ik]:
+        #         pf1[ik, 2] = -2.2 * radii[ik]  # 设置间隔为2*rs
+        #         pf2[ik, 2] = -2.2 * radii[ik]  # 设置间隔为2*rs #源
 
         # L and P matrices for air and gnd segments
         Lai = calculate_inductance(start_points[rb1, :], end_points[rb1, :], radii[rb1, 0], pf1[rb1, :], pf2[rb1, :], radii[rb1, 0])
         Pai = calculate_potential(start_points[rb1, :], end_points[rb1, :], lengths[rb1, 0], radii[rb1, 0], pf1[rb1, :], pf2[rb1, :], lengths[rb1, 0], radii[rb1, 0], At[rb1, :], Nna)
 
         Lgi = calculate_inductance(start_points[rb2, :], end_points[rb2, :], radii[rb2, 0], pf1[rb2, :], pf2[rb2, :], radii[rb2, 0])
-        Pgi = calculate_potential(start_points[rb2, :], end_points[rb2, :], lengths[rb2, 0], radii[rb2, 0], pf1[rb2, :], pf2[rb2, :], lengths[rb2, 0], radii[rb2, 0], At[rb2, :], Nng) if Ngn != 0 else 0
+        Pgi = calculate_potential(start_points[rb2, :], end_points[rb2, :], lengths[rb2, 0], radii[rb2, 0], pf1[rb2, :], pf2[rb2, :], lengths[rb2, 0], radii[rb2, 0], At[rb2, :]-Nna, Nng) if Nng != 0 else 0
 
     # (2bi) perfect ground
     if ground.gnd_model == "Perfect":

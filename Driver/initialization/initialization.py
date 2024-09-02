@@ -133,13 +133,13 @@ def initialize_tower(tower_dict, max_length):
             wires.add_tube_wire(tube_wire)  # add tube in wires
 
     # ---对所有线段进行切分----
-    wires.display()
+   # wires.display()
     wires.split_long_wires_all(max_length)
 
     # 将表皮线段添加到空气线段集合中
     for tubeWire in wires.tube_wires:
         wires.add_air_wire(tubeWire.sheath)  # sheath wire is in the air, we need to calculate it in air part.
-    wires.display()
+ #   wires.display()
     # 2. initialize ground
     ground_dic = tower_dict['ground']
     ground = initialize_ground(ground_dic)
@@ -154,7 +154,7 @@ def initialize_tower(tower_dict, max_length):
 
     # 4. initalize tower
     tower = Tower(tower_dict['name'], info, wires, tube_wire, lumps, ground, None, None)
-    print("Tower loaded.")
+    print(f"Tower:{tower.name} loaded.")
     return tower
 
 def initialize_OHL(OHL_dict, max_length):
@@ -166,8 +166,12 @@ def initialize_OHL(OHL_dict, max_length):
         #  initialize air wire
         wire_air = initialize_OHL_wire(wire)
         wire_air.start_node.x = wire_air.start_node.x + OHL_dict['Info']['Tower_head_pos'][0]
-        wire_air.start_node.y = wire_air.start_node.x + OHL_dict['Info']['Tower_head_pos'][1]
-        wire_air.start_node.z = wire_air.start_node.x + OHL_dict['Info']['Tower_head_pos'][2]
+        wire_air.start_node.y = wire_air.start_node.y + OHL_dict['Info']['Tower_head_pos'][1]
+        wire_air.start_node.z = wire_air.start_node.z + OHL_dict['Info']['Tower_head_pos'][2]
+
+        wire_air.end_node.x = wire_air.end_node.x + OHL_dict['Info']['Tower_tail_pos'][0]
+        wire_air.end_node.y = wire_air.end_node.y + OHL_dict['Info']['Tower_tail_pos'][1]
+        wire_air.end_node.z = wire_air.end_node.z + OHL_dict['Info']['Tower_tail_pos'][2]
 
         wires.add_air_wire(wire_air)  # add air wire in wires
 
@@ -183,10 +187,10 @@ def initialize_OHL(OHL_dict, max_length):
                      OHL_info['Tower_tail'],OHL_info['Tower_tail_id'],  OHL_info['Tower_tail_pos'])
 
     # 4. initalize ohl
-    ohl = OHL(None, info, wires, None, len(OHL_dict['Wire']), ground)
+    ohl = OHL(OHL_info['name'], info, wires, None, len(OHL_dict['Wire']), ground)
    # ohl.wires_name = list(ohl.wires.get_all_wires().keys())
    # ohl.nodes_name = ohl.wires.get_all_nodes()
-    print("OHL loaded.")
+    print(f"OHL:{ohl.info.name} loaded.")
     return ohl
 
 def initialize_measurement(file_name):
@@ -429,7 +433,7 @@ def initial_lump(lump_data):
     lumps.parameters_assign()
     lumps.lump_voltage_source_matrix_initial(T, dt)
     lumps.lump_current_source_matrix_initial(T, dt)
-    print_lumps(lumps)
+    #print_lumps(lumps)
     return lumps
 
 def initial_source(network, nodes, file_name):
@@ -499,7 +503,7 @@ def initialize_cable(cable, max_length):
 
     wires.add_tube_wire(tube_wire)
 
-    wires.display()
+   # wires.display()
     wires.split_long_wires_all(max_length)
 
     # 2. initialize ground

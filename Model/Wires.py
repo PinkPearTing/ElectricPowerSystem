@@ -464,14 +464,23 @@ class Wires:
         返回:
         int: 所有不重复点的总个数
         """
-        all_points = set()
+        # 使用有序字典存储所有的节点及其编号
+        node_dict = collections.OrderedDict()
 
-        # 统计 air_wires 中的点
+        # 遍历所有的 wire,构建节点编号字典和wire矩阵
         for wire in self.air_wires:
-            all_points.add(wire.start_node)
-            all_points.add(wire.end_node)
-        return len(all_points)
+            start_node = wire.start_node.name
+            end_node = wire.end_node.name
 
+            # 如果起始节点不在字典中,添加到字典并分配编号
+            if start_node not in node_dict:
+                node_dict[start_node] = True
+
+            # 如果终止节点不在字典中,添加到字典并分配编号
+            if end_node not in node_dict:
+                node_dict[end_node] = True
+
+        return len(node_dict)
 
     def count_distinct_gndPoints(self) -> int:
         """
@@ -483,14 +492,23 @@ class Wires:
         返回:
         int: 所有不重复点的总个数
         """
-        all_points = set()
+        # 使用有序字典存储所有的节点及其编号
+        node_dict = collections.OrderedDict()
 
-        # 统计 ground_wires 中的点
+        # 遍历所有的 wire,构建节点编号字典和wire矩阵
         for wire in self.ground_wires:
-            all_points.add(wire.start_node)
-            all_points.add(wire.end_node)
+            start_node = wire.start_node.name
+            end_node = wire.end_node.name
 
-        return len(all_points)
+            # 如果起始节点不在字典中,添加到字典并分配编号
+            if start_node not in node_dict:
+                node_dict[start_node] = True
+
+            # 如果终止节点不在字典中,添加到字典并分配编号
+            if end_node not in node_dict:
+                node_dict[end_node] = True
+
+        return len(node_dict)
 
 
     def count_distinct_points(self) -> int:
@@ -601,28 +619,6 @@ class Wires:
 
         return all_wires
 
-    def get_all_wires_object(self):
-        """
-        返回 Wires 对象中所有线段的所有线的集合。
-
-        参数:
-        wires (Wires): Wires 对象
-
-        返回:
-        all_wires(OrderedDict): 所有不重复线的有序集合
-        """
-        # 获取所有不重复的节点(包含管状线段内部线段的起始点和终止点)
-        all_wires = collections.OrderedDict()
-        for wire_list in [self.air_wires, self.ground_wires, self.a2g_wires, self.short_wires]:
-            for wire in wire_list:
-                all_wires[wire.name] = wire
-
-        for tubewire in self.tube_wires:
-            all_wires[tubewire.sheath.name] = tubewire.sheath
-            for core_wire in tubewire.core_wires:
-                all_wires[core_wire.name] = core_wire
-
-        return all_wires
 
     def get_tubeWires_points_index(self):
         """
@@ -861,8 +857,8 @@ class Wires:
         # 遍历所有的 wire,构建节点编号字典和wire矩阵
         wire_matrix = []
         for wire in self.air_wires + self.ground_wires:
-            start_node = wire.start_node
-            end_node = wire.end_node
+            start_node = wire.start_node.name
+            end_node = wire.end_node.name
 
             # 如果起始节点不在字典中,添加到字典并分配编号
             if start_node not in node_to_index:

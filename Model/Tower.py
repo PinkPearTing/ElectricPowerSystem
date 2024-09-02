@@ -66,6 +66,10 @@ class Tower:
         # 电容矩阵
         self.capacitance_matrix = np.zeros((self.wires.count_distinct_points(), self.wires.count_distinct_points()))
 
+        # 电导矩阵
+        self.conductance_matrix = np.zeros((self.wires.count_distinct_airPoints() + self.wires.count_distinct_gndPoints(),
+                                          self.wires.count_distinct_airPoints() + self.wires.count_distinct_gndPoints()))
+
 
 
     def initialize_incidence_matrix(self):
@@ -121,11 +125,17 @@ class Tower:
     def initialize_capacitance_matrix(self):
         pass
 
+    def initialize_conductance_matrix(self):
+        pass
+
     def add_inductance_matrix(self, L):
         self.inductance_matrix += L
 
     def add_potential_matrix(self, P):
         self.potential_matrix += P
+
+    def add_conductance_matrix(self, G):
+        self.conductance_matrix += G
 
     def expand_inductance_matrix(self):
         # 通过TubeWire的表皮与其他线段的互感，扩展复制代替为芯线与其他线段的互感，因为芯线和表皮实际上在一个位置
@@ -204,7 +214,7 @@ class Tower:
         df_R = pd.DataFrame(self.resistance_matrix, index=wire_name_list, columns=wire_name_list)
         df_L = pd.DataFrame(self.inductance_matrix, index=wire_name_list, columns=wire_name_list)
         df_C = pd.DataFrame(self.capacitance_matrix, index=node_name_list, columns=node_name_list)
-        df_G = pd.DataFrame(0, index=node_name_list, columns=node_name_list)
+        df_G = pd.DataFrame(self.conductance_matrix, index=node_name_list, columns=node_name_list)
 
         self.incidence_matrix_A = df_A.add(self.lump.incidence_matrix_A, fill_value=0).fillna(0)
         self.incidence_matrix_B = df_A.add(self.lump.incidence_matrix_B, fill_value=0).fillna(0)
