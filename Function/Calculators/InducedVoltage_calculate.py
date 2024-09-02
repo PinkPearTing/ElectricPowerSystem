@@ -1,4 +1,7 @@
 import numpy as np
+from Utils.Math import calculate_distances
+import sys
+sys.path.append(r'D:\Documents\a实验室\过电压计算程序\ElectricModelBuilding_python\ElectricPowerSystem\Vector_Fitting')
 from scipy.interpolate import interp1d
 from scipy.signal import convolve2d
 from Model.Contant import Constant
@@ -20,21 +23,22 @@ def LightningCurrrent_calculate(p1, p2, position, network, node_index, lightning
     # 1. find the wire that is hit
     selected_wire = None
     if area == "tower":
-        selected_tower = [tower for tower in network.towers if tower.name == p1]
-        selected_wire = [wire for wire in list(selected_tower[0].wires.get_all_wires_object().values()) if wire.name.split("_")[0][-2:] == p2[-2:]]
+
+        selected_tower = [tower for tower in network.towers if tower.info.name == p1]
+        selected_wire = [wire for wire in list(selected_tower[0].wires.get_all_wires().values()) if wire.name.split("_")[0] == p2]
     elif area == "OHL":
         selected_ohl = [ohl for ohl in network.ohls if ohl.name == p1]
-        selected_wire = [wire for wire in list(selected_ohl[0].wires.get_all_wires_object().values()) if wire.name.split("_")[0][-2:] == p2[-2:]]
+        selected_wire = [wire for wire in list(selected_ohl[0].wires.get_all_wires().values()) if wire.name.split("_")[0] == p2]
     elif area == "cable":
         selected_cable = [cable for cable in network.cables if cable.name == p1]
-        selected_wire = [wire for wire in list(selected_cable[0].wires.get_all_wires_object().values()) if wire.name.split("_")[0][-2:] == p2[-2:]]
+        selected_wire = [wire for wire in list(selected_cable[0].wires.get_all_wires().values()) if wire.name.split("_")[0] == p2]
     # 2. find the closest node among nodes in the hit wire.
     nodes = set()
     for wire in selected_wire:
         nodes.add(wire.start_node)
         nodes.add(wire.end_node)
 
-    closest_node = None
+    closest_point = None
     min_distance = float('inf')
 
     for node in nodes:
@@ -267,31 +271,3 @@ def ElectricField_above_lossy(HR0, ER,  constants: Constant, sigma0=None):
 
     return Er_lossy
 
-
-if __name__ == "__main__":
-    # 定义lightning
-    stroke1 = Stroke('Heidler', duration=1.0e-3, is_calculated=True, parameter_set='0.25/100us', parameters=None)
-    stroke1.calculate()
-    channel = Channel(hit_pos=[500, 50, 0])
-    lightning = Lightning(id=1, type='Direct', strokes=[stroke1], channel=channel)
-    # 定义常数
-    constants = Constant()
-    constants.ep0 = 8.85e-12
-
-    Nodes = ['X01', 'X02', 'X03']
-    node = 'X02'
-    I = LightningCurrent_calculate(Nodes=Nodes, node=node, lightning=lightning, stroke_sequence=0)
-    print(I.loc[node, 999])
-    pt_start = pd.read_excel('pt_start.xlsx', header=None)
-    pt_start = pt_start.to_numpy()
-    pt_end = pd.read_excel('pt_end.xlsx', header=None)
-    pt_end = pt_end.to_numpy()
-    U_out = InducedVoltage_calculate(pt_start, pt_end, lightning, 0, constants)
-    print('END')
-
-    # i_sr = pd.read_excel('i_sr.xlsx', header=None)
-    # i_sr = i_sr.to_numpy()
-    # stroke.current_waveform = i_sr
-    # constants = Constant()
-    # constants.ep0 = 8.85e-12
-    # U_out = InducedVoltage_calculate(pt_start, pt_end, stroke, constants)

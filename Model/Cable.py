@@ -1,10 +1,10 @@
 import numpy as np
 
 from Ground import Ground
-from Wires import Wire, TubeWire
+from Wires import Wires, TubeWire
 
 class Cable:
-    def __init__(self, name, TubeWire: TubeWire, ground: Ground):
+    def __init__(self, name,info, Wires: Wires, ground: Ground):
         """
         初始化管状线段对象。(同时满足cable中线段的定义)
 
@@ -13,46 +13,20 @@ class Cable:
         inner_num (int): 内部芯线的数量
         """
         self.name = name
+        self.info = info
         self.ground = ground
-        self.TubeWire = TubeWire
+        self.wires = Wires
         self.wires_name = []
         self.nodes_name = []
 
-        self.R = None
-        self.L = None
-        self.C = None
+        self.incidence_matrix = None
+        self.resistance_matrix = None
+        self.inductancce_matrix = None
+        self.capcitance_matrix = None
+        self.conductance_matrix = None
         self.Cw = CW(0)
-        self.Z = None
+        self.impedance_matrix = None
 
-    def get_brans_nodes_list(self, segment_num):
-        """
-        【函数功能】 获取切分后支路列表与节点列表
-        【入参】
-        segment_num(int):一条线切分后的线段数
-        segment_length(float):线长
-
-        【出参】
-        brans_name(list,wires_num*segment_num):支路名称列表
-        nodes_name(list,wires_num*segment_num+1):节点名称列表
-        """
-        brans_name = self.TubeWire.get_all_wires()
-        start_nodes_name = self.TubeWire.get_all_start_nodes()
-        end_nodes_name = self.TubeWire.get_all_end_nodes()
-        if segment_num == 1:
-            self.wires_name = brans_name
-            self.nodes_name = start_nodes_name
-            self.nodes_name.extend(end_nodes_name)
-        else:
-            for i in range(segment_num):
-                for j in range(len(brans_name)):
-                    self.wires_name.append(f"{brans_name[j]}_Splited_{i+1}")
-
-                self.nodes_name.extend(start_nodes_name)
-                for j in range(len(start_nodes_name)):
-                    start_nodes_name[j] = f"{brans_name[j]}_MiddleNode_{i + 1}"
-
-            # 最后一个分段，则将终止节点加入列表
-            self.nodes_name.extend(end_nodes_name)
 
 
 class CW:

@@ -1,3 +1,4 @@
+
 import numpy as np
 import pandas as pd
 
@@ -8,11 +9,11 @@ from Info import Info
 frq_default = np.logspace(0, 9, 37)
 
 class OHL:
-    def __init__(self, name: str, Info: Info, Wires: Wires, Phase, phase_num: int, ground: Ground):
+    def __init__(self, name: str, Info: Info, Wires: Wires,  Phase, phase_num: int, ground: Ground):
         """
         初始化架空线对象。
         name (str): 线的名称
-        info (TowerInfo): 自描述信息对象
+        info (Info): 自描述信息对象
         Phase (str): 线圈相线
         phase_num (int): 线圈相数
         ground(Ground类)：大地类
@@ -50,7 +51,7 @@ class OHL:
         brans_name(list,wires_num*segment_num):支路名称列表
         nodes_name(list,wires_num*segment_num+1):节点名称列表
         """
-        brans_name = self.wires.get_all_wires()
+        brans_name = list(self.wires.get_all_wires().keys())
         start_nodes_name = self.wires.get_all_start_nodes()
         end_nodes_name = self.wires.get_all_end_nodes()
         if segment_num == 1:

@@ -307,7 +307,7 @@ class LumpWire(Wire):
 
 
 class Wires:
-    def __init__(self, air_wires=None, ground_wires=None, a2g_wires=None, short_wires=None, tube_wires=None):
+    def __init__(self, air_wires=None, ground_wires=None, a2g_wires=None, short_wires=None, tube_wires=None, ohl_wires=None):
         """
         初始化Wires对象
 
@@ -599,7 +599,7 @@ class Wires:
             for core_wire in tubewire.core_wires:
                 all_wires[core_wire.name] = core_wire
 
-        return list(all_wires)
+        return all_wires
 
     def get_all_wires_object(self):
         """

@@ -1,2 +1,10 @@
-a = {"s":121,"b":98989}
-print(list(a.values()))
+import pandas as pd
+import numpy as np
+from functools import reduce
+a = None
+
+if a:
+    print("dddd")
+else:
+    print("aaa")
+

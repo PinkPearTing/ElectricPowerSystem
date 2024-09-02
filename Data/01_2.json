@@ -4,7 +4,8 @@
   "Tower": [
     {
       "name": "tower_1",
-      "info": {
+      "Info": {
+        "name": "tower_1",
         "id": "1",
         "type": "10",
         "Vclass": "10kV",
@@ -18,7 +19,7 @@
         "mode_con": 0,
         "mode_gnd": 0,
         "pole_height": 10.5,
-        "pole_head": "x01"
+        "pole_head": "X01"
       },
       "ground": {
         "glb": 1,
@@ -750,17 +751,21 @@
   "Cable":[
     {
       "name": "cable_1",
-    "info": {
-      "name": "Cable No.1",
-      "id": "1",
-      "type": "01",
-      "T_head": "T005",
-      "T_tail": "T007",
-      "core_num": 3,
-      "armor_num": 1,
-      "delta_L": 10,
-      "mode_con": 0,
-      "mode_gnd": 0
+      "Info": {
+        "name": "cable_1",
+        "id": "1",
+        "type": "01",
+        "T_head": "tower_5",
+        "T_head_id": 1,
+        "T_head_pos": [0,0,9.8],
+        "T_tail": "tower_7",
+        "T_tail_id": 2,
+        "T_tail_pos": [120,0,9.8],
+        "core_num": 3,
+        "armor_num": 1,
+        "delta_L": 10,
+        "mode_con": 0,
+        "mode_gnd": 0
     },
     "ground": {
       "glb": 1,
@@ -796,7 +801,8 @@
           "mur": 50,
           "epr": 1,
           "rs1": 0.04,
-          "rs3": 0.045
+          "rs3": 0.045,
+          "core_num": 3
         },
         "core":[
             {
@@ -883,7 +889,8 @@
       "name": "OHL_1",
       "Info": {
         "name": "OHL_1",
-        "ID": 1,
+        "id": 1,
+        "type": "type_01",
         "dL": 10,
         "model1": 0,
         "model2": 0,
@@ -1006,7 +1013,7 @@
   "Source":
     {
       "area": "tower_1",
-      "wire": "X01",
+      "wire": "Y01",
       "position": [1,0,0]
     }
 }

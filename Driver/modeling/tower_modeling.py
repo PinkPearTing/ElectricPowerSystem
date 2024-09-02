@@ -10,45 +10,45 @@ import pandas as pd
 # A
 def build_incidence_matrix(tower):
     # A矩阵
-    print("------------------------------------------------")
-    print("tower_A matrix is building...")
+    print("tower------------------------------------------------")
+    print("towertower_A matrix is building...")
     # 初始化A矩阵
     tower.initialize_incidence_matrix()
 
     df_A = pd.DataFrame(tower.incidence_matrix, index=tower.wires_name, columns=tower.wires.get_all_nodes())
     print(df_A)
-    print("tower_A matrix is built successfully")
-    print("------------------------------------------------")
+    print("towertower_A matrix is built successfully")
+    print("tower------------------------------------------------")
 
 # R
 def build_resistance_matrix(tower, Rin, Rx):
     # R矩阵
-    print("------------------------------------------------")
-    print("R matrix is building...")
+    print("tower------------------------------------------------")
+    print("towerR matrix is building...")
 
     tower.initialize_resistance_matrix()
 
-    if tower.tubeWire.sheath != None:
+    if tower.tubeWire != None:
 
         tower.expand_resistance_matrix()
 
         tower.update_resistance_matrix_by_tubeWires(Rin, Rx)
 
     df_R = pd.DataFrame(tower.resistance_matrix, index=tower.wires_name, columns=tower.wires_name)
-    print("tower_R matrix is built successfully")
-    print("------------------------------------------------")
+    print("towertower_R matrix is built successfully")
+    print("tower------------------------------------------------")
 
 # L
 def build_inductance_matrix(tower, L, Lin, Lx):
     # L矩阵
-    print("------------------------------------------------")
-    print("L matrix is building...")
+    print("tower------------------------------------------------")
+    print("towerL matrix is building...")
 
     tower.initialize_inductance_matrix()
 
     tower.add_inductance_matrix(L)
 
-    if tower.tubeWire.sheath != None:
+    if tower.tubeWire != None:
 
         tower.expand_inductance_matrix()
 
@@ -58,14 +58,14 @@ def build_inductance_matrix(tower, L, Lin, Lx):
     #构建L矩阵df表，便于后续索引
     #tower.inductance_matrix_df = pd.DataFrame(tower.inductance_matrix, index=tower.wires_name, columns=tower.wires_name)
     #print(tower.inductance_matrix)
-    print("L matrix is built successfully")
-    print("------------------------------------------------")
+    print("towerL matrix is built successfully")
+    print("tower------------------------------------------------")
 
 # P
 def build_potential_matrix(tower, P):
     # P矩阵
-    print("------------------------------------------------")
-    print("P matrix is building...")
+    print("tower------------------------------------------------")
+    print("towerP matrix is building...")
 
     tower.initialize_potential_matrix()
 
@@ -75,24 +75,24 @@ def build_potential_matrix(tower, P):
     # df_R = pd.DataFrame(tower.potential_matrix, index=tower.wires_name, columns=tower.wires_name)
     # print(df_R)
     print(tower.potential_matrix)
-    print("P matrix is built successfully")
-    print("------------------------------------------------")
+    print("towerP matrix is built successfully")
+    print("tower------------------------------------------------")
 
 #C
 def build_capacitance_matrix(tower, Cin):
     # C矩阵
-    print("------------------------------------------------")
-    print("C matrix is building...")
+    print("tower------------------------------------------------")
+    print("towerC matrix is building...")
 
     tower.initialize_capacitance_matrix()
 
-    if tower.tubeWire.sheath != None:
+    if tower.tubeWire != None:
 
         tower.update_capacitance_matrix_by_tubeWires(Cin)
     #构建P矩阵df表，便于后续索引
    # tower.capacitance_matrix_df = pd.DataFrame(tower.capacitance_matrix, index=tower.wires.get_all_nodes(), columns=tower.wires.get_all_nodes())
-    print("C matrix is built successfully")
-    print("------------------------------------------------")
+    print("towerC matrix is built successfully")
+    print("tower------------------------------------------------")
 
 
 def build_impedance_matrix(tubeWire, frequency, constants):
@@ -158,11 +158,11 @@ def prepare_building_parameters(tubeWire, max_length, frequency, constants):
 
 
 def tower_building(tower, frequency, max_length):
-    print("------------------------------------------------")
-    print("Tower building...")
+    print("tower------------------------------------------------")
+    print("towerTower building...")
     # 0.参数准备
     constants = Constant()
-    if tower.tubeWire.sheath != None:
+    if tower.tubeWire != None:
         Rin, Rx, Lin, Lx, Cin = prepare_building_parameters(tower.tubeWire, max_length, frequency, constants)
     else:
         Rin, Rx, Lin, Lx, Cin = 0, 0, 0, 0, 0
@@ -187,5 +187,5 @@ def tower_building(tower, frequency, max_length):
     tower.combine_parameter_matrix()
 
 
-    print("Tower building is completed.")
-    print("------------------------------------------------")
+    print("towerTower building is completed.")
+    print("tower------------------------------------------------")

@@ -1,5 +1,9 @@
 import numpy as np
-
+import math
+def distance(pos1, pos2):
+    return math.sqrt((pos1[0] - pos2[0]) ** 2 +
+                     (pos1[1] - pos2[1]) ** 2 +
+                     (pos1[2] - pos2[2]) ** 2)
 
 def Bessel_K2(z, n1, n2):
     """
