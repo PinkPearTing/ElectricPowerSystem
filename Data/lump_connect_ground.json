@@ -4,7 +4,8 @@
   "Tower": [
     {
       "name": "tower_1",
-      "info": {
+      "Info": {
+        "name": "tower_1",
         "id": "1",
         "type": "10",
         "Vclass": "10kV",
@@ -13,7 +14,7 @@
           0,
           0
         ],
-        "theta": 0,
+        "Theta": 0,
         "mode_con": 0,
         "mode_gnd": 0,
         "pole_height": 10.5,
@@ -21,7 +22,7 @@
       },
       "ground": {
         "glb": 1,
-        "sig": 1e-3,
+        "sig": 1e-2,
         "mur": 1,
         "epr": 10,
         "gnd_model": "Lossy",
@@ -34,7 +35,11 @@
           "bran": "Y01_Tower_1",
           "node1": "X01",
           "node2": "X09",
-          "pos_1": [0, 0, 10.5],
+          "pos_1": [
+            0,
+            0,
+            10.5
+          ],
           "pos_2": [
             0,
             0,
@@ -100,7 +105,7 @@
         {
           "type": "air",
           "bran": "Y03_Tower_1",
-          "node1": "X04",
+          "node1": "X03",
           "node2": "X10",
           "pos_1": [
             0,
@@ -136,7 +141,7 @@
         {
           "type": "air",
           "bran": "Y04_Tower_1",
-          "node1": "X06",
+          "node1": "X04",
           "node2": "X11",
           "pos_1": [
             0,
@@ -212,12 +217,12 @@
           "node2": "X10",
           "pos_1": [
             0,
-            0,
-            10
+            0.1,
+            9.8
           ],
           "pos_2": [
             0,
-            0.1,
+            0,
             9.8
           ],
           "oft": 0,
@@ -244,16 +249,16 @@
         {
           "type": "air",
           "bran": "Y07_Tower_1",
-          "node1": "X10",
-          "node2": "X11",
+          "node1": "X11",
+          "node2": "X10",
           "pos_1": [
             0,
-            0.1,
+            0.6,
             10
           ],
           "pos_2": [
             0,
-            0.6,
+            0.1,
             9.8
           ],
           "oft": 0,
@@ -281,7 +286,7 @@
           "type": "air",
           "bran": "Y08_Tower_1",
           "node1": "X09",
-          "node2": "X13",
+          "node2": "X12",
           "pos_1": [
             0,
             0,
@@ -314,13 +319,13 @@
           "comments": ""
         }
       ],
-      "Lump":[
-      {
+      "Lump": [
+        {
           "Type": "RL",
           "name": "GRID",
           "probe": null,
           "bran_name": "Y09_Tower_1",
-          "node1": "X13",
+          "node1": "X12",
           "node2": "ref",
           "data_type": null,
           "value1": 5e1,
@@ -330,12 +335,13 @@
           "value5": null,
           "pointer": null,
           "comments": null
-      }
-    ]
+        },
+      ]
     },
     {
       "name": "tower_2",
-      "info": {
+      "Info": {
+        "name": "tower_2",
         "id": "2",
         "type": "1",
         "Vclass": "10kV",
@@ -344,11 +350,11 @@
           0,
           0
         ],
-        "theta": 0,
+        "Theta": 0,
         "mode_con": 0,
         "mode_gnd": 0,
         "pole_height": 10.5,
-        "pole_head": "X14"
+        "pole_head": "X17"
       },
       "ground": {
         "glb": 1,
@@ -363,9 +369,13 @@
         {
           "type": "air",
           "bran": "Y01_Tower_2",
-          "node1": "X14",
-          "node2": "X22",
-          "pos_1": [0, 0, 10.5],
+          "node1": "X17",
+          "node2": "X25",
+          "pos_1": [
+            0,
+            0,
+            10.5
+          ],
           "pos_2": [
             0,
             0,
@@ -395,8 +405,8 @@
         {
           "type": "air",
           "bran": "Y02_Tower_2",
-          "node1": "X15",
-          "node2": "X21",
+          "node1": "X18",
+          "node2": "X24",
           "pos_1": [
             0,
             -0.4,
@@ -431,8 +441,8 @@
         {
           "type": "air",
           "bran": "Y03_Tower_2",
-          "node1": "X17",
-          "node2": "X23",
+          "node1": "X19",
+          "node2": "X26",
           "pos_1": [
             0,
             0.1,
@@ -467,8 +477,8 @@
         {
           "type": "air",
           "bran": "Y04_Tower_2",
-          "node1": "X19",
-          "node2": "X24",
+          "node1": "X20",
+          "node2": "X27",
           "pos_1": [
             0,
             0.6,
@@ -503,8 +513,8 @@
         {
           "type": "air",
           "bran": "Y05_Tower_2",
-          "node1": "X21",
-          "node2": "X22",
+          "node1": "X24",
+          "node2": "X25",
           "pos_1": [
             0,
             -0.4,
@@ -539,16 +549,16 @@
         {
           "type": "air",
           "bran": "Y06_Tower_2",
-          "node1": "X22",
-          "node2": "X23",
+          "node1": "X25",
+          "node2": "X26",
           "pos_1": [
             0,
-            0,
-            10
+            0.1,
+            9.8
           ],
           "pos_2": [
             0,
-            0.1,
+            0,
             9.8
           ],
           "oft": 0,
@@ -575,16 +585,16 @@
         {
           "type": "air",
           "bran": "Y07_Tower_2",
-          "node1": "X23",
-          "node2": "X24",
+          "node1": "X27",
+          "node2": "X26",
           "pos_1": [
             0,
-            0.1,
+            0.6,
             10
           ],
           "pos_2": [
             0,
-            0.6,
+            0.1,
             9.8
           ],
           "oft": 0,
@@ -611,8 +621,8 @@
         {
           "type": "air",
           "bran": "Y08_Tower_2",
-          "node1": "X22",
-          "node2": "X26",
+          "node1": "X25",
+          "node2": "X28",
           "pos_1": [
             0,
             0,
@@ -645,13 +655,13 @@
           "comments": ""
         }
       ],
-      "Lump":[
-      {
+      "Lump": [
+        {
           "Type": "RL",
           "name": "GRID",
           "probe": null,
           "bran_name": "Y09_Tower_2",
-          "node1": "X26",
+          "node1": "X28",
           "node2": "ref",
           "data_type": null,
           "value1": 5e1,
@@ -661,8 +671,8 @@
           "value5": null,
           "pointer": null,
           "comments": null
-      }
-    ]
+        },
+      ]
     }
   ],
   "OHL": [
@@ -670,121 +680,162 @@
       "name": "OHL_1",
       "Info": {
         "name": "OHL_1",
-        "ID": 1,
+        "type": "type_01",
+        "id": 1,
         "dL": 10,
         "model1": 0,
         "model2": 0,
         "Tower_head": "tower_1",
         "Tower_head_id": 1,
-        "Tower_head_pos": [0,0,0],
+        "Tower_head_pos": [
+          0,
+          0,
+          0
+        ],
         "Tower_tail": "tower_2",
         "Tower_tail_id": 2,
-        "Tower_tail_pos": [100,0,0]
+        "Tower_tail_pos": [
+          100,
+          0,
+          0
+        ]
       },
       "Wire": [
-          {
-            "type": "SW",
-            "bran": "",
-            "node1":"X01",
-            "node2":"X14",
-            "node1_pos": [0,0,10.5],
-            "node2_pos": [0,0,10.5],
-            "offset": 0,
-            "r0": 0.005,
-            "r": 0,
-            "l": 0,
-            "sig": 5.8e7,
-            "mur": 1,
-            "epr": 1,
-            "vfid_d": 0,
-            "vfid_h": 0,
-            "vfid_r": 0,
-            "vfid_a": 0,
-            "num": 1,
-            "cir_id": 1001,
-            "phase": "A",
-            "phase_num": 1,
-            "mode1": 0,
-            "mode2": 2,
-            "comments": "长线-SW"
+        {
+          "type": "SW",
+          "bran": "",
+          "node1": "X01",
+          "node2": "X17",
+          "node1_pos": [
+            0,
+            0,
+            10.5
+          ],
+          "node2_pos": [
+            0,
+            0,
+            10.5
+          ],
+          "offset": 0,
+          "r0": 0.005,
+          "r": 0,
+          "l": 0,
+          "sig": 5.8e7,
+          "mur": 1,
+          "epr": 1,
+          "vfid_d": 0,
+          "vfid_h": 0,
+          "vfid_r": 0,
+          "vfid_a": 0,
+          "num": 1,
+          "cir_id": 1001,
+          "phase": "A",
+          "phase_num": 1,
+          "mode1": 0,
+          "mode2": 2,
+          "comments": "长线-SW"
         },
-          {
-            "type": "CIRO",
-            "bran": "",
-            "node1":"X02",
-            "node2":"X15",
-            "node1_pos": [0,-0.4,10],
-            "node2_pos": [0,-0.4,10],
-            "offset": -0.4,
-            "r0": 0.005,
-            "r": 0,
-            "l": 0,
-            "sig": 5.8e7,
-            "mur": 1,
-            "epr": 1,
-            "vfid_d": 0,
-            "vfid_h": 0,
-            "vfid_r": 0,
-            "vfid_a": 0,
-            "num": 3,
-            "cir_id": 3001,
-            "phase": "A",
-            "phase_num": 3,
-            "mode1": 0,
-            "mode2": 2,
-            "comments": "长线-PhaseA"
+        {
+          "type": "CIRO",
+          "bran": "",
+          "node1": "X02",
+          "node2": "X18",
+          "node1_pos": [
+            0,
+            -0.4,
+            10
+          ],
+          "node2_pos": [
+            0,
+            -0.4,
+            10
+          ],
+          "offset": -0.4,
+          "r0": 0.005,
+          "r": 0,
+          "l": 0,
+          "sig": 5.8e7,
+          "mur": 1,
+          "epr": 1,
+          "vfid_d": 0,
+          "vfid_h": 0,
+          "vfid_r": 0,
+          "vfid_a": 0,
+          "num": 3,
+          "cir_id": 3001,
+          "phase": "A",
+          "phase_num": 3,
+          "mode1": 0,
+          "mode2": 2,
+          "comments": "长线-PhaseA"
         },
-          {
-            "type": "CIRO",
-            "bran": "",
-            "node1":"X04",
-            "node2":"X17",
-            "node1_pos": [0,0.1,10],
-            "node2_pos": [0,0.1,10],
-            "offset": 0.1,
-            "r0": 0.005,
-            "r": 0,
-            "l": 0,
-            "sig": 5.8e7,
-            "mur": 1,
-            "epr": 1,
-            "vfid_d": 0,
-            "vfid_h": 0,
-            "vfid_r": 0,
-            "vfid_a": 0,
-            "num": 3,
-            "cir_id": 3001,
-            "phase": "B",
-            "phase_num": 3,
-            "mode1": 0,
-            "mode2": 2,
-            "comments": "长线-PhaseB"
+        {
+          "type": "CIRO",
+          "bran": "",
+          "node1": "X03",
+          "node2": "X19",
+          "node1_pos": [
+            0,
+            0.1,
+            10
+          ],
+          "node2_pos": [
+            0,
+            0.1,
+            10
+          ],
+          "offset": 0.1,
+          "r0": 0.005,
+          "r": 0,
+          "l": 0,
+          "sig": 5.8e7,
+          "mur": 1,
+          "epr": 1,
+          "vfid_d": 0,
+          "vfid_h": 0,
+          "vfid_r": 0,
+          "vfid_a": 0,
+          "num": 3,
+          "cir_id": 3001,
+          "phase": "B",
+          "phase_num": 3,
+          "mode1": 0,
+          "mode2": 2,
+          "comments": "长线-PhaseB"
         },
-          {
-            "type": "CIRO",
-            "bran": "",
-            "node1":"X06",
-            "node2":"X19",
-            "node1_pos": [0,0.6,10],
-            "node2_pos": [0,0.6,10],
-            "offset": 0.6,
-            "r0": 0.005,
-            "r": 0,
-            "l": 0,
-            "sig": 5.8E7,
-            "mur": 1,
-            "epr": 1,
-            "vfid_d": 0,
-            "vfid_h": 0,
-            "vfid_r": 0,
-            "vfid_a": 0,
-            "num": 3,
-            "cir_id": 3001,
-            "phase": "C",
-            "phase_num": 3,
-            "mode1": 0,
-            "mode2": 2,
-            "comments": "长线-PhaseC"
+        {
+          "type": "CIRO",
+          "bran": "",
+          "node1": "X04",
+          "node2": "X20",
+          "node1_pos": [
+            0,
+            0.6,
+            10
+          ],
+          "node2_pos": [
+            0,
+            0.6,
+            10
+          ],
+          "offset": 0.6,
+          "r0": 0.005,
+          "r": 0,
+          "l": 0,
+          "sig": 5.8E7,
+          "mur": 1,
+          "epr": 1,
+          "vfid_d": 0,
+          "vfid_h": 0,
+          "vfid_r": 0,
+          "vfid_a": 0,
+          "num": 3,
+          "cir_id": 3001,
+          "phase": "C",
+          "phase_num": 3,
+          "mode1": 0,
+          "mode2": 2,
+          "comments": "长线-PhaseC"
         }
       ],
       "ground": {
