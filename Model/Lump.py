@@ -12,7 +12,7 @@ curPath = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(curPath)
 
 class Component:
-    def __init__(self, name: str, bran: np.ndarray, node1: np.ndarray, node2: np.ndarray, parameters: dict = None):
+    def __init__(self, name: str, bran, node1, node2, parameters: dict = None):
         """
         基础Lump元件的抽象基类。
 
@@ -64,15 +64,30 @@ class Component:
             gc.loc[node1, node2] -= value
             gc.loc[node2, node1] -= value
 
+
+class Resistor_Inductor(Component):
+    def __init__(self, name: str, bran: str, node1: str, node2: str, resistance: float, inductance: float):
+        """
+        电阻电感类，继承自 Component 类。
+
+        Args:
+            name (str): 电阻电感名称。
+            bran (str): 器件支路名称。
+            node1 (str): 器件节点1名称。
+            node2 (str): 器件节点2名称。
+            resistance (float): 电阻值。
+            inductance (float): 电感值。
+        """
+        super().__init__(name, bran, node1, node2, {"resistance": resistance, "inductance": inductance})
+
     def ima_parameter_assign(self, ima):
         '''
         【函数功能】关联矩阵A参数分配
         【入参】
         ima(pandas.Dataframe:Nbran*Nnode)：关联矩阵A（Nbran：支路数，Nnode：节点数）
         '''
-
-        self.assign_incidence_matrix_value(ima, self.bran[0], self.node1[0], -1)
-        self.assign_incidence_matrix_value(ima, self.bran[0], self.node2[0], 1)
+        super().assign_incidence_matrix_value(ima, self.bran, self.node1, -1)
+        super().assign_incidence_matrix_value(ima, self.bran, self.node2, 1)
 
     def imb_parameter_assign(self, imb):
         '''
@@ -80,8 +95,8 @@ class Component:
         【入参】
         imb(pandas.Dataframe:Nbran*Nnode)：关联矩阵B（Nbran：支路数，Nnode：节点数）
         '''
-        self.assign_incidence_matrix_value(imb, self.bran[0], self.node1[0], -1)
-        self.assign_incidence_matrix_value(imb, self.bran[0], self.node2[0], 1)
+        super().assign_incidence_matrix_value(imb, self.bran, self.node1, -1)
+        super().assign_incidence_matrix_value(imb, self.bran, self.node2, 1)
 
     def r_parameter_assign(self, r):
         '''
@@ -89,7 +104,7 @@ class Component:
         【入参】
         r(pandas.Dataframe:Nbran*Nbran)：电阻矩阵（Nbran：支路数）
         '''
-        r.loc[self.bran[0], self.bran[0]] = self.parameters['resistance']
+        r.loc[self.bran, self.bran] = self.parameters['resistance']
 
     def l_parameter_assign(self, l):
         '''
@@ -100,7 +115,23 @@ class Component:
         【出参】
         l(pandas.Dataframe:Nbran*Nbran)：电感矩阵（Nbran：支路数）
         '''
-        l.loc[self.bran[0], self.bran[0]] = self.parameters['inductance']
+        l.loc[self.bran, self.bran] = self.parameters['inductance']
+
+
+class Conductor_Capacitor(Component):
+    def __init__(self, name: str, bran: str, node1: str, node2: str, conductance: float, capacitor: float):
+        """
+        电导电容类，继承自 Component 类。
+
+        Args:
+            name (str): 电导电容名称。
+            bran (str): 器件支路名称。
+            node1 (str): 器件节点1名称。
+            node2 (str): 器件节点2名称。
+            conductance (float): 电导值。
+            capacitor (float): 电容值。
+        """
+        super().__init__(name, bran, node1, node2, {"conductance": conductance, "capacitor": capacitor})
 
     def g_parameter_assign(self, g):
         '''
@@ -108,7 +139,7 @@ class Component:
         【入参】
         g(pandas.Dataframe:Nnode*Nnode)：电导矩阵（Nnode：节点数）
         '''
-        self.assign_conductance_capcitance_value(g, self.node1[0], self.node2[0], self.parameters['conductance'])
+        super().assign_conductance_capcitance_value(g, self.node1, self.node2, self.parameters['conductance'])
 
     def c_parameter_assign(self, c):
         '''
@@ -116,54 +147,20 @@ class Component:
         【入参】
         c(pandas.Dataframe:Nnode*Nnode)：电容矩阵（Nnode：节点数）
         '''
-        self.assign_conductance_capcitance_value(c, self.node1[0], self.node2[0], self.parameters['capacitor'])
-
-
-class Resistor_Inductor(Component):
-    def __init__(self, name: str, bran: np.ndarray, node1: np.ndarray, node2: np.ndarray, resistance: float, inductance: float):
-        """
-        电阻电感类，继承自 Component 类。
-
-        Args:
-            name (str): 电阻电感名称。
-            bran (np.ndarray, 1*1): 器件支路名称。
-            node1 (np.ndarray, 1*1): 器件节点1名称。
-            node2 (np.ndarray, 1*1): 器件节点2名称。
-            resistance (float): 电阻值。
-            inductance (float): 电感值。
-        """
-        super().__init__(name, bran, node1, node2, {"resistance": resistance, "inductance": inductance})
-
-
-
-class Conductor_Capacitor(Component):
-    def __init__(self, name: str, bran: np.ndarray, node1: np.ndarray, node2: np.ndarray, conductance: float, capacitor: float):
-        """
-        电导电容类，继承自 Component 类。
-
-        Args:
-            name (str): 电导电容名称。
-            bran (np.ndarray, 1*1): 器件支路名称。
-            node1 (np.ndarray, 1*1): 器件节点1名称。
-            node2 (np.ndarray, 1*1): 器件节点2名称。
-            conductance (float): 电导值。
-            capacitor (float): 电容值。
-        """
-        super().__init__(name, bran, node1, node2, {"conductance": conductance, "capacitor": capacitor})
-
+        super().assign_conductance_capcitance_value(c, self.node1, self.node2, self.parameters['capacitor'])
 
 
 class Voltage_Source_Cosine(Component):
-    def __init__(self, name: str, bran: np.ndarray, node1: np.ndarray, node2: np.ndarray, resistance: float, magnitude: float,
+    def __init__(self, name: str, bran: str, node1: str, node2: str, resistance: float, magnitude: float,
                  frequency: float, angle: float):
         """
         余弦信号电压源类，继承自 Component 类。
 
         Args:
             name (str): 电压源名称。
-            bran (np.ndarray, 1*1): 器件支路名称。
-            node1 (np.ndarray, 1*1): 器件节点1名称。
-            node2 (np.ndarray, 1*1): 器件节点2名称。
+            bran (str): 器件支路名称。
+            node1 (str): 器件节点1名称。
+            node2 (str): 器件节点2名称。
             resistance (float): 电阻值。
             magnitude (float): 幅值。
             frequency (float): 频率。
@@ -172,6 +169,31 @@ class Voltage_Source_Cosine(Component):
         super().__init__(name, bran, node1, node2,
                          {"resistance": resistance, "magnitude": magnitude, "frequency": frequency, "angle": angle})
 
+    def ima_parameter_assign(self, ima):
+        '''
+        【函数功能】关联矩阵A参数分配
+        【入参】
+        ima(pandas.Dataframe:Nbran*Nnode)：关联矩阵A（Nbran：支路数，Nnode：节点数）
+        '''
+        super().assign_incidence_matrix_value(ima, self.bran, self.node1, -1)
+        super().assign_incidence_matrix_value(ima, self.bran, self.node2, 1)
+
+    def imb_parameter_assign(self, imb):
+        '''
+        【函数功能】关联矩阵B参数分配
+        【入参】
+        imb(pandas.Dataframe:Nbran*Nnode)：关联矩阵B（Nbran：支路数，Nnode：节点数）
+        '''
+        super().assign_incidence_matrix_value(imb, self.bran, self.node1, -1)
+        super().assign_incidence_matrix_value(imb, self.bran, self.node2, 1)
+
+    def r_parameter_assign(self, r):
+        '''
+        【函数功能】电阻参数分配
+        【入参】
+        r(pandas.Dataframe:Nbran*Nbran)：电阻矩阵（Nbran：支路数）
+        '''
+        r.loc[self.bran, self.bran] = self.parameters['resistance']
 
     def voltage_calculate(self, calculate_time, dt):
         '''
@@ -200,20 +222,45 @@ class Voltage_Source_Cosine(Component):
 
 
 class Voltage_Source_Empirical(Component):
-    def __init__(self, name: str, bran: np.ndarray, node1: np.ndarray, node2: np.ndarray, resistance: float, voltage: np.ndarray):
+    def __init__(self, name: str, bran: str, node1: str, node2: str, resistance: float, voltage: np.ndarray):
         """
         离散信号电压源类，继承自 Component 类。
 
         Args:
             name (str): 电压源名称。
-            bran (np.ndarray, 1*1): 器件支路名称。
-            node1 (np.ndarray, 1*1): 器件节点1名称。
-            node2 (np.ndarray, 1*1): 器件节点2名称。
+            bran (str): 器件支路名称。
+            node1 (str): 器件节点1名称。
+            node2 (str): 器件节点2名称。
             resistance (float): 电阻值。
             voltage (numpy.ndarray,1*n): 电压矩阵(n:计算总次数)。
         """
         super().__init__(name, bran, node1, node2, {"resistance": resistance, "voltage": voltage})
 
+    def ima_parameter_assign(self, ima):
+        '''
+        【函数功能】关联矩阵A参数分配
+        【入参】
+        ima(pandas.Dataframe:Nbran*Nnode)：关联矩阵A（Nbran：支路数，Nnode：节点数）
+        '''
+        super().assign_incidence_matrix_value(ima, self.bran, self.node1, -1)
+        super().assign_incidence_matrix_value(ima, self.bran, self.node2, 1)
+
+    def imb_parameter_assign(self, imb):
+        '''
+        【函数功能】关联矩阵B参数分配
+        【入参】
+        imb(pandas.Dataframe:Nbran*Nnode)：关联矩阵B（Nbran：支路数，Nnode：节点数）
+        '''
+        super().assign_incidence_matrix_value(imb, self.bran, self.node1, -1)
+        super().assign_incidence_matrix_value(imb, self.bran, self.node2, 1)
+
+    def r_parameter_assign(self, r):
+        '''
+        【函数功能】电阻参数分配
+        【入参】
+        r(pandas.Dataframe:Nbran*Nbran)：电阻矩阵（Nbran：支路数）
+        '''
+        r.loc[self.bran, self.bran] = self.parameters['resistance']
 
     def voltage_calculate(self, calculate_time, dt):
         '''
@@ -231,16 +278,16 @@ class Voltage_Source_Empirical(Component):
 
 
 class Current_Source_Cosine(Component):
-    def __init__(self, name: str, bran: np.ndarray, node1: np.ndarray, node2: np.ndarray, magnitude: float,
+    def __init__(self, name: str, bran: str, node1: str, node2: str, magnitude: float,
                  frequency: float, angle: float):
         """
         余弦信号电流源类，继承自 Component 类。
 
         Args:
             name (str): 电流源名称。
-            bran (np.ndarray, 1*1): 器件支路名称。
-            node1 (np.ndarray, 1*1): 器件节点1名称。
-            node2 (np.ndarray, 1*1): 器件节点2名称。
+            bran (str): 器件支路名称。
+            node1 (str): 器件节点1名称。
+            node2 (str): 器件节点2名称。
             magnitude (float): 幅值。
             frequency (float): 频率。
             angle (float): 相角。
@@ -275,15 +322,15 @@ class Current_Source_Cosine(Component):
 
 
 class Current_Source_Empirical(Component):
-    def __init__(self, name: str, bran: np.ndarray, node1: np.ndarray, node2: np.ndarray, current: np.ndarray):
+    def __init__(self, name: str, bran: str, node1: str, node2: str, current: np.ndarray):
         """
         余弦信号电流源类，继承自 Component 类。
 
         Args:
             name (str): 电流源名称。
-            bran (np.ndarray, 1*1): 器件支路名称。
-            node1 (np.ndarray, 1*1): 器件节点1名称。
-            node2 (np.ndarray, 1*1): 器件节点2名称。
+            bran (str): 器件支路名称。
+            node1 (str): 器件节点1名称。
+            node2 (str): 器件节点2名称。
             current (numpy.ndarray,1*n): 电流矩阵(n:计算总次数)。
         """
         super().__init__(name, bran, node1, node2, {"current": current})
@@ -330,6 +377,23 @@ class Voltage_Control_Voltage_Source(Component):
         super().assign_incidence_matrix_value(ima, self.bran[0], self.node1[1], self.parameters['gain'])
         super().assign_incidence_matrix_value(ima, self.bran[0], self.node2[1], -self.parameters['gain'])
 
+    def imb_parameter_assign(self, imb):
+        '''
+        【函数功能】关联矩阵B参数分配
+        【入参】
+        imb(pandas.Dataframe:Nbran*Nnode)：关联矩阵B（Nbran：支路数，Nnode：节点数）
+        '''
+        super().assign_incidence_matrix_value(imb, self.bran[0], self.node1[0], -1)
+        super().assign_incidence_matrix_value(imb, self.bran[0], self.node2[0], 1)
+
+    def r_parameter_assign(self, r):
+        '''
+        【函数功能】电阻参数分配
+        【入参】
+        r(pandas.Dataframe:Nbran*Nbran)：电阻矩阵（Nbran：支路数）
+        '''
+        r[self.bran[0] - 1, self.bran[0] - 1] = self.parameters['resistance']
+
 
 class Current_Control_Voltage_Source(Component):
     def __init__(self, name: str, bran: np.ndarray, node1: np.ndarray, node2: np.ndarray, resistance: float,
@@ -346,6 +410,24 @@ class Current_Control_Voltage_Source(Component):
             gain (float): =受控源电压/控制电流。
         """
         super().__init__(name, bran, node1, node2, {"resistance": resistance, "gain": gain})
+
+    def ima_parameter_assign(self, ima):
+        '''
+        【函数功能】关联矩阵A参数分配
+        【入参】
+        ima(pandas.Dataframe:Nbran*Nnode)：关联矩阵A（Nbran：支路数，Nnode：节点数）
+        '''
+        super().assign_incidence_matrix_value(ima, self.bran[0], self.node1[0], -1)
+        super().assign_incidence_matrix_value(ima, self.bran[0], self.node2[0], 1)
+
+    def imb_parameter_assign(self, imb):
+        '''
+        【函数功能】关联矩阵B参数分配
+        【入参】
+        imb(pandas.Dataframe:Nbran*Nnode)：关联矩阵B（Nbran：支路数，Nnode：节点数）
+        '''
+        super().assign_incidence_matrix_value(imb, self.bran[0], self.node1[0], -1)
+        super().assign_incidence_matrix_value(imb, self.bran[0], self.node2[0], 1)
 
     def r_parameter_assign(self, r):
         '''
@@ -380,6 +462,15 @@ class Voltage_Control_Current_Source(Component):
         super().assign_incidence_matrix_value(ima, self.bran[0], self.node1[1], -self.parameters['gain'])
         super().assign_incidence_matrix_value(ima, self.bran[0], self.node2[1], self.parameters['gain'])
 
+    def imb_parameter_assign(self, imb):
+        '''
+        【函数功能】关联矩阵B参数分配
+        【入参】
+        imb(pandas.Dataframe:Nbran*Nnode)：关联矩阵B（Nbran：支路数，Nnode：节点数）
+        '''
+        super().assign_incidence_matrix_value(imb, self.bran[0], self.node1[0], -1)
+        super().assign_incidence_matrix_value(imb, self.bran[0], self.node2[0], 1)
+
     def r_parameter_assign(self, r):
         '''
         【函数功能】电阻参数分配
@@ -402,6 +493,15 @@ class Current_Control_Current_Source(Component):
             gain (float): =受控源电流/控制电流。
         """
         super().__init__(name, bran, node1, node2, {"gain": gain})
+
+    def imb_parameter_assign(self, imb):
+        '''
+        【函数功能】关联矩阵B参数分配
+        【入参】
+        imb(pandas.Dataframe:Nbran*Nnode)：关联矩阵B（Nbran：支路数，Nnode：节点数）
+        '''
+        super().assign_incidence_matrix_value(imb, self.bran[0], self.node1[0], -1)
+        super().assign_incidence_matrix_value(imb, self.bran[0], self.node2[0], 1)
 
     def r_parameter_assign(self, r):
         '''
@@ -640,16 +740,16 @@ class Mutual_Inductance_Three_Port(Component):
 
 
 class Nolinear_Resistor(Component):
-    def __init__(self, name: str, bran: np.ndarray, node1: np.ndarray, node2: np.ndarray, resistance: float,
+    def __init__(self, name: str, bran: str, node1: str, node2: str, resistance: float,
                  vi_characteristic: np.ndarray, type_of_data: int):
         """
         非线性电阻类，继承自 Component 类。
 
         Args:
             name (str): 非线性电阻名称。
-            bran (np.ndarray, 1*1): 器件支路名称。
-            node1 (np.ndarray, 1*1): 器件节点1名称。
-            node2 (np.ndarray, 1*1): 器件节点2名称。
+            bran (str): 器件支路名称。
+            node1 (str): 器件节点1名称。
+            node2 (str): 器件节点2名称。
             resistance (float): 默认电阻值。
             vi_characteristic (numpy.ndarray, n*2): 电压-电流特性。
         """
@@ -657,6 +757,24 @@ class Nolinear_Resistor(Component):
         super().__init__(name, bran, node1, node2,
                          {"resistance": resistance, "vi_characteristic": vi_characteristic,
                           "type_of_data": type_of_data})
+
+    def ima_parameter_assign(self, ima):
+        '''
+        【函数功能】关联矩阵A参数分配
+        【入参】
+        ima(pandas.Dataframe:Nbran*Nnode)：关联矩阵A（Nbran：支路数，Nnode：节点数）
+        '''
+        super().assign_incidence_matrix_value(ima, self.bran[0], self.node1[0], -1)
+        super().assign_incidence_matrix_value(ima, self.bran[0], self.node2[0], 1)
+
+    def imb_parameter_assign(self, imb):
+        '''
+        【函数功能】关联矩阵B参数分配
+        【入参】
+        imb(pandas.Dataframe:Nbran*Nnode)：关联矩阵B（Nbran：支路数，Nnode：节点数）
+        '''
+        super().assign_incidence_matrix_value(imb, self.bran[0], self.node1[0], -1)
+        super().assign_incidence_matrix_value(imb, self.bran[0], self.node2[0], 1)
 
     def r_parameter_calculate(self, r):
         """
@@ -670,16 +788,16 @@ class Nolinear_Resistor(Component):
 
 
 class Nolinear_F(Component):
-    def __init__(self, name: str, bran: np.ndarray, node1: np.ndarray, node2: np.ndarray, inductance: float,
+    def __init__(self, name: str, bran: str, node1: str, node2: str, inductance: float,
                  bh_characteristic: np.ndarray, type_of_data: int):
         """
         变压器励磁支路类，继承自 Component 类。
 
         Args:
             name (str): 变压器励磁支路名称。
-            bran (np.ndarray, 1*1): 器件支路名称。
-            node1 (np.ndarray, 1*1): 器件节点1名称。
-            node2 (np.ndarray, 1*1): 器件节点2名称。
+            bran (str): 器件支路名称。
+            node1 (str): 器件节点1名称。
+            node2 (str): 器件节点2名称。
             inductance (float): 默认电感值。
             bh_characteristic (numpy.ndarray, n*2): b-h特性。
             type_of_data (int): 数据类型。
@@ -688,6 +806,24 @@ class Nolinear_F(Component):
         super().__init__(name, bran, node1, node2,
                          {"inductance": inductance, "bh_characteristic": bh_characteristic,
                           "type_of_data": type_of_data})
+
+    def ima_parameter_assign(self, ima):
+        '''
+        【函数功能】关联矩阵A参数分配
+        【入参】
+        ima(pandas.Dataframe:Nbran*Nnode)：关联矩阵A（Nbran：支路数，Nnode：节点数）
+        '''
+        super().assign_incidence_matrix_value(ima, self.bran[0], self.node1[0], -1)
+        super().assign_incidence_matrix_value(ima, self.bran[0], self.node2[0], 1)
+
+    def imb_parameter_assign(self, imb):
+        '''
+        【函数功能】关联矩阵B参数分配
+        【入参】
+        imb(pandas.Dataframe:Nbran*Nnode)：关联矩阵B（Nbran：支路数，Nnode：节点数）
+        '''
+        super().assign_incidence_matrix_value(imb, self.bran[0], self.node1[0], -1)
+        super().assign_incidence_matrix_value(imb, self.bran[0], self.node2[0], 1)
 
     def l_parameter_calculate(self, l):
         """
@@ -701,16 +837,16 @@ class Nolinear_F(Component):
 
 
 class Voltage_Controled_Switch(Component):
-    def __init__(self, name: str, bran: np.ndarray, node1: np.ndarray, node2: np.ndarray, resistance: float,
+    def __init__(self, name: str, bran: str, node1: str, node2: str, resistance: float,
                  voltage: float, type_of_data: int):
         """
         电压控制开关类，继承自 Component 类。
 
         Args:
             name (str): 电压控制开关名称。
-            bran (np.ndarray, 1*1): 器件支路名称。
-            node1 (np.ndarray, 1*1): 器件节点1名称。
-            node2 (np.ndarray, 1*1): 器件节点2名称。
+            bran (str): 器件支路名称。
+            node1 (str): 器件节点1名称。
+            node2 (str): 器件节点2名称。
             resistance (float): 电阻值。
             type_of_data (int): 数据类型。
             voltage(float): 控制电压值
@@ -719,18 +855,36 @@ class Voltage_Controled_Switch(Component):
         super().__init__(name, bran, node1, node2,
                          {"inductance": resistance, "type_of_data": type_of_data, "voltage": voltage})
 
+    def ima_parameter_assign(self, ima):
+        '''
+        【函数功能】关联矩阵A参数分配
+        【入参】
+        ima(pandas.Dataframe:Nbran*Nnode)：关联矩阵A（Nbran：支路数，Nnode：节点数）
+        '''
+        super().assign_incidence_matrix_value(ima, self.bran[0], self.node1[0], -1)
+        super().assign_incidence_matrix_value(ima, self.bran[0], self.node2[0], 1)
+
+    def imb_parameter_assign(self, imb):
+        '''
+        【函数功能】关联矩阵B参数分配
+        【入参】
+        imb(pandas.Dataframe:Nbran*Nnode)：关联矩阵B（Nbran：支路数，Nnode：节点数）
+        '''
+        super().assign_incidence_matrix_value(imb, self.bran[0], self.node1[0], -1)
+        super().assign_incidence_matrix_value(imb, self.bran[0], self.node2[0], 1)
+
 
 class Time_Controled_Switch(Component):
-    def __init__(self, name: str, bran: np.ndarray, node1: np.ndarray, node2: np.ndarray, close_time: float,
+    def __init__(self, name: str, bran: str, node1: str, node2: str, close_time: float,
                  open_time: float, type_of_data: int):
         """
         电压控制开关类，继承自 Component 类。
 
         Args:
             name (str): 电压控制开关名称。
-            bran (np.ndarray, 1*1): 器件支路名称。
-            node1 (np.ndarray, 1*1): 器件节点1名称。
-            node2 (np.ndarray, 1*1): 器件节点2名称。
+            bran (str): 器件支路名称。
+            node1 (str): 器件节点1名称。
+            node2 (str): 器件节点2名称。
             type_of_data (int): 数据类型。
             close_time（float）： 闭合时间
             open_time（float）： 断开时间
@@ -739,50 +893,128 @@ class Time_Controled_Switch(Component):
         super().__init__(name, bran, node1, node2,
                          {"close_time": close_time, "type_of_data": type_of_data, "open_time": open_time})
 
+    def ima_parameter_assign(self, ima):
+        '''
+        【函数功能】关联矩阵A参数分配
+        【入参】
+        ima(pandas.Dataframe:Nbran*Nnode)：关联矩阵A（Nbran：支路数，Nnode：节点数）
+        '''
+        super().assign_incidence_matrix_value(ima, self.bran[0], self.node1[0], -1)
+        super().assign_incidence_matrix_value(ima, self.bran[0], self.node2[0], 1)
+
+    def imb_parameter_assign(self, imb):
+        '''
+        【函数功能】关联矩阵B参数分配
+        【入参】
+        imb(pandas.Dataframe:Nbran*Nnode)：关联矩阵B（Nbran：支路数，Nnode：节点数）
+        '''
+        super().assign_incidence_matrix_value(imb, self.bran[0], self.node1[0], -1)
+        super().assign_incidence_matrix_value(imb, self.bran[0], self.node2[0], 1)
+
 
 class A2G(Component):
-    def __init__(self, name: str, bran: np.ndarray, node1: np.ndarray, node2: np.ndarray, resistance: float):
+    def __init__(self, name: str, bran: str, node1: str, node2: str, resistance: float):
         """
         电压控制开关类，继承自 Component 类。
 
         Args:
             name (str): 电压控制开关名称。
-            bran (np.ndarray, 1*1): 器件支路名称。
-            node1 (np.ndarray, 1*1): 器件节点1名称。
-            node2 (np.ndarray, 1*1): 器件节点2名称。
+            bran (str): 器件支路名称。
+            node1 (str): 器件节点1名称。
+            node2 (str): 器件节点2名称。
             resistance (float): 电阻值。
         """
         self.default = 0  # 是否当作非线性元件的标记
         super().__init__(name, bran, node1, node2, {"resistance": resistance})
 
+    def ima_parameter_assign(self, ima):
+        '''
+        【函数功能】关联矩阵A参数分配
+        【入参】
+        ima(pandas.Dataframe:Nbran*Nnode)：关联矩阵A（Nbran：支路数，Nnode：节点数）
+        '''
+        super().assign_incidence_matrix_value(ima, self.bran[0], self.node1[0], -1)
+        super().assign_incidence_matrix_value(ima, self.bran[0], self.node2[0], 1)
+
+    def imb_parameter_assign(self, imb):
+        '''
+        【函数功能】关联矩阵B参数分配
+        【入参】
+        imb(pandas.Dataframe:Nbran*Nnode)：关联矩阵B（Nbran：支路数，Nnode：节点数）
+        '''
+        super().assign_incidence_matrix_value(imb, self.bran[0], self.node1[0], -1)
+        super().assign_incidence_matrix_value(imb, self.bran[0], self.node2[0], 1)
+
+    def r_parameter_assign(self, r):
+        '''
+        【函数功能】电阻参数分配
+        【入参】
+        r(pandas.Dataframe:Nbran*Nbran)：电阻矩阵（Nbran：支路数）
+        '''
+        r.loc[self.bran, self.bran] = self.parameters['resistance']
+
 
 class Ground(Component):
-    def __init__(self, name: str, bran: np.ndarray, node1: np.ndarray, node2: np.ndarray, resistance: float, inductance: float):
+    def __init__(self, name: str, bran: str, node1: str, node2: str, resistance: float, inductance: float):
         """
         电阻电感类，继承自 Component 类。
 
         Args:
             name (str): 电阻电感名称。
-            bran (np.ndarray, 1*1): 器件支路名称。
-            node1 (np.ndarray, 1*1): 器件节点1名称。
-            node2 (np.ndarray, 1*1): 器件节点2名称。
+            bran (str): 器件支路名称。
+            node1 (str): 器件节点1名称。
+            node2 (str): 器件节点2名称。
             resistance (float): 电阻值。
             inductance (float): 电感值。
         """
         super().__init__(name, bran, node1, node2, {"resistance": resistance, "inductance": inductance})
 
+    def ima_parameter_assign(self, ima):
+        '''
+        【函数功能】关联矩阵A参数分配
+        【入参】
+        ima(pandas.Dataframe:Nbran*Nnode)：关联矩阵A（Nbran：支路数，Nnode：节点数）
+        '''
+        super().assign_incidence_matrix_value(ima, self.bran, self.node1, -1)
+        super().assign_incidence_matrix_value(ima, self.bran, self.node2, 1)
+
+    def imb_parameter_assign(self, imb):
+        '''
+        【函数功能】关联矩阵B参数分配
+        【入参】
+        imb(pandas.Dataframe:Nbran*Nnode)：关联矩阵B（Nbran：支路数，Nnode：节点数）
+        '''
+        super().assign_incidence_matrix_value(imb, self.bran, self.node1, -1)
+        super().assign_incidence_matrix_value(imb, self.bran, self.node2, 1)
+
+    def r_parameter_assign(self, r):
+        '''
+        【函数功能】电阻参数分配
+        【入参】
+        r(pandas.Dataframe:Nbran*Nbran)：电阻矩阵（Nbran：支路数）
+        '''
+        r.loc[self.bran, self.bran] = self.parameters['resistance']
+
+    def l_parameter_assign(self, l):
+        '''
+        【函数功能】电感参数分配
+        【入参】
+        l(pandas.Dataframe:Nbran*Nbran)：电感矩阵（Nbran：支路数）
+        '''
+        l.loc[self.bran, self.bran] = self.parameters['inductance']
+
 
 class Nolinear_Element(Component):
-    def __init__(self, name: str, bran: np.ndarray, node1: np.ndarray, node2: np.ndarray, resistance: float,
+    def __init__(self, name: str, bran: str, node1: str, node2: str, resistance: float,
                  vi_characteristic, ri_characteristic, type_of_data: int):
         """
         非线性器件类，继承自 Component 类。
 
         Args:
             name (str): 非线性电阻名称。
-            bran (np.ndarray, 1*1): 器件支路名称。
-            node1 (np.ndarray, 1*1): 器件节点1名称。
-            node2 (np.ndarray, 1*1): 器件节点2名称。
+            bran (str): 器件支路名称。
+            node1 (str): 器件节点1名称。
+            node2 (str): 器件节点2名称。
             resistance (float): 默认电阻值。
             vi_characteristic (lambda): 电压-电流特性。
         """
@@ -790,6 +1022,24 @@ class Nolinear_Element(Component):
         super().__init__(name, bran, node1, node2,
                          {"resistance": resistance, "vi_characteristic": vi_characteristic,
                           "ri_characteristic": ri_characteristic, "type_of_data": type_of_data})
+
+    def ima_parameter_assign(self, ima):
+        '''
+        【函数功能】关联矩阵A参数分配
+        【入参】
+        ima(pandas.Dataframe:Nbran*Nnode)：关联矩阵A（Nbran：支路数，Nnode：节点数）
+        '''
+        super().assign_incidence_matrix_value(ima, self.bran[0], self.node1[0], -1)
+        super().assign_incidence_matrix_value(ima, self.bran[0], self.node2[0], 1)
+
+    def imb_parameter_assign(self, imb):
+        '''
+        【函数功能】关联矩阵B参数分配
+        【入参】
+        imb(pandas.Dataframe:Nbran*Nnode)：关联矩阵B（Nbran：支路数，Nnode：节点数）
+        '''
+        super().assign_incidence_matrix_value(imb, self.bran[0], self.node1[0], -1)
+        super().assign_incidence_matrix_value(imb, self.bran[0], self.node2[0], 1)
 
     def r_parameter_calculate(self, r):
         """
@@ -803,16 +1053,16 @@ class Nolinear_Element(Component):
 
 
 class Switch_Disruptive_Effect_Model(Component):
-    def __init__(self, name: str, bran: np.ndarray, node1: np.ndarray, node2: np.ndarray, resistance: float, type_of_data: int,
+    def __init__(self, name: str, bran: str, node1: str, node2: str, resistance: float, type_of_data: int,
                  DE_max: float, v_initial: float=168.6e3, k: float=1):
         """
         开关-破坏效应模型类，继承自 Component 类。
 
         Args:
             name (str): 电压控制开关名称。
-            bran (np.ndarray, 1*1): 器件支路名称。
-            node1 (np.ndarray, 1*1): 器件节点1名称。
-            node2 (np.ndarray, 1*1): 器件节点2名称。
+            bran (str): 器件支路名称。
+            node1 (str): 器件节点1名称。
+            node2 (str): 器件节点2名称。
             resistance (float): 电阻值。
             type_of_data (int): 数据类型。
             DE_max(float): 破坏效应值。
@@ -824,6 +1074,24 @@ class Switch_Disruptive_Effect_Model(Component):
         super().__init__(name, bran, node1, node2,
                          {"resistance": resistance, "type_of_data": type_of_data, "DE_max": DE_max,
                           "v_initial": v_initial, "k": k})
+
+    def ima_parameter_assign(self, ima):
+        '''
+        【函数功能】关联矩阵A参数分配
+        【入参】
+        ima(pandas.Dataframe:Nbran*Nnode)：关联矩阵A（Nbran：支路数，Nnode：节点数）
+        '''
+        super().assign_incidence_matrix_value(ima, self.bran[0], self.node1[0], -1)
+        super().assign_incidence_matrix_value(ima, self.bran[0], self.node2[0], 1)
+
+    def imb_parameter_assign(self, imb):
+        '''
+        【函数功能】关联矩阵B参数分配
+        【入参】
+        imb(pandas.Dataframe:Nbran*Nnode)：关联矩阵B（Nbran：支路数，Nnode：节点数）
+        '''
+        super().assign_incidence_matrix_value(imb, self.bran[0], self.node1[0], -1)
+        super().assign_incidence_matrix_value(imb, self.bran[0], self.node2[0], 1)
 
     def disruptive_effect_calculate(self, v_primary, v_secondary):
         '''
@@ -1463,124 +1731,6 @@ class Measurements:
         for ith, component in enumerate(self.measurements_linear + self.measurements_gc):
             component.initial(Nt)
 
-
-# class Sources:
-# #     def __init__(self, current_sources_cosine=None, current_sources_empirical=None, voltage_sources_cosine=None,
-# #                  voltage_sources_empirical=None):
-# #         """
-# #         初始化Sources对象
-# #
-# #         参数:
-# #         voltage_sources_cosine (Voltage_Sources_Cosine类型的list, optional): 余弦电压源列表,默认为空列表。
-# #         voltage_sources_empirical (Voltage_Sources_Empirical类型的list, optional): 离散信号电压源列表,默认为空列表。
-# #         current_sources_cosine (Current_Sources_Cosine类型的list, optional): 余弦电流源列表,默认为空列表。
-# #         current_sources_empirical (Current_Sources_Empirical类型的list, optional): 离散信号电流源列表,默认为空列表。
-# #         """
-# #         self.current_sources_cosine = current_sources_cosine or []
-# #         self.current_sources_empirical = current_sources_empirical or []
-# #         self.voltage_sources_cosine = voltage_sources_cosine or []
-# #         self.voltage_sources_empirical = voltage_sources_empirical or []
-# #
-# #     def add_current_source_cosine(self, current_source_cosine):
-# #         """
-# #         添加余弦电流源
-# #         """
-# #         self.current_sources_cosine.append(current_source_cosine)
-# #
-# #     def add_current_source_empirical(self, current_source_empirical):
-# #         """
-# #         添加离散信号电流源
-# #         """
-# #         self.current_sources_empirical.append(current_source_empirical)
-# #
-# #     def add_voltage_source_cosine(self, voltage_source_cosine):
-# #         """
-# #         添加余弦电压源
-# #         """
-# #         self.voltage_sources_cosine.append(voltage_source_cosine)
-# #
-# #     def add_voltage_source_empirical(self, voltage_source_empirical):
-# #         """
-# #         添加离散信号电压源
-# #         """
-# #         self.voltage_sources_empirical.append(voltage_source_empirical)
-# #
-# #     def source_matrix_initial(self, Nbran: int, Nnode: int):
-# #         """
-# #         【函数功能】电压和电流矩阵初始化
-# #         【入参】
-# #         Nbran(int)：支路数
-# #         Nnode(int)：节点数
-# #         """
-# #         self.Vs = np.zeros((Nbran, 1))
-# #         self.Is = np.zeros((Nnode, 1))
-# #
-# #     def voltage_matrix_update(self, n, dt):
-# #         """
-# #         【函数功能】电压矩阵更新
-# #         【入参】
-# #         n(int)：当前计算到第n个步长
-# #         dt(float)：步长
-# #         """
-# #         Vs = np.zeros_like(self.Vs)
-# #         for voltage_source in self.voltage_sources_cosine:
-# #             Vs[voltage_source.bran - 1] = voltage_source.voltage_calculate(n, dt)
-# #
-# #         for voltage_source in self.voltage_sources_empirical:
-# #             Vs[voltage_source.bran - 1] = voltage_source.voltage_calculate(n)
-# #
-# #         return Vs
-# #
-# #     def current_matrix_update(self, n, dt):
-# #         """
-# #         【函数功能】电流矩阵更新
-# #         【入参】
-# #         n(int)：当前计算到第n个步长
-# #         dt(float)：步长
-# #         """
-# #         Is = np.zeros_like(self.Is)
-# #         for current_source in self.current_sources_cosine:
-# #             Is[current_source.node1 - 1] = current_source.current_calculate(n, dt)
-# #
-# #         for current_source in self.current_sources_empirical:
-# #             Is[current_source.node1 - 1] = current_source.current_calculate(n)
-# #
-# #         return Is
-# #
-# #     def source_matrix_update(self, n, dt):
-# #         """
-# #         【函数功能】电压和电流矩阵更新
-# #         【入参】
-# #         n(int)：当前计算到第n个步长
-# #         dt(float)：步长
-# #         """
-# #         for voltage_source in self.voltage_sources_cosine:
-# #             self.Vs[voltage_source.bran - 1] = voltage_source.voltage_calculate(n, dt)
-# #
-# #         for voltage_source in self.voltage_sources_empirical:
-# #             self.Vs[voltage_source.bran - 1] = voltage_source.voltage_calculate(n)
-# #
-# #         for current_source in self.current_sources_cosine:
-# #             self.Is[current_source.node1 - 1] = current_source.current_calculate(n, dt)
-# #
-# #         for current_source in self.current_sources_empirical:
-# #             self.Is[current_source.node1 - 1] = current_source.current_calculate(n)
-# #
-# #         return np.vstack((self.Vs, self.Is))
-# #
-# #     def source_vector_matrix_update(self):
-# #         """
-# #         【函数功能】电压和电流向量矩阵更新
-# #         """
-# #         for voltage_source in self.voltage_sources_cosine:
-# #             self.Vs[voltage_source.bran - 1] = voltage_source.voltage_vector_calculate()
-# #
-# #         for current_source in self.current_sources_cosine:
-# #             self.Is[current_source.node1 - 1] = current_source.current_vector_calculate()
-# #
-# #         return np.vstack((self.Vs, self.Is))
-
-
 class Lumps:
     def __init__(self, resistor_inductors=None, conductor_capacitors=None, voltage_control_voltage_sources=None,
                  current_control_voltage_sources=None, voltage_control_current_sources=None,
@@ -1645,18 +1795,6 @@ class Lumps:
         self.measurements = measurements or Measurements()
         self.nolinear_elements = nolinear_elements or []
         self.switch_disruptive_effect_models = switch_disruptive_effect_models or []
-
-        self.brans_name = []
-        self.nodes_name = []
-        
-        self.incidence_matrix_A = None
-        self.incidence_matrix_B = None
-        self.resistance_matrix = None
-        self.inductance_matrix = None
-        self.capacitance_matrix = None
-        self.conductance_matrix = None
-        self.voltage_source_matrix = None
-        self.current_source_matrix = None
     
     def brans_nodes_list_initial(self):
         """
@@ -1677,11 +1815,11 @@ class Lumps:
                                self.current_sources_empirical, self.voltage_sources_cosine,
                                self.voltage_sources_empirical]:
             for component in component_list:
-                all_nodes[component.node1[0]] = True
-                all_nodes[component.node2[0]] = True
-                all_brans[component.bran[0]] = True
+                all_nodes[component.node1] = True
+                all_nodes[component.node2] = True
+                all_brans[component.bran] = True
                 
-        for component_list in [self.voltage_control_voltage_sources, self.current_control_voltage_sources, 
+        for component_list in [self.voltage_control_voltage_sources, self.current_control_voltage_sources,
                                self.voltage_control_current_sources, self.current_control_current_sources, 
                                self.transformers_one_phase, self.transformers_three_phase,
                                self.mutual_inductors_two_port, self.mutual_inductors_three_port]:
@@ -1697,8 +1835,8 @@ class Lumps:
             del all_brans['---']
         if 'ref' in all_nodes:
             del all_nodes['ref']
-        self.brans_name = list(all_brans)
-        self.nodes_name = list(all_nodes)
+        self.branList = list(all_brans)
+        self.nodeList = list(all_nodes)
 
     def lump_measurement_initial(self, Nt: int):
         """
@@ -1724,22 +1862,22 @@ class Lumps:
         capacitance_matrix(pandas.Dataframe:Nnode*Nnode)：电容矩阵（Nnode：节点数）
         """
         #邻接矩阵A初始化
-        self.incidence_matrix_A = pd.DataFrame(0, index=self.brans_name, columns=self.nodes_name, dtype=float)
+        self.incidence_matrix_A = pd.DataFrame(0, index=self.branList, columns=self.nodeList, dtype=float)
 
         # 邻接矩阵B初始化
-        self.incidence_matrix_B = pd.DataFrame(0, index=self.brans_name, columns=self.nodes_name, dtype=float)
+        self.incidence_matrix_B = pd.DataFrame(0, index=self.branList, columns=self.nodeList, dtype=float)
 
         # 电阻矩阵R初始化
-        self.resistance_matrix = pd.DataFrame(0, index=self.brans_name, columns=self.brans_name, dtype=float)
+        self.resistance_matrix = pd.DataFrame(0, index=self.branList, columns=self.branList, dtype=float)
 
         # 电感矩阵L初始化
-        self.inductance_matrix = pd.DataFrame(0, index=self.brans_name, columns=self.brans_name, dtype=float)
+        self.inductance_matrix = pd.DataFrame(0, index=self.branList, columns=self.branList, dtype=float)
 
         # 电导矩阵G初始化
-        self.conductance_matrix = pd.DataFrame(0, index=self.nodes_name, columns=self.nodes_name, dtype=float)
+        self.conductance_matrix = pd.DataFrame(0, index=self.nodeList, columns=self.nodeList, dtype=float)
 
         # 电容矩阵C初始化
-        self.capacitance_matrix = pd.DataFrame(0, index=self.nodes_name, columns=self.nodes_name, dtype=float)
+        self.capacitance_matrix = pd.DataFrame(0, index=self.nodeList, columns=self.nodeList, dtype=float)
 
     def lump_voltage_source_matrix_initial(self, calculate_time, dt):
         """
@@ -1755,7 +1893,7 @@ class Lumps:
         """
         calculate_num = int(np.ceil(calculate_time / dt))
         # 电源矩阵初始化
-        self.voltage_source_matrix = pd.DataFrame(0, index=self.brans_name, columns=range(calculate_num))
+        self.voltage_source_matrix = pd.DataFrame(0, index=self.branList, columns=range(calculate_num))
 
         for voltage_source_list in [self.voltage_sources_cosine, self.voltage_sources_empirical]:
             for voltage_source in voltage_source_list:
@@ -1776,7 +1914,7 @@ class Lumps:
         """
         calculate_num = int(np.ceil(calculate_time / dt))
         # 电源矩阵初始化
-        self.current_source_matrix = pd.DataFrame(0, index=self.nodes_name, columns=range(calculate_num))
+        self.current_source_matrix = pd.DataFrame(0, index=self.nodeList, columns=range(calculate_num))
 
         for current_source_list in [self.current_sources_cosine, self.current_sources_empirical]:
             for current_source in current_source_list:
@@ -1973,7 +2111,6 @@ def Lump_zero_initial_solve(ima, imb, R, L, G, C, sources, dt, Meas, diff: str =
 
     return out
 
-
 def Lump_steady_state_solve(ima, imb, R, L, G, C, sources, w, Meas):
     """
     【函数功能】电路稳态求解
@@ -2000,7 +2137,6 @@ def Lump_steady_state_solve(ima, imb, R, L, G, C, sources, w, Meas):
     Meas.record_steady_measured_data(out, 0, Nn, 2 * np.pi * 50)
 
     return out
-
 
 def Lump_central_step_solve(ima, imb, R, L, G, C, sources, n, Ic, dt, hist):
     """
@@ -2032,7 +2168,6 @@ def Lump_central_step_solve(ima, imb, R, L, G, C, sources, n, Ic, dt, hist):
     # Ic = (2 * C / dt).dot(out[:Nn] - hist[:Nn]) - Ic
     return out
 
-
 def Lump_central_solve(ima, imb, R, L, G, C, sources, Ic, Meas, dt, Nt, initial_state):
     """
     【函数功能】使用中心差分法的电路零初始状态求解
@@ -2060,7 +2195,6 @@ def Lump_central_solve(ima, imb, R, L, G, C, sources, Ic, Meas, dt, Nt, initial_
         Meas.record_measured_data(out, i + 1, dt, Nnode, 'central')
         hist = np.copy(out)
 
-
 def Lump_backward_step_solve(ima, imb, R, L, G, C, sources, n, dt, hist):
     """
     【函数功能】使用后向差分法的电路零初始状态求解
@@ -2086,7 +2220,6 @@ def Lump_backward_step_solve(ima, imb, R, L, G, C, sources, n, dt, hist):
     RIGHT = np.block([[(-L / dt).dot(hist[Nn:])], [(C / dt).dot(hist[:Nn])]])
     out = inv_LEFT.dot(SR + RIGHT)
     return out
-
 
 def Lump_backward_solve(ima, imb, R, L, G, C, sources, Meas, dt, Nt, initial_state):
     """
@@ -2157,28 +2290,28 @@ def Lump_circuit_sol(ima, imb, R, L, G, C, sources, measurements, dt, T, Initial
 "测试用"
 
 
-def GeneInfoRead(data):
-    """
-    读取文件
-    :param data:
-    :return:
-    """
-    DATA = data.copy()
-    DATA.dropna(axis=0, inplace=True, subset=[2, 3, 4])
-    Nrow = DATA.shape[0]
-    row_del = np.array([])
-    for i in range(Nrow):
-        str1 = str(DATA.iloc[i, 0])
-        str2 = str(DATA.iloc[i, 2])
-        if str1 == 'Type':
-            row_del = np.hstack((row_del, DATA.index[i]))
-        elif str1[0] == '%':
-            row_del = np.hstack((row_del, DATA.index[i]))
-        elif str2 == 'nan' or str2 == ' ':
-            row_del = np.hstack((row_del, DATA.index[i]))
-    DATA.drop(row_del, axis=0, inplace=True)
-    DATA.dropna(axis=0, how='all', inplace=True)
-    return DATA.to_numpy()
+# def GeneInfoRead(data):
+#     """
+#     读取文件
+#     :param data:
+#     :return:
+#     """
+#     DATA = data.copy()
+#     DATA.dropna(axis=0, inplace=True, subset=[2, 3, 4])
+#     Nrow = DATA.shape[0]
+#     row_del = np.array([])
+#     for i in range(Nrow):
+#         str1 = str(DATA.iloc[i, 0])
+#         str2 = str(DATA.iloc[i, 2])
+#         if str1 == 'Type':
+#             row_del = np.hstack((row_del, DATA.index[i]))
+#         elif str1[0] == '%':
+#             row_del = np.hstack((row_del, DATA.index[i]))
+#         elif str2 == 'nan' or str2 == ' ':
+#             row_del = np.hstack((row_del, DATA.index[i]))
+#     DATA.drop(row_del, axis=0, inplace=True)
+#     DATA.dropna(axis=0, how='all', inplace=True)
+#     return DATA.to_numpy()
 
 
 def NodeBranIndex(data):
@@ -2328,299 +2461,68 @@ def Export_meas(measurements, dir_path):
                 ep_file.create(file_name, file, header=True)
 
 
-def initial(data):
-    Node, Bran, nodebran = NodeBranIndex(data)
-
-    dt = 1e-6
-    T = 0.001
-    Nt = int(np.ceil(T / dt))
-    Nbran = Bran['num'][0]
-    Nnode = Node['num'][0]
-    nodebran_n = np.copy(data[:, 2:5])
-    nodebran_id = NodeBranIndex_Update(Node, Bran, data[:, 2:5])
-
-    lumps = Lumps()
-
-    for i in range(data.shape[0]):
-        firstColumnValue = data[i, 0]
-        match firstColumnValue:
-            case 'RL':
-                name = 'RL_{}'.format(i)
-                bran_id = np.array([nodebran_n[i, 0]])
-                node1_id = np.array([nodebran_n[i, 1]])
-                node2_id = np.array([nodebran_n[i, 2]])
-                resistance = data[i, 6]
-                inductance = data[i, 7]
-
-                # globals()[name] =
-                lumps.add_resistor_inductor(
-                    Resistor_Inductor(name, bran_id, node1_id, node2_id, resistance, inductance))
-
-            case 'GC':
-                name = 'GC_{}'.format(i)
-                bran_id = np.array([nodebran_n[i, 0]])
-                node1_id = np.array([nodebran_n[i, 1]])
-                node2_id = np.array([nodebran_n[i, 2]])
-                conductance = data[i, 6]
-                capacitance = data[i, 7]
-                lumps.add_conductor_capacitor(
-                    Conductor_Capacitor(name, bran_id, node1_id, node2_id, conductance, capacitance))
-            case 'Vs':
-                name = 'Vs_{}'.format(i)
-                bran_id = np.array([nodebran_n[i, 0]])
-                node1_id = np.array([nodebran_n[i, 1]])
-                node2_id = np.array([nodebran_n[i, 2]])
-                type_of_data = data[i, 5]
-                resistance = data[i, 6]
-                if type_of_data > 0:
-                    magnitude = data[i, 7]
-                    frequency = data[i, 8]
-                    angle = data[i, 10]
-                    lumps.add_voltage_source_cosine(
-                        Voltage_Source_Cosine(name, bran_id, node1_id, node2_id, resistance, magnitude, frequency,
-                                              angle))
-                elif type_of_data == 0:
-                    voltages = Str2matrix(data[i, 7])
-                    lumps.add_voltage_source_empirical(
-                        Voltage_Source_Empirical(name, bran_id, node1_id, node2_id, resistance, voltages))
-
-            case 'Is':
-                name = 'Is_{}'.format(i)
-                bran_id = np.array([nodebran_n[i, 0]])
-                node1_id = np.array([nodebran_n[i, 1]])
-                node2_id = np.array([nodebran_n[i, 2]])
-                type_of_data = data[i, 5]
-                if type_of_data > 0:
-                    magnitude = data[i, 7]
-                    frequency = data[i, 8]
-                    angle = data[i, 10]
-                    lumps.add_current_source_cosine(
-                        Current_Source_Cosine(name, bran_id, node1_id, node2_id, magnitude, frequency, angle))
-                elif type_of_data == 0:
-                    currents = Str2matrix(data[i, 7])
-                    lumps.add_current_source_empirical(
-                        Current_Source_Empirical(name, bran_id, node1_id, node2_id, currents))
-
-            case 'VCVS':
-                name = 'VCVS_{}'.format(i)
-                bran_id = nodebran_n[i:i + 2, 0]
-                node1_id = nodebran_n[i:i + 2, 1]
-                node2_id = nodebran_n[i:i + 2, 2]
-                resistance = data[i, 6]
-                gain = data[i + 1, 6]
-                lumps.add_voltage_control_voltage_source(
-                    Voltage_Control_Voltage_Source(name, bran_id, node1_id, node2_id, resistance, gain))
-
-            case 'ICVS':
-                name = 'ICVS_{}'.format(i)
-                bran_id = nodebran_n[i:i + 2, 0]
-                node1_id = nodebran_n[i:i + 2, 1]
-                node2_id = nodebran_n[i:i + 2, 2]
-                resistance = data[i, 6]
-                r = data[i + 1, 6]
-                lumps.add_current_control_voltage_source(
-                    Current_Control_Voltage_Source(name, bran_id, node1_id, node2_id, resistance, r))
-
-            case 'VCIS':
-                name = 'VCIS_{}'.format(i)
-                bran_id = nodebran_n[i:i + 2, 0]
-                node1_id = nodebran_n[i:i + 2, 1]
-                node2_id = nodebran_n[i:i + 2, 2]
-                g = data[i + 1, 6]
-                lumps.add_voltage_control_current_source(
-                    Voltage_Control_Current_Source(name, bran_id, node1_id, node2_id, g))
 
 
-            case 'ICIS':
-                name = 'ICIS_{}'.format(i)
-                bran_id = nodebran_n[i:i + 2, 0]
-                node1_id = nodebran_n[i:i + 2, 1]
-                node2_id = nodebran_n[i:i + 2, 2]
-                gain = data[i + 1, 6]
-                lumps.add_current_control_current_source(
-                    Current_Control_Current_Source(name, bran_id, node1_id, node2_id, gain))
-
-
-            case 'TX2':
-                name = 'TX2_{}'.format(i)
-                bran_id = nodebran_n[i:i + 2, 0]
-                node1_id = nodebran_n[i:i + 2, 1]
-                node2_id = nodebran_n[i:i + 2, 2]
-                vpri = data[i, 6]
-                vsec = data[i, 7]
-                lumps.add_transformer_one_phase(
-                    Transformer_One_Phase(name, bran_id, node1_id, node2_id, vpri, vsec))
-
-            case 'TX3':
-                name = 'TX3_{}'.format(i)
-                bran_id = nodebran_n[i:i + 6, 0]
-                node1_id = nodebran_n[i:i + 6, 1]
-                node2_id = nodebran_n[i:i + 6, 2]
-                vpri = data[i, 6]
-                vsec = data[i, 7]
-                lumps.add_transformer_three_phase(
-                    Transformer_Three_Phase(name, bran_id, node1_id, node2_id, vpri, vsec))
-
-            case 'M2':
-                name = 'M2_{}'.format(i)
-                bran_id = nodebran_n[i:i + 2, 0]
-                node1_id = nodebran_n[i:i + 2, 1]
-                node2_id = nodebran_n[i:i + 2, 2]
-                resistance = data[i:i + 2, 6]
-                inductance = Str2matrix(data[i, 7])
-                lumps.add_mutual_inductor_two_port(
-                    Mutual_Inductance_Two_Port(name, bran_id, node1_id, node2_id, resistance, inductance))
-
-            case 'M3':
-                name = 'M3_{}'.format(i)
-                bran_id = nodebran_n[i:i + 3, 0]
-                node1_id = nodebran_n[i:i + 3, 1]
-                node2_id = nodebran_n[i:i + 3, 2]
-                resistance = data[i:i + 3, 6]
-                inductance = Str2matrix(data[i, 7])
-                lumps.add_mutual_inductor_three_port(
-                    Mutual_Inductance_Three_Port(name, bran_id, node1_id, node2_id, resistance, inductance))
-
-            case 'NLR':
-                name = 'NLR_{}'.format(i)
-                bran_id = np.array([nodebran_n[i, 0]])
-                node1_id = np.array([nodebran_n[i, 1]])
-                node2_id = np.array([nodebran_n[i, 2]])
-                resistance = data[i, 6]
-                vi_characteristic = Str2matrix(data[i, 8])
-                type_of_data = data[i, 5]
-                lumps.add_nolinear_resistor(
-                    Nolinear_Resistor(name, bran_id, node1_id, node2_id, resistance, vi_characteristic, type_of_data))
-            case 'NLF':
-                name = 'NLF_{}'.format(i)
-                bran_id = np.array([nodebran_n[i, 0]])
-                node1_id = np.array([nodebran_n[i, 1]])
-                node2_id = np.array([nodebran_n[i, 2]])
-                inductance = data[i, 7]
-                bh_characteristic = Str2matrix(data[i, 8])
-                type_of_data = data[i, 5]
-                lumps.add_nolinear_f(
-                    Nolinear_F(name, bran_id, node1_id, node2_id, inductance, bh_characteristic, type_of_data))
-
-            case 'SWV':
-                name = 'SWV_{}'.format(i)
-                bran_id = np.array([nodebran_n[i, 0]])
-                node1_id = np.array([nodebran_n[i, 1]])
-                node2_id = np.array([nodebran_n[i, 2]])
-                resistance = data[i, 6]
-                voltage = data[i, 8]
-                type_of_data = data[i, 5]
-                lumps.add_voltage_controled_switch(
-                    Voltage_Controled_Switch(name, bran_id, node1_id, node2_id, resistance, voltage, type_of_data))
-
-            case 'SWT':
-                name = 'SWT_{}'.format(i)
-                bran_id = np.array([nodebran_n[i, 0]])
-                node1_id = np.array([nodebran_n[i, 1]])
-                node2_id = np.array([nodebran_n[i, 2]])
-                close_time = data[i, 6]
-                open_time = data[i, 7]
-                type_of_data = data[i, 5]
-                lumps.add_time_controled_switch(
-                    Time_Controled_Switch(name, bran_id, node1_id, node2_id, close_time, open_time, type_of_data))
-
-            case 'A2G':
-                name = 'A2G_{}'.format(i)
-                bran_id = np.array([nodebran_n[i, 0]])
-                node1_id = np.array([nodebran_n[i, 1]])
-                node2_id = np.array([nodebran_n[i, 2]])
-                resistance = data[i, 6]
-                lumps.add_a2g(
-                    A2G(name, bran_id, node1_id, node2_id, resistance))
-
-            case 'GOD':
-                name = 'GOD_{}'.format(i)
-                bran_id = np.array([nodebran_n[i, 0]])
-                node1_id = np.array([nodebran_n[i, 1]])
-                node2_id = np.array([nodebran_n[i, 2]])
-                resistance = data[i, 6]
-                inductance = data[i, 7]
-                lumps.add_a2g(
-                    Ground(name, bran_id, node1_id, node2_id, resistance, inductance))
-
-
-    lumps.brans_nodes_list_initial()
-    lumps.lump_parameter_matrix_initial()
-    lumps.lump_measurement_initial(Nt)
-    lumps.parameters_assign()
-    lumps.lump_voltage_source_matrix_initial(T, dt)
-    lumps.lump_current_source_matrix_initial(T, dt)
-    return lumps
-
-
-if __name__ == '__main__':
-    import pandas as pd
-
-    file_name = 'D:\\softwares\\PycharmProjects\\CK_Para\\test\\光伏逆变器.xlsx'
-    raw_data = pd.read_excel(file_name, index_col=None, header=None)
-    data = GeneInfoRead(raw_data)
-    data1 = np.copy(data[0:5, :])
-    data2 = np.copy(data[5:, :])
-
-    lump1 = initial(data1)
-    lump2 = initial(data2)
-    lump_all = initial(data)
-
-    a1 = lump1.incidence_matrix_A
-    a2 = lump2.incidence_matrix_A
-    a_merge = a1.add(a2, fill_value=0).fillna(0)
-    # a_merge = a1.merge(a2, how='outer', left_index=True, right_index=True)
-    a_all = lump_all.incidence_matrix_A
-    a_all.sort_index(inplace=True)
-    a_all.sort_index(axis=1, inplace=True)
-    print('incidence_matrix_A equals?', a_all.equals(a_merge))
-
-    a1 = lump1.incidence_matrix_B
-    a2 = lump2.incidence_matrix_B
-    a_merge = a1.add(a2, fill_value=0).fillna(0)
-    # a_merge = a1.merge(a2, how='outer', left_index=True, right_index=True)
-    a_all = lump_all.incidence_matrix_B
-    a_all.sort_index(inplace=True)
-    a_all.sort_index(axis=1, inplace=True)
-    print('incidence_matrix_B equals?', a_all.equals(a_merge))
-
-    a1 = lump1.resistance_matrix
-    a2 = lump2.resistance_matrix
-    a_merge = a1.add(a2, fill_value=0).fillna(0)
-    # a_merge = a1.merge(a2, how='outer', left_index=True, right_index=True)
-    a_all = lump_all.resistance_matrix
-    a_all.sort_index(inplace=True)
-    a_all.sort_index(axis=1, inplace=True)
-    print('resistance_matrix equals?', a_all.equals(a_merge))
-
-    a1 = lump1.inductance_matrix
-    a2 = lump2.inductance_matrix
-    a_merge = a1.add(a2, fill_value=0).fillna(0)
-    # a_merge = a1.merge(a2, how='outer', left_index=True, right_index=True)
-    a_all = lump_all.inductance_matrix
-    a_all.sort_index(inplace=True)
-    a_all.sort_index(axis=1, inplace=True)
-    print('inductance_matrix equals?', a_all.equals(a_merge))
-
-    a1 = lump1.conductance_matrix
-    a2 = lump2.conductance_matrix
-    a_merge = a1.add(a2, fill_value=0).fillna(0)
-    # a_merge = a1.merge(a2, how='outer', left_index=True, right_index=True)
-    a_all = lump_all.conductance_matrix
-    a_all.sort_index(inplace=True)
-    a_all.sort_index(axis=1, inplace=True)
-    print('conductance_matrix equals?', a_all.equals(a_merge))
-
-    a1 = lump1.capacitance_matrix
-    a2 = lump2.capacitance_matrix
-    a_merge = a1.add(a2, fill_value=0).fillna(0)
-    # a_merge = a1.merge(a2, how='outer', left_index=True, right_index=True)
-    a_all = lump_all.capacitance_matrix
-    a_all.sort_index(inplace=True)
-    a_all.sort_index(axis=1, inplace=True)
-    print('capacitance_matrix equals?', a_all.equals(a_merge))
-
-    # Lump_circuit_sol(lumps.ima, lumps.imb.T, lumps.R, lumps.L, lumps.G, lumps.C, lumps.sources, lumps.measurements, dt,
-    #                  T, Initial_Stable=1, Diff='Central')
-    # Export_meas(lumps.measurements, './')
-    # print(1)
+#
+# if __name__ == '__main__':
+#     import pandas as pd
+#
+#     # file_name = '../Data/光伏逆变器.xlsx'
+#     # raw_data = pd.read_excel(file_name, index_col=None, header=None)
+#     # data = GeneInfoRead(raw_data)
+#     # data1 = np.copy(data[0:5, :])
+#     # data2 = np.copy(data[5:, :])
+#
+#     json_file_path = '../Data/01_2.json'
+#     # 0. read json file
+#     with open(json_file_path, 'r') as j:
+#         load_dict = json.load(j)
+#     lump_data = load_dict['Lump']
+#
+#     data1 = lump_data[0:5]
+#     data2 = lump_data[5:]
+#     lump1 = initial_lump(data1)
+#     lump2 = initial_lump(data2)
+#
+#     a1 = lump1.incidence_matrix_A
+#
+#     a2 = lump2.incidence_matrix_A
+#
+#     a_merge = a1.add(a2, fill_value=0).fillna(0)
+#
+#     print("incidence_matrix_A",a_merge)
+#
+#     a1 = lump1.incidence_matrix_B
+#     a2 = lump2.incidence_matrix_B
+#     a_merge = a1.add(a2, fill_value=0).fillna(0)
+#
+#     print('incidence_matrix_B ?',a_merge)
+#
+#     a1 = lump1.resistance_matrix
+#     a2 = lump2.resistance_matrix
+#     a_merge = a1.add(a2, fill_value=0).fillna(0)
+#
+#     print('resistance_matrix ?',a_merge)
+#
+#     a1 = lump1.inductance_matrix
+#     a2 = lump2.inductance_matrix
+#     a_merge = a1.add(a2, fill_value=0).fillna(0)
+#
+#     print('inductance_matrix ', a_merge)
+#
+#     a1 = lump1.conductance_matrix
+#     a2 = lump2.conductance_matrix
+#     a_merge = a1.add(a2, fill_value=0).fillna(0)
+#
+#     print('conductance_matrix equals?',a_merge)
+#
+#     a1 = lump1.capacitance_matrix
+#     a2 = lump2.capacitance_matrix
+#     a_merge = a1.add(a2, fill_value=0).fillna(0)
+#
+#     print('capacitance_matrix equals?',a_merge)
+#
+#     # Lump_circuit_sol(lumps.ima, lumps.imb.T, lumps.R, lumps.L, lumps.G, lumps.C, lumps.sources, lumps.measurements, dt,
+#     #                  T, Initial_Stable=1, Diff='Central')
+#     # Export_meas(lumps.measurements, './')
+#     # print(1)

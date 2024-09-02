@@ -119,7 +119,7 @@ def get_t_delay_index2(arr):
     return index2
 
 
-def calculate_electric_field_down_r_and_z(pt_start, pt_end, stroke, z_channel, i_sr, t_sr, i_sr_int, i_sr_div, ep0, vc, air_or_img):
+def calculate_electric_field_down_r_and_z(pt_start, pt_end, stroke, channel, z_channel, i_sr, t_sr, i_sr_int, i_sr_div, ep0, vc, air_or_img):
     """
     功能：
     计算雷击影响下，不同时刻，自由空间或镜像电场
@@ -128,6 +128,7 @@ def calculate_electric_field_down_r_and_z(pt_start, pt_end, stroke, z_channel, i
     pt_start (np.array, (n, 3)): 导体段的起点坐标，每行代表坐标(x, y, z)
     pt_end (np.array, (n, 3)): 导体段的终点坐标，每行代表坐标(x, y, z)
     stroke (Stroke对象)
+    channel (Channel对象)
     z_channel (list): 每个雷电通道段终点的z坐标列表，从小到大排列
     i_sr (np.array, (1, stroke.Nt): 雷电流时间序列
     t_sr (np.array, (1, stroke.Nt): 时刻点
@@ -148,13 +149,13 @@ def calculate_electric_field_down_r_and_z(pt_start, pt_end, stroke, z_channel, i
     Ez_T = np.zeros((stroke.Nt, a00))
 
     line_mid_points = (pt_start + pt_end) / 2
-    channel_mid_points = np.column_stack( (np.full(z_channel.shape[0], stroke.hit_pos[0]), np.full(z_channel.shape[0], stroke.hit_pos[1]), z_channel))
+    channel_mid_points = np.column_stack( (np.full(z_channel.shape[0], channel.hit_pos[0]), np.full(z_channel.shape[0], channel.hit_pos[1]), z_channel))
 
     # 空间距离和时间延迟的计算可以通过矩阵运算来实现
     Rxyz, Rxy, Rz = calculate_distances_between_lineseg_and_channelseg(line_mid_points, channel_mid_points)
 
     # 增加维度，便于广播
-    t_delay = (np.abs(z_channel) / vc / stroke.vcof + Rxyz / vc)
+    t_delay = (np.abs(z_channel) / vc / channel.vcof + Rxyz / vc)
     t_delay_expand = np.tile(t_delay[:, :, np.newaxis], (1, 1, stroke.Nt))  # 变成 (a00, b00, 1)
     t_sr_expand = np.tile(t_sr, (a00, b00, 1))  # 变成 (1, 1, 2000)
 
@@ -170,19 +171,19 @@ def calculate_electric_field_down_r_and_z(pt_start, pt_end, stroke, z_channel, i
     # 根据自由空间和镜像，选择对应的系数计算方式
     if air_or_img == 0:
         # 根据不同的传播模型，选择系数
-        if stroke.channel_model == 'TL':
+        if channel.channel_model == 'TL':
             cof_isr = 1 / (4 * np.pi * ep0)
-        elif stroke.channel_model == 'MTLL':
-            cof_isr = 1 / (4 * np.pi * ep0) * (1 - z_channel / stroke.H)
+        elif channel.channel_model == 'MTLL':
+            cof_isr = 1 / (4 * np.pi * ep0) * (1 - z_channel / channel.H)
         else:
-            cof_isr = 1 / (4 * np.pi * ep0) * np.exp(-z_channel / stroke.lamda)
+            cof_isr = 1 / (4 * np.pi * ep0) * np.exp(-z_channel / channel.lamda)
     else:
-        if stroke.channel_model == 'TL':
+        if channel.channel_model == 'TL':
             cof_isr = 1 / (4 * np.pi * ep0)
-        elif stroke.channel_model == 'MTLL':
-            cof_isr = 1 / (4 * np.pi * ep0) * (1 + z_channel / stroke.H)
+        elif channel.channel_model == 'MTLL':
+            cof_isr = 1 / (4 * np.pi * ep0) * (1 + z_channel / channel.H)
         else:
-            cof_isr = 1 / (4 * np.pi * ep0) * np.exp(-np.abs(z_channel) / stroke.lamda)
+            cof_isr = 1 / (4 * np.pi * ep0) * np.exp(-np.abs(z_channel) / channel.lamda)
 
     dEz_1_cof = cof_isr * (2 * Rz ** 2 - Rxy ** 2) / Rxyz ** 5
     dEz_2_cof = cof_isr * (2 * Rz ** 2 - Rxy ** 2) / Rxyz ** 4 / vc
@@ -230,7 +231,7 @@ def calculate_electric_field_down_r_and_z(pt_start, pt_end, stroke, z_channel, i
     Er = Er.T
     return Ez, Er
 
-def calculate_H_magnetic_field_down_r(pt_start, pt_end, stroke, z_channel, i_sr, t_sr, i_sr_int, i_sr_div, ep0, vc, air_or_img):
+def calculate_H_magnetic_field_down_r(pt_start, pt_end, stroke, channel, z_channel, i_sr, t_sr, i_sr_int, i_sr_div, ep0, vc, air_or_img):
     """
     功能：
     计算雷击影响下，不同时刻，r方向（z方向为0）的自由空间或镜像磁场？
@@ -239,6 +240,7 @@ def calculate_H_magnetic_field_down_r(pt_start, pt_end, stroke, z_channel, i_sr,
     pt_start (np.array, (n, 3)): 导体段的起点坐标，每行代表坐标(x, y, z)
     pt_end (np.array, (n, 3)): 导体段的终点坐标，每行代表坐标(x, y, z)
     stroke (Stroke对象)
+    channel (Channel对象)
     z_channel (list): 每个雷电通道段终点的z坐标列表，从小到大排列
     i_sr (np.array, (1, stroke.Nt): 雷电流时间序列
     t_sr (np.array, (1, stroke.Nt): 时刻点
@@ -259,14 +261,14 @@ def calculate_H_magnetic_field_down_r(pt_start, pt_end, stroke, z_channel, i_sr,
     Ez_T = np.zeros((stroke.Nt, a00))
 
     line_mid_points = (pt_start + pt_end) / 2
-    channel_mid_points = np.column_stack( (np.full(z_channel.shape[0], stroke.hit_pos[0]), np.full(z_channel.shape[0], stroke.hit_pos[1]), z_channel))
+    channel_mid_points = np.column_stack( (np.full(z_channel.shape[0], channel.hit_pos[0]), np.full(z_channel.shape[0], channel.hit_pos[1]), z_channel))
     line_mid_points[:, 2] = 0 # 计算磁场时，不考虑z方向
 
     # 空间距离和时间延迟的计算可以通过矩阵运算来实现
     Rxyz, Rxy, Rz = calculate_distances_between_lineseg_and_channelseg(line_mid_points, channel_mid_points)
 
     # 增加维度，便于广播
-    t_delay = (np.abs(z_channel) / vc / stroke.vcof + Rxyz / vc)
+    t_delay = (np.abs(z_channel) / vc / channel.vcof + Rxyz / vc)
     t_delay_expand = np.tile(t_delay[:, :, np.newaxis], (1, 1, stroke.Nt))  # 变成 (a00, b00, 1)
     t_sr_expand = np.tile(t_sr, (a00, b00, 1))  # 变成 (1, 1, 2000)
 
@@ -282,19 +284,19 @@ def calculate_H_magnetic_field_down_r(pt_start, pt_end, stroke, z_channel, i_sr,
     # 根据自由空间和镜像，选择对应的系数计算方式
     if air_or_img == 0:
         # 根据不同的传播模型，选择系数
-        if stroke.channel_model == 'TL':
+        if channel.channel_model == 'TL':
             cof_isr = 1 / (4 * np.pi * ep0)
-        elif stroke.channel_model == 'MTLL':
-            cof_isr = 1 / (4 * np.pi * ep0) * (1 - z_channel / stroke.H)
+        elif channel.channel_model == 'MTLL':
+            cof_isr = 1 / (4 * np.pi * ep0) * (1 - z_channel / channel.H)
         else:
-            cof_isr = 1 / (4 * np.pi * ep0) * np.exp(-z_channel / stroke.lamda)
+            cof_isr = 1 / (4 * np.pi * ep0) * np.exp(-z_channel / channel.lamda)
     else:
-        if stroke.channel_model == 'TL':
+        if channel.channel_model == 'TL':
             cof_isr = 1 / (4 * np.pi * ep0)
-        elif stroke.channel_model == 'MTLL':
-            cof_isr = 1 / (4 * np.pi * ep0) * (1 + z_channel / stroke.H)
+        elif channel.channel_model == 'MTLL':
+            cof_isr = 1 / (4 * np.pi * ep0) * (1 + z_channel / channel.H)
         else:
-            cof_isr = 1 / (4 * np.pi * ep0) * np.exp(-np.abs(z_channel) / stroke.lamda)
+            cof_isr = 1 / (4 * np.pi * ep0) * np.exp(-np.abs(z_channel) / channel.lamda)
 
     dEr_1_cof = 0 * cof_isr * (3 * Rz * Rxy) / Rxyz ** 5
     dEr_2_cof = cof_isr * (Rxy) / Rxyz ** 3

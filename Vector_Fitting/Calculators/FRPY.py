@@ -2,7 +2,7 @@ import numpy as np
 from scipy.linalg import eig
 from scipy.optimize import minimize
 from Vector_Fitting.Calculators.pr2ss import pr2ss
-from Calculators.fitcalcPRE import fitcalcPRE
+from Vector_Fitting.Calculators.fitcalcPRE import fitcalcPRE
 
 # 暂时注释掉了49行的clear bigA
 def FRPY(SER, s, s2, s3, RPopts):

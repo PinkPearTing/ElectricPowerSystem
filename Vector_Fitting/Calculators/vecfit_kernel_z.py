@@ -1,7 +1,7 @@
 import numpy as np
 import warnings
 import Vector_Fitting.Drivers.RP_Driver as RPdriver
-import Drivers.VF_Driver as VFdriver
+import Vector_Fitting.Drivers.VF_Driver as VFdriver
 import scipy.io
 
 def vecfit_kernel_Z_Ding(Zi, f0, Nfit, vf_mod=None):
@@ -44,7 +44,7 @@ def vecfit_kernel_Z_Ding(Zi, f0, Nfit, vf_mod=None):
 
 
 if __name__ == "__main__":
-    mat_contents = scipy.io.loadmat(r'D:\Documents\a实验室\过电压计算程序\Electronic_model_building-main\Vector_Fitting-main\Data\input.mat')
+    mat_contents = scipy.io.loadmat(r'../Data/input.mat')
     Zi = mat_contents['Zi']
     f0 = mat_contents['f0']
     Nfit = 9

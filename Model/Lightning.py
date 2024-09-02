@@ -25,14 +25,28 @@ class StrokeParameters:
     }
 
 
+class Channel:
+    def __init__(self, hit_pos, model='MTLE'):
+        # 雷电通道相关参数
+        self.height = 1000  # 雷电通道高度
+        self.dh = 10  # 通道段长度
+        self.N_channel_segment = self.height / self.dh  # 雷电通道被划分后的个数
+        self.hit_pos = hit_pos  # 雷击点的坐标
+        self.channel_model = model  # 模型
+        # 与电磁场计算的相关常数，根据模型的不同取不同的值
+        self.H = StrokeParameters.CHANNELMODEL_PARAMETERS[model][0]
+        self.lamda = StrokeParameters.CHANNELMODEL_PARAMETERS[model][1]
+        self.vcof = 1 / StrokeParameters.CHANNELMODEL_PARAMETERS[model][2]
+
+
 class Stroke:
-    def __init__(self, stroke_type: str, duration: float, is_calculated: bool, parameter_set: str, hit_pos: list,
-                 model='MTLE', parameters=None):
+    def __init__(self, stroke_type: str, duration: float, is_calculated: bool, parameter_set: str, parameters=None):
         """
         初始化脉冲对象
 
         参数说明:
         stroke_type (str): 脉冲的类型, 目前只支持 'CIGRE' 和 'Heidler'
+        stroke_sequence (int): 回击的序号
         duration (float): 脉冲持续时间
         is_calculated (bool): 脉冲是否要被计算
         parameter_set (str): 脉冲参数集, 目前只支持 '0.25/100us', '8/20us', '2.6/50us', '10/350us'
@@ -40,29 +54,20 @@ class Stroke:
         model (str): 模型选择
         parameters (list, optional): 脉冲参数, 仅在 'CIGRE' 和 'Heidler' 类型时使用, parameter_set被指定时, 请勿初始化该参数, 如想测试parameter_set之外的参数集, 请在此处初始化参数列表
         """
-        self.dt = 1.0e-8  # 时间步长
-        self.Nt = 1000  # 时间步数
-        self.Nt_0 = 100000  # 每个stroke电流的最大采样点数
-        # self.N_max = 200000  # 最大采样点数
-        self.channel_height = 1000  # 雷电通道高度
-        self.dh = 10  # 每个雷电通道段（元）的长度
-        self.N_channel_segment = self.channel_height / self.dh  # 雷电通道被划分后的个数
-        self.hit_pos = hit_pos  # 雷击点的坐标
-
-        self.channel_model = model  # 模型
-
-        # 与电磁场计算的相关常数，根据模型的不同取不同的值
-        self.H = StrokeParameters.CHANNELMODEL_PARAMETERS[model][0]
-        self.lamda = StrokeParameters.CHANNELMODEL_PARAMETERS[model][1]
-        self.vcof = 1 / StrokeParameters.CHANNELMODEL_PARAMETERS[model][2]
-
-        self.t_us = np.arange(0, self.Nt_0) * self.dt  # 时刻，单位为us
-        self.current_waveform = []  # 雷电流波形的时间序列
-
         self.stroke_type = stroke_type
         self.duration = duration
         self.is_calculated = is_calculated
-        self.stroke_interval = 1.0e-3  # 每个stroke的间隔为1ms
+        # self.dt = 1.0e-8  # 时间步长
+        # self.Nt = 1000  # 时间步数
+        self.Nt = 1000  # 每个stroke电流的最大采样点数
+        # self.N_max = 200000  # 最大采样点数
+
+
+        self.t_us = np.linspace(0, duration, self.Nt)  # 时刻，单位为us
+        self.dt = self.duration / self.Nt
+        self.current_waveform = []  # 雷电流波形的时间序列
+
+        # self.stroke_interval = 1.0e-3  # 每个stroke的间隔为1ms
 
         # parameter_set与parameters二选一传入，最终决定参数列表归属
         if parameter_set:
@@ -79,7 +84,7 @@ class Stroke:
     def cigre_waveform(self, t):
         tn, A, B, n, I1, t1, I2, t2, Ipi, Ipc = self.parameters
         # 初始化电流波形
-        Iout = np.zeros(self.Nt_0)
+        Iout = np.zeros(self.Nt)
         Iout1 = A * t[t <= tn] + B * t[t <= tn] ** n
         Iout2 = I1 * np.exp(-(t[t > tn] - tn) / t1) - I2 * np.exp(-(t[t > tn] - tn) / t2)
         Iout[t <= tn] = Iout1
@@ -101,7 +106,7 @@ class Stroke:
         给电流波形的尾部应用余弦窗，平滑波形
         """
         # 计算尾部应用余弦窗的点数, n的取值与采样点个数和间隔时间有关，后续待修改
-        Ntail = int(np.floor((self.stroke_interval / 10) / self.dt))
+        Ntail = int(np.floor((self.duration / 10) / self.dt))
         # 生成theta值
         theta = np.linspace(0, np.pi, Ntail, endpoint=False)
         # 计算余弦窗
@@ -132,7 +137,7 @@ class Stroke:
 
 
 class Lightning:
-    def __init__(self, id: int, type: str, strokes):
+    def __init__(self, id: int, type: str, strokes, channel):
         """
         初始化雷电对象
 
@@ -151,8 +156,7 @@ class Lightning:
         self.strokes.append(stroke)
         self.stroke_number = len(self.strokes)
 
-
-    def total_waveform(self, t):
+    def total_waveform(self):
         """
         Calculate the total lightning waveform at the given time.
 
@@ -162,15 +166,28 @@ class Lightning:
         Returns:
             float: The value of the total lightning waveform at the given time.
         """
-        total = 0
+        total = []
         for stroke in self.strokes:
-            total += stroke.calculate(t)
+            total.append(stroke.calculate())
+        total = np.concatenate(total, axis=0)
         return total
 
 
 if __name__ == '__main__':
-    stroke = Stroke('Heidler', duration=0.2, is_calculated=True, hit_pos=[0, 0, 0], parameter_set='0.25/100us',
+    stroke1 = Stroke('Heidler', duration=1e-3, is_calculated=True, parameter_set='0.25/100us',
                     parameters=None)
-    m = stroke.calculate()
-    plt.plot(m)
+    stroke2 = Stroke('Heidler', duration=2e-3, is_calculated=True, parameter_set='0.25/100us',
+                    parameters=None)
+    strokes = [stroke1, stroke2]
+    channel = Channel(hit_pos=[50, 500, 0])
+    lightning = Lightning(id=1, type='Indirect', strokes=strokes, channel=channel)
+    t = []
+    last_stroke_duration = 0
+    for stroke in lightning.strokes:
+        t_us = stroke.t_us + last_stroke_duration
+        t.append(t_us)
+        last_stroke_duration = stroke.duration
+    t = np.concatenate(t, axis=0)
+    I = lightning.total_waveform()
+    plt.plot(t, I)
     plt.show()

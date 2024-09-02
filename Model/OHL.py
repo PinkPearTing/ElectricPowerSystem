@@ -12,7 +12,7 @@ class OHL:
         """
         初始化架空线对象。
         name (str): 线的名称
-        info (Info): 自描述信息对象
+        info (TowerInfo): 自描述信息对象
         Phase (str): 线圈相线
         phase_num (int): 线圈相数
         ground(Ground类)：大地类
