@@ -84,6 +84,7 @@ class Network:
         # segment_length = 50  # 预设的参数
         for tower in self.towers:
             tower_building(tower, f0, max_length)
+
         for ohl in self.OHLs:
             OHL_building(ohl, max_length,frq_default)
         for cable in self.cables:
@@ -178,9 +179,67 @@ class Network:
   #          out[:, i + 1] = np.copy(temp_result)[:,0]
    #     self.solution = pd.DataFrame(out, index=self.capacitance_matrix.columns.tolist()+self.inductance_matrix.columns.tolist())
 
-    def update_H(self):
+    def H_calculate_nolinear(self, sources, dt, Nt):
+        """
+        【函数功能】非线性电路求解
+        【入参】
+        ima(numpy.ndarray:Nbran*Nnode)：关联矩阵A（Nbran：支路数，Nnode：节点数）
+        imb(numpy.ndarray:Nbran*Nnode)：关联矩阵B（Nbran：支路数，Nnode：节点数）
+        R(numpy.ndarray:Nbran*Nbran)：电阻矩阵（Nbran：支路数）
+        L(numpy.ndarray:Nbran*Nbran)：电感矩阵（Nbran：支路数）
+        G(numpy.ndarray:Nnode*Nnode)：电导矩阵（Nnode：节点数）
+        C(numpy.ndarray:Nnode*Nnode)：电容矩阵（Nnode：节点数）
+        sources(numpy.ndarray:(Nbran+Nnode)*Nt)：电源矩阵（Nbran：支路数，Nnode：节点数）
+        dt(float)：步长
+        Nt(int)：计算总次数
 
-        print("更新H矩阵",self.H)
+        【出参】
+        out(numpy.ndarray:(Nbran+Nnode)*Nt)：计算结果矩阵（Nbran：支路数，Nnode：节点数）
+        """
+
+        branches, nodes = self.incidence_matrix_A.shape
+        out = np.zeros((branches + nodes, Nt))
+
+        # source = np.array(sources)
+        for i in range(Nt - 1):
+            C = self.capacitance_matrix.to_numpy()  # 点点
+            G = self.conductance_matrix.to_numpy()
+            L = self.inductance_matrix.to_numpy() # 线线
+            R = self.resistance_matrix.to_numpy()
+            ima = self.incidence_matrix_A.to_numpy()  # 线点
+            imb = self.incidence_matrix_B.T.to_numpy()  # 点线
+            Vnode = out[:nodes, i].reshape((-1, 1))
+            Ibran = out[nodes:, i].reshape((-1, 1))
+            # Isource = source[:,i].reshape((-1,1))
+            LEFT = np.block([[-ima, -R - L / dt], [G + C / dt, -imb]])
+            inv_LEFT = np.linalg.inv(LEFT)
+            RIGHT = np.block([[(-L / dt).dot(Ibran)], [(C / dt).dot(Vnode)]])
+
+            # temp_result = inv_LEFT.dot(Isource + RIGHT)
+            temp_result = inv_LEFT.dot(RIGHT)
+            out[:, i + 1] = np.copy(temp_result)[:, 0]
+            temp_result = pd.DataFrame(temp_result,
+                                         index=self.capacitance_matrix.columns.tolist() + self.inductance_matrix.columns.tolist())
+            self.update_H(temp_result)
+
+        self.solution = pd.DataFrame(out, index=self.capacitance_matrix.columns.tolist()+self.inductance_matrix.columns.tolist())
+
+    def update_H(self, current_result):
+        for tower in self.towers:
+            for ith, lumps in enumerate([tower.lump] + tower.devices.insulators+ tower.devices.arrestors+ tower.devices.transformers):
+                for component in lumps.switch_disruptive_effect_models:
+                    v1 = current_result.loc[component.node1, 0] if component.node1 != 'ref' else 0
+                    v2 = current_result.loc[component.node2, 0] if component.node2 != 'ref' else 0
+
+                    resistance = component.disruptive_effect_calculate(v1, v2)
+                    self.resistance_matrix[component.bran, component.bran] = resistance
+
+
+
+
+
+
+        # print("更新H矩阵",self.H)
 
     def run(self,file_name):
         frq = np.concatenate([
@@ -204,13 +263,14 @@ class Network:
         #network.initialize_source(file_name)
         #source = network.sources
         source = 0
-        network.H_calculate(source,dt,Nt)
+        network.H_calculate_nolinear(source, dt, Nt)
+        # network.H_calculate(source,dt,Nt)
         #print(x)
         #print(source)
 
 if __name__ == '__main__':
     # 1. 接收到创建新电网指令
-    file_name = "wire_connnect_ground"
+    file_name = "lump_connnect_ground"
     network = Network()
     network.run(file_name)
 

@@ -1080,7 +1080,7 @@ class Switch_Disruptive_Effect_Model(Component):
             v_initial(float): 闪络过程的起始电压。
             k(float): 经验常数。
         """
-        self.on_off = -1  # -1开关闭合，1开关断开
+        self.on_off = 1  # -1 开关闭合，1 开关断开
         self.DE = 0
         super().__init__(name, bran, node1, node2,
                          {"resistance": resistance, "type_of_data": type_of_data, "DE_max": DE_max,
@@ -1092,8 +1092,8 @@ class Switch_Disruptive_Effect_Model(Component):
         【入参】
         ima(pandas.Dataframe:Nbran*Nnode)：关联矩阵A（Nbran：支路数，Nnode：节点数）
         '''
-        super().assign_incidence_matrix_value(ima, self.bran[0], self.node1[0], -1)
-        super().assign_incidence_matrix_value(ima, self.bran[0], self.node2[0], 1)
+        super().assign_incidence_matrix_value(ima, self.bran, self.node1, -1)
+        super().assign_incidence_matrix_value(ima, self.bran, self.node2, 1)
 
     def imb_parameter_assign(self, imb):
         '''
@@ -1101,8 +1101,16 @@ class Switch_Disruptive_Effect_Model(Component):
         【入参】
         imb(pandas.Dataframe:Nbran*Nnode)：关联矩阵B（Nbran：支路数，Nnode：节点数）
         '''
-        super().assign_incidence_matrix_value(imb, self.bran[0], self.node1[0], -1)
-        super().assign_incidence_matrix_value(imb, self.bran[0], self.node2[0], 1)
+        super().assign_incidence_matrix_value(imb, self.bran, self.node1, -1)
+        super().assign_incidence_matrix_value(imb, self.bran, self.node2, 1)
+
+    def r_parameter_assign(self, r):
+        '''
+        【函数功能】电阻参数分配
+        【入参】
+        r(pandas.Dataframe:Nbran*Nbran)：电阻矩阵（Nbran：支路数）
+        '''
+        r.loc[self.bran, self.bran] = self.parameters['resistance']
 
     def disruptive_effect_calculate(self, v_primary, v_secondary):
         '''
@@ -1116,7 +1124,8 @@ class Switch_Disruptive_Effect_Model(Component):
             self.DE += (voltage - self.parameters['v_initial']) ** self.parameters['k']
 
         if self.DE >= self.parameters['DE_max']:
-            self.on_off = 1
+            self.on_off = -1
+        return 10 ** (self.on_off * 6)
 
 
 class Measurement:
@@ -1824,7 +1833,7 @@ class Lumps:
 
         for component_list in [self.a2gs, self.resistor_inductors, self.conductor_capacitors, self.current_sources_cosine,
                                self.current_sources_empirical, self.voltage_sources_cosine,
-                               self.voltage_sources_empirical]:
+                               self.voltage_sources_empirical, self.nolinear_elements, self.switch_disruptive_effect_models]:
             for component in component_list:
                 all_nodes[component.node1] = True
                 all_nodes[component.node2] = True
@@ -2084,7 +2093,7 @@ class Lumps:
                 self.voltage_control_voltage_sources + self.current_control_voltage_sources +
                 self.voltage_control_current_sources + self.transformers_one_phase + self.transformers_three_phase +
                 self.a2gs + self.voltage_sources_empirical + self.voltage_sources_cosine +
-                self.nolinear_elements):
+                self.nolinear_elements + self.switch_disruptive_effect_models):
             component.ima_parameter_assign(self.incidence_matrix_A)
             component.imb_parameter_assign(self.incidence_matrix_B)
             component.r_parameter_assign(self.resistance_matrix)

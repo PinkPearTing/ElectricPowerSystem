@@ -5,7 +5,8 @@ from Model.Lump import Lumps, Resistor_Inductor, Measurement_Linear, Conductor_C
     Voltage_Source_Cosine, Voltage_Source_Empirical, Current_Source_Cosine, Str2matrix, Current_Source_Empirical, \
     Voltage_Control_Voltage_Source, Current_Control_Voltage_Source, Voltage_Control_Current_Source, \
     Current_Control_Current_Source, Transformer_One_Phase, Transformer_Three_Phase, Mutual_Inductance_Two_Port, \
-    Mutual_Inductance_Three_Port, Nolinear_Resistor, Nolinear_F, Voltage_Controled_Switch, Time_Controled_Switch, A2G
+    Mutual_Inductance_Three_Port, Nolinear_Resistor, Nolinear_F, Voltage_Controled_Switch, Time_Controled_Switch, A2G, \
+    Switch_Disruptive_Effect_Model, Nolinear_Element, Nolinear_Element_Parameters
 from Model.Node import Node
 from Model.Wires import Wire, Wires, CoreWire, TubeWire
 from Model.Ground import Ground
@@ -17,6 +18,7 @@ from Function.Calculators.InducedVoltage_calculate import InducedVoltage_calcula
 import pandas as pd
 from Model.Cable import Cable
 from Model.Info import TowerInfo,OHLInfo, CableInfo
+from Model.Device import Devices
 
 
 # initialize wire in tower
@@ -147,13 +149,16 @@ def initialize_tower(tower_dict, max_length):
     # 3. initialize lumps
     lumps = initial_lump(tower_dict['Lump'])
 
-    # 4. information of tower
+    # 4. initialize devices
+    devices = initial_device(tower_dict['Device'])
+
+    # 5. information of tower
     tower_info = tower_dict['Info']
     info = TowerInfo(tower_info['name'],tower_info['id'],tower_info['type'],tower_info['position'],tower_info['Vclass'],
          tower_info['Theta'],tower_info['mode_con'],tower_info['mode_gnd'], tower_info['pole_height'], tower_info['pole_head'])
 
-    # 4. initalize tower
-    tower = Tower(tower_dict['name'], info, wires, tube_wire, lumps, ground, None, None)
+    # 6. initalize tower
+    tower = Tower(tower_dict['name'], info, wires, tube_wire, lumps, ground, devices, None)
     print(f"Tower:{tower.name} loaded.")
     return tower
 
@@ -426,6 +431,19 @@ def initial_lump(lump_data):
                 if str(probe) != 'nan':
                     lumps.measurements.add_measurement_linear(
                         Measurement_Linear(name, bran_name, node1, node2, probe))
+            case "swh":
+                resistance = lump['value1']
+                pointer = lump['pointer']
+                if pointer == 'SWH01':
+                    DE_max = 140.4e3
+                    v_initial = 168.6e3
+                    k = 1
+                else:
+                    DE_max = lump['value2']
+                    v_initial = lump['value3']
+                    k = lump['value4']
+                lumps.add_switch_disruptive_effect_model(
+                    Switch_Disruptive_Effect_Model(name, bran_name, node1, node2, resistance, 0, DE_max, v_initial, k))
 
     lumps.brans_nodes_list_initial()
     lumps.lump_parameter_matrix_initial()
@@ -435,6 +453,21 @@ def initial_lump(lump_data):
     lumps.lump_current_source_matrix_initial(T, dt)
     #print_lumps(lumps)
     return lumps
+
+def initial_device(device_data):
+    devices = Devices()
+
+    for device in device_data:
+        lumps = initial_lump(device['Lump'])
+        if device['type'] == 'insulator':
+            devices.add_insolator(lumps)
+        elif device['type'] == 'arrestor':
+            devices.add_arrestor(lumps)
+        elif device['type'] == 'transformer':
+            devices.add_transformer(lumps)
+    # d = data.shape[0]
+
+    return devices
 
 def initial_source(network, nodes, file_name):
     json_file_path = "../Data/" + file_name + ".json"

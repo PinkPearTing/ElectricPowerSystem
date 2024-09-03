@@ -8,7 +8,7 @@ sys.path.append(curPath)
 from Info import Info
 from Wires import Wires, TubeWire
 from Ground import Ground
-from Device import Device
+from Device import Devices
 from Node import MeasurementNode
 import numpy as np
 from scipy.linalg import block_diag
@@ -16,7 +16,7 @@ from Utils.Matrix import expand_matrix, copy_and_expand_matrix, update_matrix, u
 
 
 class Tower:
-    def __init__(self, name, Info, Wires: Wires, tubeWire: TubeWire, Lump, Ground: Ground, Device: Device,
+    def __init__(self, name, Info, Wires: Wires, tubeWire: TubeWire, Lump, Ground: Ground, Devices: Devices,
                  MeasurementNode: MeasurementNode):
         """
         初始化杆塔对象
@@ -45,7 +45,7 @@ class Tower:
         self.tubeWire = tubeWire
         self.lump = Lump
         self.ground = Ground
-        self.device = Device
+        self.devices = Devices
         self.measurementNode = MeasurementNode
         self.nodesList = Wires.get_node_names()
         self.nodesPositions = Wires.get_node_coordinates()
@@ -67,10 +67,9 @@ class Tower:
         self.capacitance_matrix = np.zeros((self.wires.count_distinct_points(), self.wires.count_distinct_points()))
 
         # 电导矩阵
-        self.conductance_matrix = np.zeros((self.wires.count_distinct_airPoints() + self.wires.count_distinct_gndPoints(),
-                                          self.wires.count_distinct_airPoints() + self.wires.count_distinct_gndPoints()))
-
-
+        self.conductance_matrix = np.zeros(
+            (self.wires.count_distinct_airPoints() + self.wires.count_distinct_gndPoints(),
+             self.wires.count_distinct_airPoints() + self.wires.count_distinct_gndPoints()))
 
     def initialize_incidence_matrix(self):
         """
@@ -171,14 +170,16 @@ class Tower:
             Lss = Lin[0, 0] + sheath_inductance_matrix[i, i]
             # L0+Lx+Lss的最终结果 更新到表皮和芯线的自感和互感位置上去
             self.inductance_matrix = update_matrix(self.inductance_matrix, index, L0 + Lx + Lss)
-            index = [x + y for x, y in zip(index, increment)] # index+increment就是下一条管状线段的表皮和芯线的索引
+            index = [x + y for x, y in zip(index, increment)]  # index+increment就是下一条管状线段的表皮和芯线的索引
 
         return L0
-    
+
     def expand_resistance_matrix(self):
         # 扩展电阻矩阵
-        coreWires_resistance_matrix = np.zeros((len(self.wires.tube_wires) * (self.wires.tube_wires[0].inner_num), len(self.wires.tube_wires) * (self.wires.tube_wires[0].inner_num)))
-        self.resistance_matrix = block_diag(self.resistance_matrix, coreWires_resistance_matrix) # 增加芯线的电阻矩阵，此处只做扩充，不做芯线本身的电阻填充
+        coreWires_resistance_matrix = np.zeros((len(self.wires.tube_wires) * (self.wires.tube_wires[0].inner_num),
+                                                len(self.wires.tube_wires) * (self.wires.tube_wires[0].inner_num)))
+        self.resistance_matrix = block_diag(self.resistance_matrix,
+                                            coreWires_resistance_matrix)  # 增加芯线的电阻矩阵，此处只做扩充，不做芯线本身的电阻填充
 
     def update_resistance_matrix_by_tubeWires(self, Rin, Rx):
         # 与电感矩阵更新逻辑相同
@@ -187,7 +188,7 @@ class Tower:
 
         R0 = Rin.copy()
         R0[0, 0] = 0
-        Rss = Rin[0, 0] # 此处与电感矩阵更新过程不同，此处不需要表皮的单位电阻
+        Rss = Rin[0, 0]  # 此处与电感矩阵更新过程不同，此处不需要表皮的单位电阻
         for i in range(len(self.wires.tube_wires)):
             self.resistance_matrix = update_matrix(self.resistance_matrix, index, R0 + Rx + Rss)
             index = [x + y for x, y in zip(index, increment)]
@@ -198,16 +199,17 @@ class Tower:
         indices = self.wires.get_tubeWires_points_index()
         for i in range(len(indices)):
             # 将C矩阵相应位置的点 更新为C0相应位置的数据
-            self.capacitance_matrix = update_matrix(self.capacitance_matrix, indices[i], 0.5*C0 if i==0 or i==len(indices)-1 else C0)#与外界相连接的部分，需要折半
+            self.capacitance_matrix = update_matrix(self.capacitance_matrix, indices[i], 0.5 * C0 if i == 0 or i == len(
+                indices) - 1 else C0)  # 与外界相连接的部分，需要折半
 
     def combine_parameter_matrix(self):
         """
         【函数功能】 合并Lumps和Tower的参数矩阵
         """
-        #获取线名称列表
+        # 获取线名称列表
         wire_name_list = self.wires_name
 
-        #获取节点名称列表
+        # 获取节点名称列表
         node_name_list = self.wires.get_all_nodes()
 
         df_A = pd.DataFrame(self.incidence_matrix, index=wire_name_list, columns=node_name_list)
@@ -223,7 +225,63 @@ class Tower:
         self.capacitance_matrix = df_C.add(self.lump.capacitance_matrix, fill_value=0).fillna(0)
         self.conductance_matrix = df_G.add(self.lump.conductance_matrix, fill_value=0).fillna(0)
 
+        del df_A
+        del df_R
+        del df_L
+        del df_G
+        del df_C
 
+        for device_list in [self.devices.insulators, self.devices.arrestors, self.devices.transformers]:
+            for device in device_list:
+                self.incidence_matrix_A = self.incidence_matrix_A.add(device.incidence_matrix_A,
+                                                                      fill_value=0).fillna(0)
+                self.incidence_matrix_B = self.incidence_matrix_B.add(device.incidence_matrix_B,
+                                                                      fill_value=0).fillna(0)
+                self.resistance_matrix = self.resistance_matrix.add(device.resistance_matrix, fill_value=0).fillna(0)
+                self.inductance_matrix = self.inductance_matrix.add(device.inductance_matrix, fill_value=0).fillna(0)
+                self.capacitance_matrix = self.capacitance_matrix.add(device.capacitance_matrix,
+                                                                      fill_value=0).fillna(0)
+                self.conductance_matrix = self.conductance_matrix.add(device.conductance_matrix,
+                                                                      fill_value=0).fillna(0)
 
+    def parameter_matrix_update(self):
+        """
+        【函数功能】 合并Lumps和Tower的参数矩阵
+        """
+        # 获取线名称列表
+        wire_name_list = self.wires_name
 
+        # 获取节点名称列表
+        node_name_list = self.wires.get_all_nodes()
 
+        df_A = pd.DataFrame(self.incidence_matrix, index=wire_name_list, columns=node_name_list)
+        df_R = pd.DataFrame(self.resistance_matrix, index=wire_name_list, columns=wire_name_list)
+        df_L = pd.DataFrame(self.inductance_matrix, index=wire_name_list, columns=wire_name_list)
+        df_C = pd.DataFrame(self.capacitance_matrix, index=node_name_list, columns=node_name_list)
+        df_G = pd.DataFrame(self.conductance_matrix, index=node_name_list, columns=node_name_list)
+
+        self.incidence_matrix_A = df_A.add(self.lump.incidence_matrix_A, fill_value=0).fillna(0)
+        self.incidence_matrix_B = df_A.add(self.lump.incidence_matrix_B, fill_value=0).fillna(0)
+        self.resistance_matrix = df_R.add(self.lump.resistance_matrix, fill_value=0).fillna(0)
+        self.inductance_matrix = df_L.add(self.lump.inductance_matrix, fill_value=0).fillna(0)
+        self.capacitance_matrix = df_C.add(self.lump.capacitance_matrix, fill_value=0).fillna(0)
+        self.conductance_matrix = df_G.add(self.lump.conductance_matrix, fill_value=0).fillna(0)
+
+        del df_A
+        del df_R
+        del df_L
+        del df_G
+        del df_C
+
+        for device_list in [self.devices.insulators, self.devices.arrestors, self.devices.transformers]:
+            for device in device_list:
+                self.incidence_matrix_A = self.incidence_matrix_A.add(device.incidence_matrix_A,
+                                                                      fill_value=0).fillna(0)
+                self.incidence_matrix_B = self.incidence_matrix_B.add(device.incidence_matrix_B,
+                                                                      fill_value=0).fillna(0)
+                self.resistance_matrix = self.resistance_matrix.add(device.resistance_matrix, fill_value=0).fillna(0)
+                self.inductance_matrix = self.inductance_matrix.add(device.inductance_matrix, fill_value=0).fillna(0)
+                self.capacitance_matrix = self.capacitance_matrix.add(device.capacitance_matrix,
+                                                                      fill_value=0).fillna(0)
+                self.conductance_matrix = self.conductance_matrix.add(device.conductance_matrix,
+                                                                      fill_value=0).fillna(0)

@@ -500,7 +500,7 @@ def calculate_wires_inductance_potential_with_ground(wires, ground, constants):
         pf2[:, 2] = -pf2[:, 2]  # image for gnd segments
 
         # 计算tmp  
-        tmp = pf1[:, 2] + pf2[:, 2]  # 注意MATLAB的索引从1开始，Python从0开始，所以这里是[:, 2]
+        tmp = 0.5 * abs(pf1[:, 2] + pf2[:, 2])  # 注意MATLAB的索引从1开始，Python从0开始，所以这里是[:, 2]
         
         # 遍历tmp和rs的索引
 
@@ -508,10 +508,10 @@ def calculate_wires_inductance_potential_with_ground(wires, ground, constants):
         #     pf1[:, 2] = -2 * max(radii)
         #     pf2[:, 2] = -2 * max(radii) #改1
 
-        # for ik in range(len(tmp)):
-        #     if tmp[ik] < radii[ik]:
-        #         pf1[ik, 2] = -2.2 * radii[ik]  # 设置间隔为2*rs
-        #         pf2[ik, 2] = -2.2 * radii[ik]  # 设置间隔为2*rs #源
+        for ik in range(len(tmp)):
+            if tmp[ik] < radii[ik]:
+                pf1[ik, 2] = -2.2 * radii[ik]  # 设置间隔为2*rs
+                pf2[ik, 2] = -2.2 * radii[ik]  # 设置间隔为2*rs #源
 
         # L and P matrices for air and gnd segments
         Lai = calculate_inductance(start_points[rb1, :], end_points[rb1, :], radii[rb1, 0], pf1[rb1, :], pf2[rb1, :], radii[rb1, 0])
