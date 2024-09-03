@@ -1,12 +1,12 @@
 import json
 import numpy as np
 import copy
-from Model.Lump import Lumps, Resistor_Inductor, Measurement_Linear, Conductor_Capacitor, Measurement_GC, \
-    Voltage_Source_Cosine, Voltage_Source_Empirical, Current_Source_Cosine, Str2matrix, Current_Source_Empirical, \
+from Model.Lump import Lumps, Resistor_Inductor, Conductor_Capacitor, \
+    Voltage_Source_Cosine, Voltage_Source_Empirical, Current_Source_Cosine, Current_Source_Empirical, \
     Voltage_Control_Voltage_Source, Current_Control_Voltage_Source, Voltage_Control_Current_Source, \
     Current_Control_Current_Source, Transformer_One_Phase, Transformer_Three_Phase, Mutual_Inductance_Two_Port, \
     Mutual_Inductance_Three_Port, Nolinear_Resistor, Nolinear_F, Voltage_Controled_Switch, Time_Controled_Switch, A2G, \
-    Switch_Disruptive_Effect_Model, Nolinear_Element, Nolinear_Element_Parameters
+    Switch_Disruptive_Effect_Model, Nolinear_Element_Parameters
 from Model.Node import Node
 from Model.Wires import Wire, Wires, CoreWire, TubeWire
 from Model.Ground import Ground
@@ -103,7 +103,7 @@ def initialize_ground(ground_dic):
     return Ground(sig, mur, epr, model, ionisation_intensity, ionisation_model)
 
 
-def initialize_tower(tower_dict, max_length):
+def initialize_tower(tower_dict, max_length, dt, T):
 
 
     # tower_dict['Wire']
@@ -147,10 +147,10 @@ def initialize_tower(tower_dict, max_length):
     ground = initialize_ground(ground_dic)
 
     # 3. initialize lumps
-    lumps = initial_lump(tower_dict['Lump'])
+    lumps = initial_lump(tower_dict['Lump'], dt, T)
 
     # 4. initialize devices
-    devices = initial_device(tower_dict['Device'])
+    devices = initial_device(tower_dict['Device'], dt, T)
 
     # 5. information of tower
     tower_info = tower_dict['Info']
@@ -204,43 +204,31 @@ def initialize_measurement(file_name):
     with open(json_file_path, 'r') as j:
         load_dict = json.load(j)
 
-def initial_lump(lump_data):
-    dt = 1e-6
-    T = 0.001
+def initial_lump(lump_data, dt, T):
     Nt = int(np.ceil(T / dt))
-    # Nbran = Bran['num'][0]
-    # Nnode = Node['num'][0]
-    # nodebran_n = np.copy(data[:, 2:5])
-    # nodebran_id = NodeBranIndex_Update(Node, Bran, data[:, 2:5])
 
     lumps = Lumps()
-    # d = data.shape[0]
+
+    nolinear_parameters = Nolinear_Element_Parameters()
+
     for lump in lump_data:
         lump_type = lump['Type']
         name = lump['name']
-        bran_name = lump['bran_name']
-        node1= lump['node1']
-        node2= lump['node2']
+        bran_name = np.array([lump['bran_name']]).reshape(-1)
+        node1 = np.array([lump['node1']]).reshape(-1)
+        node2 = np.array([lump['node2']]).reshape(-1)
+        # 判断器件类型
         match lump_type:
             case 'RL':
                 resistance = lump['value1']
                 inductance = lump['value2']
                 lumps.add_resistor_inductor(
                     Resistor_Inductor(name, bran_name, node1, node2, resistance, inductance))
-                probe = lump['probe']
-                if str(probe) != 'nan':
-                    lumps.measurements.add_measurement_linear(
-                        Measurement_Linear(name, bran_name, node1, node2, probe))
             case 'GC':
                 conductance = lump['value1']
                 capacitance = lump['value2']
                 lumps.add_conductor_capacitor(
                     Conductor_Capacitor(name, bran_name, node1, node2,  conductance, capacitance))
-
-                probe = lump['probe']
-                if str(probe) != 'nan':
-                    lumps.measurements.add_measurement_gc(
-                        Measurement_GC(name, bran_name, node1, node2,  probe, conductance, capacitance))
             case 'Vs':
                 type_of_data = lump['data_type']
                 resistance = lump['value1']
@@ -252,14 +240,9 @@ def initial_lump(lump_data):
                         Voltage_Source_Cosine(name, bran_name, node1, node2, resistance, magnitude, frequency,
                                               angle))
                 elif type_of_data == 0:
-                    voltages = Str2matrix(lump['value2'])
+                    voltages = np.array(lump['value2'])
                     lumps.add_voltage_source_empirical(
                         Voltage_Source_Empirical(name, bran_name, node1, node2,  resistance, voltages))
-
-                probe = ['prob']
-                if str(probe) != 'nan':
-                    lumps.measurements.add_measurement_linear(
-                        Measurement_Linear(name, bran_name, node1, node2, probe))
             case 'Is':
                 type_of_data = lump['data_type']
                 if type_of_data > 0:
@@ -269,126 +252,71 @@ def initial_lump(lump_data):
                     lumps.add_current_source_cosine(
                         Current_Source_Cosine(name, bran_name, node1, node2, magnitude, frequency, angle))
                 elif type_of_data == 0:
-                    currents = Str2matrix(lump['value2'])
+                    currents = np.array(lump['value2'])
                     lumps.add_current_source_empirical(
                         Current_Source_Empirical(name, bran_name, node1, node2, currents))
-
-                probe = lump['probe']
-                if str(probe) != 'nan':
-                    lumps.measurements.add_measurement_linear(
-                        Measurement_Linear(name, bran_name, node1, node2, probe))
             case 'VCVS':
                 resistance = lump['value1'][0]
                 gain = lump['value1'][1]
                 lumps.add_voltage_control_voltage_source(
                     Voltage_Control_Voltage_Source(name, bran_name, node1, node2, resistance, gain))
-                probe = lump['probe']
-                for ith_probe in range(2):
-                    if str(probe) != 'nan':
-                        lumps.measurements.add_measurement_linear(
-                            Measurement_Linear(name,bran_name[ith_probe], node1[ith_probe],
-                                               node2[ith_probe], probe[ith_probe]))
             case 'ICVS':
                 resistance = lump['value1'][0]
                 r = lump['value1'][1]
                 lumps.add_current_control_voltage_source(
                     Current_Control_Voltage_Source(name, bran_name, node1, node2, resistance, r))
-                probe = lump['probe']
-
-                for ith_probe in range(2):
-                    if str(probe) != 'nan':
-                        lumps.measurements.add_measurement_linear(
-                            Measurement_Linear(name + '_{}'.format(ith_probe), bran_name[ith_probe],
-                                               node1[ith_probe], node2[ith_probe], probe[ith_probe]))
             case 'VCIS':
                 g = lump['value1'][1]
                 lumps.add_voltage_control_current_source(
                     Voltage_Control_Current_Source(name, bran_name, node1, node2, g))
-                probe = lump['probe']
-                for ith_probe in range(2):
-                    if str(probe) != 'nan':
-                        lumps.measurements.add_measurement_linear(
-                            Measurement_Linear(name + '_{}'.format(ith_probe), bran_name[ith_probe], node1[ith_probe],
-                                               node2[ith_probe], probe))
             case 'ICIS':
                 gain = lump['value1'][1]
                 lumps.add_current_control_current_source(
                     Current_Control_Current_Source(name, bran_name, node1, node2, gain))
-                probe = lump['probe']
-                for ith_probe in range(2):
-                    if str(probe) != 'nan':
-                        lumps.measurements.add_measurement_linear(
-                            Measurement_Linear(name + '_{}'.format(ith_probe), bran_name[ith_probe], node1[ith_probe],
-                                               node2[ith_probe], probe))
             case 'TX2':
                 vpri = lump['value1'][0]
                 vsec = lump['value2'][0]
                 lumps.add_transformer_one_phase(
                     Transformer_One_Phase(name, bran_name, node1, node2, vpri, vsec))
-                probe = lump['probe']
-                for ith_probe in range(2):
-                    if str(probe) != 'nan':
-                        lumps.measurements.add_measurement_linear(
-                            Measurement_Linear(name + '_{}'.format(ith_probe), bran_name[ith_probe], node1[ith_probe],
-                                               node2[ith_probe], probe))
             case 'TX3':
-
                 vpri = lump['value1'][0]
                 vsec = lump['value2'][0]
                 lumps.add_transformer_three_phase(
                     Transformer_Three_Phase(name, bran_name, node1, node2, vpri, vsec))
-                probe = lump['probe']
-                for ith_probe in range(6):
-                    if str(probe) != 'nan':
-                        lumps.measurements.add_measurement_linear(
-                            Measurement_Linear(name + '_{}'.format(ith_probe), bran_name[ith_probe], node1[ith_probe],
-                                               node2[ith_probe], probe))
             case 'M2':
                 resistance = lump['value1']
-                inductance = Str2matrix(lump['value1'][0])
+                inductance = np.array(lump['value1'][0])
                 lumps.add_mutual_inductor_two_port(
                     Mutual_Inductance_Two_Port(name, bran_name, node1, node2, resistance, inductance))
-                probe = lump['probe']
-                for ith_probe in range(2):
-                    if str(probe) != 'nan':
-                        lumps.measurements.add_measurement_linear(
-                            Measurement_Linear(name + '_{}'.format(ith_probe), bran_name[ith_probe], node1[ith_probe],
-                                               node2[ith_probe], probe))
             case 'M3':
                 resistance = lump['value1']
 
-                inductance = Str2matrix(lump['value2'][0])
+                inductance = np.array(lump['value2'][0])
                 lumps.add_mutual_inductor_three_port(
                     Mutual_Inductance_Three_Port(name, bran_name, node1, node2, resistance, inductance))
-                probe = lump['probe']
-                for ith_probe in range(3):
-                    if str(probe) != 'nan':
-                        lumps.measurements.add_measurement_linear(
-                            Measurement_Linear(name + '_{}'.format(ith_probe), bran_name[ith_probe], node1[ith_probe],
-                                               node2[ith_probe], probe))
             case 'NLR':
-
                 resistance = lump['value1']
-                vi_characteristic = Str2matrix(lump['value3'])
+                pointer = lump['pointer']
+                if pointer == 'NLE01':
+                    vi_characteristic = nolinear_parameters.NLE01['vi_characteristics']
+                    ri_characteristic = nolinear_parameters.NLE01['ri_characteristics']
+                elif pointer == 'NLE02':
+                    vi_characteristic = nolinear_parameters.NLE02['vi_characteristics']
+                    ri_characteristic = nolinear_parameters.NLE02['ri_characteristics']
+                else:
+                    vi_characteristic = np.array(lump['value2'])
+                    ri_characteristic = np.array(lump['value3'])
+
                 type_of_data = lump['data_type']
                 lumps.add_nolinear_resistor(
-                    Nolinear_Resistor(name, bran_name, node1, node2, resistance, vi_characteristic, type_of_data))
-
-                probe = lump['probe']
-                if str(probe) != 'nan':
-                    lumps.measurements.add_measurement_linear(
-                        Measurement_Linear(name, bran_name, node1, node2, probe))
+                    Nolinear_Resistor(name, bran_name, node1, node2, resistance, vi_characteristic, ri_characteristic,
+                                      type_of_data))
             case 'NLF':
                 inductance = lump['value2']
-                bh_characteristic = Str2matrix(lump['value3'])
+                bh_characteristic = np.array(lump['value3'])
                 type_of_data = lump['data_type']
                 lumps.add_nolinear_f(
                     Nolinear_F(name, bran_name, node1, node2, inductance, bh_characteristic, type_of_data))
-
-                probe = lump['probe']
-                if str(probe) != 'nan':
-                    lumps.measurements.add_measurement_linear(
-                        Measurement_Linear(name, bran_name, node1, node2, probe))
             case 'SWV':
 
                 resistance = lump['value1']
@@ -396,41 +324,21 @@ def initial_lump(lump_data):
                 type_of_data = lump['data_type']
                 lumps.add_voltage_controled_switch(
                     Voltage_Controled_Switch(name, bran_name, node1, node2, resistance, voltage, type_of_data))
-
-                probe = lump['probe']
-                if str(probe) != 'nan':
-                    lumps.measurements.add_measurement_linear(
-                        Measurement_Linear(name, bran_name, node1, node2, probe))
             case 'SWT':
                 close_time = lump['value1']
                 open_time = lump['value2']
                 type_of_data = lump['data_type']
                 lumps.add_time_controled_switch(
                     Time_Controled_Switch(name, bran_name, node1, node2, close_time, open_time, type_of_data))
-
-                probe = lump['probe']
-                if str(probe) != 'nan':
-                    lumps.measurements.add_measurement_linear(
-                        Measurement_Linear(name, bran_name, node1, node2, probe))
             case 'A2G':
                 resistance = lump['value1']
                 lumps.add_a2g(
                     A2G(name, bran_name, node1, node2, resistance))
-
-                probe = lump['probe']
-                if str(probe) != 'nan':
-                    lumps.measurements.add_measurement_linear(
-                        Measurement_Linear(name, bran_name, node1, node2, probe))
             case 'GOD':
                 resistance = lump['value1']
                 inductance = lump['value2']
                 lumps.add_a2g(
                     Ground(name, bran_name, node1, node2, resistance, inductance))
-
-                probe = lump['probe']
-                if str(probe) != 'nan':
-                    lumps.measurements.add_measurement_linear(
-                        Measurement_Linear(name, bran_name, node1, node2, probe))
             case "swh":
                 resistance = lump['value1']
                 pointer = lump['pointer']
@@ -444,21 +352,23 @@ def initial_lump(lump_data):
                     k = lump['value4']
                 lumps.add_switch_disruptive_effect_model(
                     Switch_Disruptive_Effect_Model(name, bran_name, node1, node2, resistance, 0, DE_max, v_initial, k))
-
+    # 获取器件不重复的支路列表和节点列表
     lumps.brans_nodes_list_initial()
+    # 初始化Lumps参数矩阵
     lumps.lump_parameter_matrix_initial()
-    lumps.lump_measurement_initial(Nt)
+    # 将器件的参数分配到参数矩阵中
     lumps.parameters_assign()
+    # 初始化Lumps电压矩阵
     lumps.lump_voltage_source_matrix_initial(T, dt)
+    # 初始化Lumps电流矩阵
     lumps.lump_current_source_matrix_initial(T, dt)
-    #print_lumps(lumps)
     return lumps
 
-def initial_device(device_data):
+def initial_device(device_data, dt, T):
     devices = Devices()
 
     for device in device_data:
-        lumps = initial_lump(device['Lump'])
+        lumps = initial_lump(device['Lump'], dt, T)
         if device['type'] == 'insulator':
             devices.add_insolator(lumps)
         elif device['type'] == 'arrestor':
