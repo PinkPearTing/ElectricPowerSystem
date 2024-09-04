@@ -37,7 +37,7 @@ class Network:
         self.voltage_source_matrix = pd.DataFrame()
         self.current_source_matrix = pd.DataFrame()
         self.solution_type = {
-            'linear': True,
+            'linear': False,
             'constant_step': True,
             'variable_frequency': False
         }
@@ -237,20 +237,21 @@ class Network:
             for ith, lumps in enumerate(
                     [tower.lump] + tower.devices.insulators + tower.devices.arrestors + tower.devices.transformers):
                 for jth, component in enumerate(lumps.switch_disruptive_effect_models + lumps.voltage_controled_switchs):
-                    v1 = current_result.loc[component.node1, 0] if component.node1 != 'ref' else 0
-                    v2 = current_result.loc[component.node2, 0] if component.node2 != 'ref' else 0
+                    v1 = current_result.loc[component.node1, 0].values if component.node1 != 'ref' else 0
+                    v2 = current_result.loc[component.node2, 0].values if component.node2 != 'ref' else 0
 
                     resistance = component.update_parameter(v1, v2)
-                    self.resistance_matrix[component.bran, component.bran] = resistance
+                    self.resistance_matrix.loc[component.bran[0], component.bran[0]] = resistance
 
-                for component in lumps.time_controled_switchs:
-                    resistance = component.update_parameter(time)
-                    self.resistance_matrix[component.bran, component.bran] = resistance
+                for time_controled_switch in lumps.time_controled_switchs:
+                    resistance = time_controled_switch.update_parameter(time)
+                    self.resistance_matrix.loc[
+                        time_controled_switch.bran[0], time_controled_switch.bran[0]] = resistance
 
-                for component in lumps.nolinear_resistors:
-                    i = current_result.loc[component.bran, 0]
-                    resistance = component.update_parameter(i)
-                    self.resistance_matrix[component.bran, component.bran] = resistance
+                for nolinear_resistor in lumps.nolinear_resistors:
+                    component_current = current_result.loc[nolinear_resistor.bran, 0].values
+                    resistance = nolinear_resistor.update_parameter(component_current)
+                    self.resistance_matrix.loc[nolinear_resistor.bran[0], nolinear_resistor.bran[0]] = resistance
 
 
         # print("更新H矩阵",self.H)

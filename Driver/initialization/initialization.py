@@ -6,7 +6,7 @@ from Model.Lump import Lumps, Resistor_Inductor, Conductor_Capacitor, \
     Voltage_Control_Voltage_Source, Current_Control_Voltage_Source, Voltage_Control_Current_Source, \
     Current_Control_Current_Source, Transformer_One_Phase, Transformer_Three_Phase, Mutual_Inductance_Two_Port, \
     Mutual_Inductance_Three_Port, Nolinear_Resistor, Nolinear_F, Voltage_Controled_Switch, Time_Controled_Switch, A2G, \
-    Switch_Disruptive_Effect_Model, Nolinear_Element_Parameters
+    Switch_Disruptive_Effect_Model, Nolinear_Element_Parameters, Switch_Parameters
 from Model.Node import Node
 from Model.Wires import Wire, Wires, CoreWire, TubeWire
 from Model.Ground import Ground
@@ -209,7 +209,8 @@ def initial_lump(lump_data, dt, T):
 
     lumps = Lumps()
 
-    nolinear_parameters = Nolinear_Element_Parameters()
+    nolinear_element_parameters = Nolinear_Element_Parameters()
+    switch_parameters = Switch_Parameters()
 
     for lump in lump_data:
         lump_type = lump['Type']
@@ -296,20 +297,18 @@ def initial_lump(lump_data, dt, T):
                     Mutual_Inductance_Three_Port(name, bran_name, node1, node2, resistance, inductance))
             case 'NLR':
                 resistance = lump['value1']
-                pointer = lump['pointer']
-                if pointer == 'NLE01':
-                    vi_characteristic = nolinear_parameters.NLE01['vi_characteristics']
-                    ri_characteristic = nolinear_parameters.NLE01['ri_characteristics']
-                elif pointer == 'NLE02':
-                    vi_characteristic = nolinear_parameters.NLE02['vi_characteristics']
-                    ri_characteristic = nolinear_parameters.NLE02['ri_characteristics']
+                model = lump['model']
+                if model != None:
+                    nolinear_model = eval('nolinear_element_parameters.' + str(model))
+                    vi_characteristics = nolinear_model['vi_characteristics']
+                    ri_characteristics = nolinear_model['ri_characteristics']
                 else:
-                    vi_characteristic = np.array(lump['value2'])
-                    ri_characteristic = np.array(lump['value3'])
+                    vi_characteristics = np.array(lump['value2'])
+                    ri_characteristics = np.array(lump['value3'])
 
                 type_of_data = lump['data_type']
                 lumps.add_nolinear_resistor(
-                    Nolinear_Resistor(name, bran_name, node1, node2, resistance, vi_characteristic, ri_characteristic,
+                    Nolinear_Resistor(name, bran_name, node1, node2, resistance, vi_characteristics, ri_characteristics,
                                       type_of_data))
             case 'NLF':
                 inductance = lump['value2']
@@ -318,7 +317,6 @@ def initial_lump(lump_data, dt, T):
                 lumps.add_nolinear_f(
                     Nolinear_F(name, bran_name, node1, node2, inductance, bh_characteristic, type_of_data))
             case 'SWV':
-
                 resistance = lump['value1']
                 voltage = lump['value3']
                 type_of_data = lump['data_type']
@@ -341,11 +339,12 @@ def initial_lump(lump_data, dt, T):
                     Ground(name, bran_name, node1, node2, resistance, inductance))
             case "swh":
                 resistance = lump['value1']
-                pointer = lump['pointer']
-                if pointer == 'SWH01':
-                    DE_max = 140.4e3
-                    v_initial = 168.6e3
-                    k = 1
+                model = lump['model']
+                if model != None:
+                    nolinear_model = eval('switch_parameters.' + str(model))
+                    DE_max = nolinear_model['DE_max']
+                    v_initial = nolinear_model['v_initial']
+                    k = nolinear_model['k']
                 else:
                     DE_max = lump['value2']
                     v_initial = lump['value3']

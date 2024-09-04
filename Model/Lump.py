@@ -638,6 +638,8 @@ class Nolinear_Resistor(Component):
         【函数功能】参数更新
         """
         resistance = self.parameters['ri_characteristic'](current) if self.default == 1 else self.parameters['resistance']
+        resistance = min(resistance, 1e6)
+        resistance = max(resistance, 1e-6)
         return resistance
 
 
@@ -705,7 +707,7 @@ class Voltage_Controled_Switch(Component):
 
 class Time_Controled_Switch(Component):
     def __init__(self, name: str, bran: np.ndarray, node1: np.ndarray, node2: np.ndarray, close_time: float,
-                 open_time: float, type_of_data: int):
+                 open_time: float, type_of_data: int, resistance: float = 1e6):
         """
         电压控制开关类，继承自 Component 类。
 
@@ -721,7 +723,8 @@ class Time_Controled_Switch(Component):
         self.default = 1  # 是否当作非线性元件的标记
         self.on_off = 3-2 * type_of_data# type_of_data = 1, open2close, on_off = 1; type_of_data = 2, close2open, on_off = -1
         super().__init__(name, bran, node1, node2,
-                         {"close_time": close_time, "type_of_data": type_of_data, "open_time": open_time})
+                         {"close_time": close_time, "type_of_data": type_of_data, "open_time": open_time,
+                          'resistance': resistance})
     def update_parameter(self, t):
         """
         【函数功能】参数更新计算
@@ -773,6 +776,14 @@ class Nolinear_Element_Parameters:
     NLE02 = {
         'vi_characteristics': lambda i: (0.08*np.log10(i)+0.61)*42.5*10**3,
         'ri_characteristics': lambda i: 42.5*10**3*(0.08*np.log10(i)+0.61)/i
+    }
+
+
+class Switch_Parameters:
+    SWH01 = {
+        'DE_max': 140.4e3,
+        'v_initial': 168.6e3,
+        'k': 1
     }
 
 
@@ -994,7 +1005,7 @@ class Lumps:
 
         for current_source_list in [self.current_sources_cosine, self.current_sources_empirical]:
             for current_source in current_source_list:
-                self.current_source_matrix.loc[current_source.bran] = current_source.voltage_calculate(calculate_time,
+                self.current_source_matrix.loc[current_source.node1] = current_source.current_calculate(calculate_time,
                                                                                                dt)
 
     def add_current_source_cosine(self, current_source_cosine):

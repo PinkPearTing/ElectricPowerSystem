@@ -335,6 +335,86 @@
           "value5": null,
           "pointer": null,
           "comments": null
+        },
+        {
+          "Type": "Vs",
+          "name": "Vs",
+          "probe": null,
+          "bran_name": "Y16_Tower_1",
+          "node1": "X01",
+          "node2": "X09",
+          "data_type": 1,
+          "value1": 1e-6,
+          "value2": 220,
+          "value3": 50,
+          "value4": null,
+          "value5": 0,
+          "pointer": null,
+          "comments": null
+        },
+        {
+          "Type": "Is",
+          "name": "Is",
+          "probe": null,
+          "bran_name": "---",
+          "node1": "X02",
+          "node2": "ref",
+          "data_type": 1,
+          "value1": null,
+          "value2": 110,
+          "value3": 50,
+          "value4": null,
+          "value5": 0,
+          "pointer": null,
+          "comments": null
+        },
+        {
+          "Type": "NLR",
+          "name": "NLR",
+          "probe": null,
+          "bran_name": "Y18_Tower_1",
+          "node1": "X09",
+          "node2": "X12",
+          "data_type": null,
+          "value1": null,
+          "value2": null,
+          "value3": null,
+          "value4": null,
+          "value5": null,
+          "model": "NLE01",
+          "comments": null
+        },
+        {
+          "Type": "SWT",
+          "name": "SWT",
+          "probe": null,
+          "bran_name": "Y19_Tower_1",
+          "node1": "X09",
+          "node2": "X12",
+          "data_type": 1,
+          "value1": 0.0001,
+          "value2": 0.0002,
+          "value3": null,
+          "value4": null,
+          "value5": null,
+          "model": null,
+          "comments": null
+        },
+        {
+          "Type": "SWV",
+          "name": "SWV",
+          "probe": null,
+          "bran_name": "Y20_Tower_1",
+          "node1": "X03",
+          "node2": "X06",
+          "data_type": null,
+          "value1": 1e6,
+          "value2": null,
+          "value3": 60,
+          "value4": null,
+          "value5": null,
+          "model": null,
+          "comments": null
         }
       ],
       "Device": [
@@ -355,7 +435,7 @@
               "value3": null,
               "value4": null,
               "value5": null,
-              "pointer": "SWH01",
+              "model": "SWH01",
               "comments": null
             },
             {
@@ -371,7 +451,7 @@
               "value3": null,
               "value4": null,
               "value5": null,
-              "pointer": "SWH01",
+              "model": "SWH01",
               "comments": null
             },
             {
@@ -387,7 +467,7 @@
               "value3": null,
               "value4": null,
               "value5": null,
-              "pointer": "SWH01",
+              "model": "SWH01",
               "comments": null
             },
             {
@@ -795,7 +875,7 @@
               "value3": null,
               "value4": null,
               "value5": null,
-              "pointer": "SWH01",
+              "model": "SWH01",
               "comments": null
             },
             {
@@ -811,7 +891,7 @@
               "value3": null,
               "value4": null,
               "value5": null,
-              "pointer": "SWH01",
+              "model": "SWH01",
               "comments": null
             },
             {
@@ -827,7 +907,7 @@
               "value3": null,
               "value4": null,
               "value5": null,
-              "pointer": "SWH01",
+              "model": "SWH01",
               "comments": null
             },
             {
