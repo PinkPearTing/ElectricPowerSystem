@@ -1,5 +1,7 @@
 import numpy as np
 import math
+
+
 def distance(pos1, pos2):
     return math.sqrt((pos1[0] - pos2[0]) ** 2 +
                      (pos1[1] - pos2[1]) ** 2 +
@@ -164,7 +166,8 @@ def calculate_electric_field_down_r_and_z(pt_start, pt_end, stroke, channel, z_c
     t_sr_expand = np.tile(t_sr, (a00, b00, 1))  # 变成 (1, 1, 2000)
 
     # 计算时间延迟，获取时间索引
-    n_td_tmp = np.floor((t_sr_expand * 1e-6 - t_delay_expand) / stroke.dt).astype(int)
+    n_td_tmp = np.floor((t_sr_expand - t_delay_expand) / stroke.dt).astype(int)
+    # n_td_tmp = np.floor((t_sr_expand * 1e-6 - t_delay_expand) / stroke.dt).astype(int)
     index_head = np.apply_along_axis(get_t_delay_index1, 2, n_td_tmp)
     index_tail = np.apply_along_axis(get_t_delay_index2, 2, n_td_tmp)
     index_head = np.where(index_head == 1)
@@ -277,7 +280,8 @@ def calculate_H_magnetic_field_down_r(pt_start, pt_end, stroke, channel, z_chann
     t_sr_expand = np.tile(t_sr, (a00, b00, 1))  # 变成 (1, 1, 2000)
 
     # 计算时间延迟，获取时间索引
-    n_td_tmp = np.floor((t_sr_expand * 1e-6 - t_delay_expand) / stroke.dt).astype(int)
+    n_td_tmp = np.floor((t_sr_expand - t_delay_expand) / stroke.dt).astype(int)
+    # n_td_tmp = np.floor((t_sr_expand * 1e-6 - t_delay_expand) / stroke.dt).astype(int)
     index_head = np.apply_along_axis(get_t_delay_index1, 2, n_td_tmp)
     index_tail = np.apply_along_axis(get_t_delay_index2, 2, n_td_tmp)
     index_head = np.where(index_head == 1)

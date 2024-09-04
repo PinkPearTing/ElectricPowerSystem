@@ -379,18 +379,37 @@ def initial_device(device_data, dt, T):
     return devices
 
 def initial_source(network, nodes, file_name):
-    json_file_path = "../Data/" + file_name + ".json"
+    json_file_path = "Data/input/" + file_name + ".json"
     # 0. read json file
     with open(json_file_path, 'r') as j:
         load_dict = json.load(j)
 
-    stroke = Stroke('Heidler', duration=1.0e-3, is_calculated=True, parameter_set='0.25/100us', parameters=None)
+    stroke = Stroke('Heidler', duration=1.0e-3, is_calculated=True, parameter_set='2.6/50us', parameters=None)
     stroke.calculate()
-    channel = Channel(hit_pos=[500, 50, 0])
+    channel = Channel(hit_pos=[10, 10, 0])
     lightning =Lightning(id=1, type='Direct', strokes=[stroke], channel=channel)
-    start = [l[0] for l in list(network.branches.values())]
-    end = [l[2] for l in list(network.branches.values())]
-    branches = list(network.branches.keys())
+    branches = network.branches.copy()  # branches的副本，用于新增或删减支路
+    for key, value in network.branches.items():
+        keys_tobe_delete = []
+        if 'OHL' in value[2]:
+            start_node_coord = list(value[0].values())[0]
+            end_node_coord = list(value[1].values())[0]
+            # 生成新节点
+            x = np.linspace(start_node_coord[0], end_node_coord[0], value[3] + 1, dtype=float)
+            y = np.linspace(start_node_coord[1], end_node_coord[1], value[3] + 1, dtype=float)
+            z = np.linspace(start_node_coord[2], end_node_coord[2], value[3] + 1, dtype=float)
+            new_nodes_name = [key + '_MiddleNode_{:02d}'.format(i) for i in range(1, value[3])]
+            new_nodes_name.insert(0, list(value[0].keys())[0])
+            new_nodes_name.append(list(value[1].keys())[0])
+            for i in range(len(new_nodes_name) - 1):
+                start_node_after_seg_dict = {new_nodes_name[i]: [x[i], y[i], z[i]]}
+                end_node_after_seg_dict = {new_nodes_name[i+1]: [x[i+1], y[i+1], z[i+1]]}
+                branches[f"{key}_splited_{i+1}"] = [start_node_after_seg_dict, end_node_after_seg_dict, value[2], value[3]]
+            del branches[key]
+
+    start = [list(l[0].values())[0] for l in list(branches.values())]
+    end = [list(l[1].values())[0] for l in list(branches.values())]
+    branches = list(branches.keys())
     pt_start = np.array(start)
     pt_end = np.array(end)
     constants = Constant()
@@ -400,10 +419,14 @@ def initial_source(network, nodes, file_name):
     I_out = LightningCurrrent_calculate(load_dict["Source"]["area"], load_dict["Source"]["wire"], load_dict["Source"]["position"], network, nodes, lightning, stroke_sequence=0)
    # Source_Matrix = pd.concat([I_out, U_out], axis=0)
     lumps = [tower.lump for tower in network.towers]
-
+    devices = [tower.devices for tower in network.towers]
     for lump in lumps:
         U_out = U_out.add(lump.voltage_source_matrix, fill_value=0).fillna(0)
         I_out = I_out.add(lump.current_source_matrix, fill_value=0).fillna(0)
+    for lumps in list(map(lambda device:device.arrestors+device.insulators+device.transformers , devices)):
+        for lump in lumps:
+            U_out = U_out.add(lump.voltage_source_matrix, fill_value=0).fillna(0)
+            I_out = I_out.add(lump.current_source_matrix, fill_value=0).fillna(0)
     Source_Matrix = pd.concat([I_out, U_out], axis=0)
     return Source_Matrix
 
@@ -479,16 +502,16 @@ def print_lumps(lumps):
     capacitance_matrix = lumps.capacitance_matrix
     print('capacitance_matrix equals?',capacitance_matrix)
 
-if __name__ == '__main__':
-    file_name = "01_2"
-    json_file_path = "../../Data/" + file_name + ".json"
-    # 0. read json file
-    with open(json_file_path, 'r') as j:
-        load_dict = json.load(j)
-
-    # 1. initialize all elements in the network
-    cable = initialize_cable(load_dict['Cable'][0],50)
-    print(cable.info.HeadTower)
+# if __name__ == '__main__':
+#     file_name = "01_2"
+#     json_file_path = "../../Data/" + file_name + ".json"
+#     # 0. read json file
+#     with open(json_file_path, 'r') as j:
+#         load_dict = json.load(j)
+#
+#     # 1. initialize all elements in the network
+#     cable = initialize_cable(load_dict['Cable'][0],50)
+#     print(cable.info.HeadTower)
 
 
 # def initialize_measurement(file_name):

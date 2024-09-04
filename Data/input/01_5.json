@@ -70,7 +70,7 @@
           "type": "air",
           "bran": "Y02_Tower_1",
           "node1": "X02",
-          "node2": "X05",
+          "node2": "X08",
           "pos_1": [
             0,
             -0.4,
@@ -106,7 +106,7 @@
           "type": "air",
           "bran": "Y03_Tower_1",
           "node1": "X03",
-          "node2": "X06",
+          "node2": "X10",
           "pos_1": [
             0,
             0.1,
@@ -142,7 +142,7 @@
           "type": "air",
           "bran": "Y04_Tower_1",
           "node1": "X04",
-          "node2": "X07",
+          "node2": "X11",
           "pos_1": [
             0,
             0.6,
@@ -317,19 +317,127 @@
           "vfid_a": [],
           "num": 0,
           "comments": ""
+        },
+        {
+          "type": "ground",
+          "bran": "Y09_Tower_1",
+          "node1": "X13",
+          "node2": "X14",
+          "pos_1": [
+            0,
+            0,
+            0
+          ],
+          "pos_2": [
+            0,
+            0,
+            -1
+          ],
+          "oft": 0,
+          "r0": 0.005,
+          "rs2": null,
+          "rs3": null,
+          "r": 0,
+          "l": 0,
+          "sig": 58000000,
+          "mur": 1,
+          "epr": 1,
+          "model1": 0,
+          "model2": 2000,
+          "b0": null,
+          "n1": null,
+          "n2": null,
+          "vfid_d": [],
+          "vfid_h": [],
+          "vfid_r": [],
+          "vfid_a": [],
+          "num": 0,
+          "comments": ""
+        },
+        {
+          "type": "ground",
+          "bran": "Y10_Tower_1",
+          "node1": "X13",
+          "node2": "X15",
+          "pos_1": [
+            0,
+            0,
+            -1
+          ],
+          "pos_2": [
+            0,
+            -2,
+            -1
+          ],
+          "oft": 0,
+          "r0": 0.005,
+          "rs2": null,
+          "rs3": null,
+          "r": 0,
+          "l": 0,
+          "sig": 58000000,
+          "mur": 1,
+          "epr": 1,
+          "model1": 0,
+          "model2": 2000,
+          "b0": null,
+          "n1": null,
+          "n2": null,
+          "vfid_d": [],
+          "vfid_h": [],
+          "vfid_r": [],
+          "vfid_a": [],
+          "num": 0,
+          "comments": ""
+        },
+        {
+          "type": "ground",
+          "bran": "Y11_Tower_1",
+          "node1": "X13",
+          "node2": "X16",
+          "pos_1": [
+            0,
+            0,
+            -1
+          ],
+          "pos_2": [
+            0,
+            2,
+            -1
+          ],
+          "oft": 0,
+          "r0": 0.005,
+          "rs2": null,
+          "rs3": null,
+          "r": 0,
+          "l": 0,
+          "sig": 58000000,
+          "mur": 1,
+          "epr": 1,
+          "model1": 0,
+          "model2": 2000,
+          "b0": null,
+          "n1": null,
+          "n2": null,
+          "vfid_d": [],
+          "vfid_h": [],
+          "vfid_r": [],
+          "vfid_a": [],
+          "num": 0,
+          "comments": ""
         }
       ],
       "Lump": [
         {
-          "Type": "RL",
-          "name": "GRID",
+          "Type": "A2G",
+          "name": "A2G",
           "probe": null,
-          "bran_name": "Y09_Tower_1",
+          "bran_name": "Y12_Tower_1",
           "node1": "X12",
-          "node2": "ref",
+          "node2": "X13",
           "data_type": null,
-          "value1": 5e1,
-          "value2": 1e-6,
+          "value1": 1e-6,
+          "value2": 0,
           "value3": null,
           "value4": null,
           "value5": null,
@@ -355,7 +463,7 @@
               "value3": null,
               "value4": null,
               "value5": null,
-              "model": "SWH01",
+              "pointer": "SWH01",
               "comments": null
             },
             {
@@ -371,7 +479,7 @@
               "value3": null,
               "value4": null,
               "value5": null,
-              "model": "SWH01",
+              "pointer": "SWH01",
               "comments": null
             },
             {
@@ -387,7 +495,7 @@
               "value3": null,
               "value4": null,
               "value5": null,
-              "model": "SWH01",
+              "pointer": "SWH01",
               "comments": null
             },
             {
@@ -441,7 +549,7 @@
           ]
         }
       ]
-      },
+    },
     {
       "name": "tower_2",
       "Info": {
@@ -510,7 +618,7 @@
           "type": "air",
           "bran": "Y02_Tower_2",
           "node1": "X18",
-          "node2": "X21",
+          "node2": "X24",
           "pos_1": [
             0,
             -0.4,
@@ -546,7 +654,7 @@
           "type": "air",
           "bran": "Y03_Tower_2",
           "node1": "X19",
-          "node2": "X22",
+          "node2": "X26",
           "pos_1": [
             0,
             0.1,
@@ -582,7 +690,7 @@
           "type": "air",
           "bran": "Y04_Tower_2",
           "node1": "X20",
-          "node2": "X23",
+          "node2": "X27",
           "pos_1": [
             0,
             0.6,
@@ -757,19 +865,127 @@
           "vfid_a": [],
           "num": 0,
           "comments": ""
+        },
+        {
+          "type": "ground",
+          "bran": "Y09_Tower_2",
+          "node1": "X29",
+          "node2": "X30",
+          "pos_1": [
+            0,
+            0,
+            0
+          ],
+          "pos_2": [
+            0,
+            0,
+            -1
+          ],
+          "oft": 0,
+          "r0": 0.005,
+          "rs2": null,
+          "rs3": null,
+          "r": 0,
+          "l": 0,
+          "sig": 58000000,
+          "mur": 1,
+          "epr": 1,
+          "model1": 0,
+          "model2": 2000,
+          "b0": null,
+          "n1": null,
+          "n2": null,
+          "vfid_d": [],
+          "vfid_h": [],
+          "vfid_r": [],
+          "vfid_a": [],
+          "num": 0,
+          "comments": ""
+        },
+        {
+          "type": "ground",
+          "bran": "Y10_Tower_2",
+          "node1": "X29",
+          "node2": "X31",
+          "pos_1": [
+            0,
+            0,
+            -1
+          ],
+          "pos_2": [
+            0,
+            -2,
+            -1
+          ],
+          "oft": 0,
+          "r0": 0.005,
+          "rs2": null,
+          "rs3": null,
+          "r": 0,
+          "l": 0,
+          "sig": 58000000,
+          "mur": 1,
+          "epr": 1,
+          "model1": 0,
+          "model2": 2000,
+          "b0": null,
+          "n1": null,
+          "n2": null,
+          "vfid_d": [],
+          "vfid_h": [],
+          "vfid_r": [],
+          "vfid_a": [],
+          "num": 0,
+          "comments": ""
+        },
+        {
+          "type": "ground",
+          "bran": "Y11_Tower_2",
+          "node1": "X29",
+          "node2": "X32",
+          "pos_1": [
+            0,
+            0,
+            -1
+          ],
+          "pos_2": [
+            0,
+            2,
+            -1
+          ],
+          "oft": 0,
+          "r0": 0.005,
+          "rs2": null,
+          "rs3": null,
+          "r": 0,
+          "l": 0,
+          "sig": 58000000,
+          "mur": 1,
+          "epr": 1,
+          "model1": 0,
+          "model2": 2000,
+          "b0": null,
+          "n1": null,
+          "n2": null,
+          "vfid_d": [],
+          "vfid_h": [],
+          "vfid_r": [],
+          "vfid_a": [],
+          "num": 0,
+          "comments": ""
         }
       ],
       "Lump": [
         {
-          "Type": "RL",
-          "name": "GRID",
+          "Type": "A2G",
+          "name": "A2G",
           "probe": null,
-          "bran_name": "Y09_Tower_2",
+          "bran_name": "Y12_Tower_2",
           "node1": "X28",
-          "node2": "ref",
+          "node2": "X29",
           "data_type": null,
-          "value1": 5e1,
-          "value2": 1e-6,
+          "value1": 1e-6,
+          "value2": 0,
           "value3": null,
           "value4": null,
           "value5": null,
@@ -777,110 +993,7 @@
           "comments": null
         }
       ],
-      "Device": [
-        {
-          "name": "insolator_Tower_2",
-          "type": "insulator",
-          "Lump": [
-            {
-              "Type": "swh",
-              "name": "swh_Tower_2_1",
-              "probe": null,
-              "bran_name": "Y13_Tower_2",
-              "node1": "X21",
-              "node2": "X24",
-              "data_type": null,
-              "value1": 1e6,
-              "value2": null,
-              "value3": null,
-              "value4": null,
-              "value5": null,
-              "model": "SWH01",
-              "comments": null
-            },
-            {
-              "Type": "swh",
-              "name": "swh_Tower_2_2",
-              "probe": null,
-              "bran_name": "Y14_Tower_2",
-              "node1": "X22",
-              "node2": "X26",
-              "data_type": null,
-              "value1": 1e6,
-              "value2": null,
-              "value3": null,
-              "value4": null,
-              "value5": null,
-              "model": "SWH01",
-              "comments": null
-            },
-            {
-              "Type": "swh",
-              "name": "swh_Tower_2_3",
-              "probe": null,
-              "bran_name": "Y15_Tower_2",
-              "node1": "X23",
-              "node2": "X27",
-              "data_type": null,
-              "value1": 1e6,
-              "value2": null,
-              "value3": null,
-              "value4": null,
-              "value5": null,
-              "model": "SWH01",
-              "comments": null
-            },
-            {
-              "Type": "GC",
-              "name": "GC_Tower_2_1",
-              "probe": null,
-              "bran_name": "---",
-              "node1": "X21",
-              "node2": "X24",
-              "data_type": null,
-              "value1": 0,
-              "value2": 1e6,
-              "value3": null,
-              "value4": null,
-              "value5": null,
-              "pointer": null,
-              "comments": null
-            },
-            {
-              "Type": "GC",
-              "name": "GC_Tower_2_2",
-              "probe": null,
-              "bran_name": "---",
-              "node1": "X22",
-              "node2": "X26",
-              "data_type": null,
-              "value1": 0,
-              "value2": 1e6,
-              "value3": null,
-              "value4": null,
-              "value5": null,
-              "pointer": null,
-              "comments": null
-            },
-            {
-              "Type": "GC",
-              "name": "GC_Tower_2_3",
-              "probe": null,
-              "bran_name": "---",
-              "node1": "X23",
-              "node2": "X27",
-              "data_type": null,
-              "value1": 0,
-              "value2": 1e6,
-              "value3": null,
-              "value4": null,
-              "value5": null,
-              "pointer": null,
-              "comments": null
-            }
-          ]
-        }
-      ]
+      "Device": null
     }
   ],
   "OHL": [
@@ -1057,10 +1170,10 @@
       }
     }
   ],
-        "Source":
+    "Source":
     {
       "area": "tower_1",
       "wire": "Y01",
-      "position": [50,0,10.5]
+      "position": [1,0,0]
     }
 }

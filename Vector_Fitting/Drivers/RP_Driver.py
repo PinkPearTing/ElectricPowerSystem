@@ -478,7 +478,7 @@ def pass_check_Y(SERflag, A, B, C, D, colinterch):
         Nc = len(D)
         N = len(A)
         tell = 0
-        CC = np.zeros((Nc, Nc * N))
+        CC = np.zeros((Nc, Nc * N), dtype=complex)
         AA = np.array([])
         BB = np.array([])
         B = np.ones((N, 1))

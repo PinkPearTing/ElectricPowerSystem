@@ -230,19 +230,19 @@ class Tower:
         del df_L
         del df_G
         del df_C
-
-        for device_list in [self.devices.insulators, self.devices.arrestors, self.devices.transformers]:
-            for device in device_list:
-                self.incidence_matrix_A = self.incidence_matrix_A.add(device.incidence_matrix_A,
-                                                                      fill_value=0).fillna(0)
-                self.incidence_matrix_B = self.incidence_matrix_B.add(device.incidence_matrix_B,
-                                                                      fill_value=0).fillna(0)
-                self.resistance_matrix = self.resistance_matrix.add(device.resistance_matrix, fill_value=0).fillna(0)
-                self.inductance_matrix = self.inductance_matrix.add(device.inductance_matrix, fill_value=0).fillna(0)
-                self.capacitance_matrix = self.capacitance_matrix.add(device.capacitance_matrix,
-                                                                      fill_value=0).fillna(0)
-                self.conductance_matrix = self.conductance_matrix.add(device.conductance_matrix,
-                                                                      fill_value=0).fillna(0)
+        if self.devices is not None:
+            for device_list in [self.devices.insulators, self.devices.arrestors, self.devices.transformers]:
+                for device in device_list:
+                    self.incidence_matrix_A = self.incidence_matrix_A.add(device.incidence_matrix_A,
+                                                                          fill_value=0).fillna(0)
+                    self.incidence_matrix_B = self.incidence_matrix_B.add(device.incidence_matrix_B,
+                                                                          fill_value=0).fillna(0)
+                    self.resistance_matrix = self.resistance_matrix.add(device.resistance_matrix, fill_value=0).fillna(0)
+                    self.inductance_matrix = self.inductance_matrix.add(device.inductance_matrix, fill_value=0).fillna(0)
+                    self.capacitance_matrix = self.capacitance_matrix.add(device.capacitance_matrix,
+                                                                          fill_value=0).fillna(0)
+                    self.conductance_matrix = self.conductance_matrix.add(device.conductance_matrix,
+                                                                          fill_value=0).fillna(0)
 
     def parameter_matrix_update(self):
         """

@@ -37,7 +37,11 @@ def vectfit3(f, s, poles, weight, opts):
     TOLhigh = 1e18
 
     # 调整极点位置
-    a = len(poles)
+    if np.array(poles).ndim == 1:
+        a = 1
+    elif np.array(poles).ndim == 2:
+        a = len(np.array(poles))
+
     if np.squeeze(s)[0] == 0 and a == 1:
         if poles[0] == 0 and poles[1] != 0:
             poles[0] = -1

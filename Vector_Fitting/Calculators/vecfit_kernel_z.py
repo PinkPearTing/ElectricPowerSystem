@@ -3,7 +3,7 @@ import warnings
 import Vector_Fitting.Drivers.RP_Driver as RPdriver
 import Vector_Fitting.Drivers.VF_Driver as VFdriver
 import scipy.io
-
+# 40 41行修改
 def vecfit_kernel_Z_Ding(Zi, f0, Nfit, vf_mod=None):
     """
     Vector Fitting Toolkit in Python
@@ -29,16 +29,16 @@ def vecfit_kernel_Z_Ding(Zi, f0, Nfit, vf_mod=None):
     RFopts = {'Niter_in': 5}
     SER, Zfit, *_ = RPdriver.drive(SER, s, RFopts)
 
-    R0 = SER['D']
-    L0 = SER['E']
+    R0 = np.real(SER['D'])  # 只取实部
+    L0 = np.real(SER['E'])  # 只取实部
 
     Nc = Zi.shape[0]
     Ln = np.zeros((Nc, Nc, VFopts['N']))
     Rn = np.zeros((Nc, Nc, VFopts['N']))
 
     for ik in range(VFopts['N']):
-        Rn[:, :, ik] = SER['R'][:, :, ik] / SER['poles'][ik]
-        Ln[:, :, ik] = -1 / SER['poles'][ik] * Rn[:, :, ik]
+        Rn[:, :, ik] = np.real(SER['R'][:, :, ik] / SER['poles'][ik])  # 只取实部
+        Ln[:, :, ik] = np.real(-1 / SER['poles'][ik] * Rn[:, :, ik])  # 只取实部
 
     return R0, L0, Rn, Ln, Zfit
 

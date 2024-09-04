@@ -14,7 +14,7 @@ class StrokeParameters:
     HEIDLER_PARAMETERS = {
         '0.25/100us': [0.9, 0.25, 100, 2],
         '8/20us': [30.85, 8, 20, 2.4],
-        '2.6/50us': [16.83, 2.6, 50, 2.1],
+        '2.6/50us': [100000, 2.6, 50, 2.1],
         '10/350us': [44.43, 10, 350, 2.1]
     }
 
@@ -47,7 +47,7 @@ class Stroke:
         参数说明:
         stroke_type (str): 脉冲的类型, 目前只支持 'CIGRE' 和 'Heidler'
         stroke_sequence (int): 回击的序号
-        duration (float): 脉冲持续时间
+        duration (float): 脉冲持续时间，单位us
         is_calculated (bool): 脉冲是否要被计算
         parameter_set (str): 脉冲参数集, 目前只支持 '0.25/100us', '8/20us', '2.6/50us', '10/350us'
         hit_pos (list): 雷击点坐标(x, y, 0)
@@ -150,6 +150,7 @@ class Lightning:
         self.type = type
         self.strokes = strokes or []
         self.stroke_number = len(self.strokes)
+        self.channel = channel
 
 
     def add_stroke(self, stroke: Stroke):
@@ -174,11 +175,11 @@ class Lightning:
 
 
 if __name__ == '__main__':
-    stroke1 = Stroke('Heidler', duration=1e-3, is_calculated=True, parameter_set='0.25/100us',
+    stroke1 = Stroke('Heidler', duration=1e-5, is_calculated=True, parameter_set='2.6/50us',
                     parameters=None)
-    stroke2 = Stroke('Heidler', duration=2e-3, is_calculated=True, parameter_set='0.25/100us',
-                    parameters=None)
-    strokes = [stroke1, stroke2]
+    # stroke2 = Stroke('Heidler', duration=2e-3, is_calculated=True, parameter_set='0.25/100us',
+    #                 parameters=None)
+    strokes = [stroke1]
     channel = Channel(hit_pos=[50, 500, 0])
     lightning = Lightning(id=1, type='Indirect', strokes=strokes, channel=channel)
     t = []

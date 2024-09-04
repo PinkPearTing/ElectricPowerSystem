@@ -15,7 +15,7 @@ from Model.Lightning import Lightning
 from Model.Tower import Tower
 from Model.Wires import OHLWire
 from Utils.Math import distance
-
+import Model.Strategy as Strategy
 
 class Network:
     def __init__(self, **kwargs):
@@ -41,6 +41,9 @@ class Network:
             'constant_step': True,
             'variable_frequency': False
         }
+        self.dt = 0
+        self.Nt = 0
+        self.T = 0
 
     def calculate_branches(self, maxlength):
         tower_branch_node = {}
@@ -70,16 +73,16 @@ class Network:
                 self.branches[wire.name] = [position_obj_start, position_obj_end, obj.info.name, Nt]
 
     # initialize internal network elements
-    def initialize_network(self, f0, frq_default, max_length, file_name, dt, T):
-        json_file_path = "../Data/" + file_name + ".json"
+    def initialize_network(self,f0,frq_default,max_length,file_name):
+        json_file_path = "Data/input/" + file_name + ".json"
         # 0. read json file
         with open(json_file_path, 'r') as j:
             load_dict = json.load(j)
 
         # 1. initialize all elements in the network
         if 'Tower' in load_dict:
-            self.towers = [initialize_tower(tower, max_length=max_length, dt=dt, T=T) for tower in load_dict['Tower']]
-        # self.towers = reduce(lambda a, b: dict(a, **b), tower_list)
+            self.towers = [initialize_tower(tower, max_length=max_length,dt=self.dt,T = self.T) for tower in load_dict['Tower']]
+        #self.towers = reduce(lambda a, b: dict(a, **b), tower_list)
         if 'OHL' in load_dict:
             self.OHLs = [initialize_OHL(ohl, max_length=max_length) for ohl in load_dict['OHL']]
         if 'Cable' in load_dict:
@@ -113,8 +116,8 @@ class Network:
             self.inductance_matrix = self.inductance_matrix.add(tower.inductance_matrix, fill_value=0).fillna(0)
             self.capacitance_matrix = self.capacitance_matrix.add(tower.capacitance_matrix, fill_value=0).fillna(0)
             self.conductance_matrix = self.conductance_matrix.add(tower.conductance_matrix, fill_value=0).fillna(0)
-        # self.voltage_source_matrix.add(tower.voltage_source_matrix, fill_value=0).fillna(0)
-        # self.current_source_matrix.add(tower.current_source_matrix, fill_value=0).fillna(0)
+           # self.voltage_source_matrix.add(tower.voltage_source_matrix, fill_value=0).fillna(0)
+           # self.current_source_matrix.add(tower.current_source_matrix, fill_value=0).fillna(0)
 
         for model_list in [self.OHLs, self.cables]:
             for model in model_list:
@@ -124,113 +127,8 @@ class Network:
                 self.inductance_matrix = self.inductance_matrix.add(model.inductance_matrix, fill_value=0).fillna(0)
                 self.capacitance_matrix = self.capacitance_matrix.add(model.capacitance_matrix, fill_value=0).fillna(0)
                 self.conductance_matrix = self.conductance_matrix.add(model.conductance_matrix, fill_value=0).fillna(0)
-            #   self.voltage_source_matrix.add(model.voltage_source_matrix, fill_value=0).fillna(0)
-            #   self.current_source_matrix.add(model.current_source_matrix, fill_value=0).fillna(0)
-
-    def concate_H(self):
-        GC = self.capacitance_matrix.add(self.conductance_matrix)  # 点点
-        RL = self.inductance_matrix.add(self.resistance_matrix)  # 线线
-        A = self.incidence_matrix_A  # 线点
-        A_T = self.incidence_matrix_B.T  # 点线
-
-        A_RL = pd.concat([-A, RL], axis=1)
-        GC_A = pd.concat([GC, -A_T], axis=1)
-
-        H = pd.concat([A_RL, GC_A], axis=0)
-
-        print("得到一个合并的大矩阵H", H)
-        self.H = H
-
-    def H_calculate(self, sources, dt, Nt):
-        """
-        【函数功能】电路求解
-        【入参】
-        ima(numpy.ndarray:Nbran*Nnode)：关联矩阵A（Nbran：支路数，Nnode：节点数）
-        imb(numpy.ndarray:Nbran*Nnode)：关联矩阵B（Nbran：支路数，Nnode：节点数）
-        R(numpy.ndarray:Nbran*Nbran)：电阻矩阵（Nbran：支路数）
-        L(numpy.ndarray:Nbran*Nbran)：电感矩阵（Nbran：支路数）
-        G(numpy.ndarray:Nnode*Nnode)：电导矩阵（Nnode：节点数）
-        C(numpy.ndarray:Nnode*Nnode)：电容矩阵（Nnode：节点数）
-        sources(numpy.ndarray:(Nbran+Nnode)*Nt)：电源矩阵（Nbran：支路数，Nnode：节点数）
-        dt(float)：步长
-        Nt(int)：计算总次数
-
-        【出参】
-        out(numpy.ndarray:(Nbran+Nnode)*Nt)：计算结果矩阵（Nbran：支路数，Nnode：节点数）
-        """
-
-        C = np.array(self.capacitance_matrix)  # 点点
-        G = np.array(self.conductance_matrix)
-        L = np.array(self.inductance_matrix)  # 线线
-        R = np.array(self.resistance_matrix)
-        ima = np.array(self.incidence_matrix_A)  # 线点
-        imb = np.array(self.incidence_matrix_B.T)  # 点线
-        source = np.array(sources)
-
-        nodes = len(self.capacitance_matrix.columns.tolist())
-        branches = len(self.inductance_matrix.columns.tolist())
-
-        out = np.zeros((branches + nodes, Nt))
-        branches, nodes = ima.shape
-        for i in range(Nt - 1):
-            Vnode = out[:nodes, i].reshape((-1, 1))
-            Ibran = out[nodes:, i].reshape((-1, 1))
-            #            Isource = source[:,i].reshape((-1,1))
-            LEFT = np.block([[-ima, -R - L / dt], [G + C / dt, -imb]])
-            inv_LEFT = np.linalg.inv(LEFT)
-            RIGHT = np.block([[(-L / dt).dot(Ibran)], [(C / dt).dot(Vnode)]])
-
-    #           temp_result = inv_LEFT.dot(Isource + RIGHT)
-    #          out[:, i + 1] = np.copy(temp_result)[:,0]
-    #     self.solution = pd.DataFrame(out, index=self.capacitance_matrix.columns.tolist()+self.inductance_matrix.columns.tolist())
-
-    def H_calculate_nolinear(self, sources, dt, Nt):
-        """
-        【函数功能】非线性电路求解
-        【入参】
-        ima(numpy.ndarray:Nbran*Nnode)：关联矩阵A（Nbran：支路数，Nnode：节点数）
-        imb(numpy.ndarray:Nbran*Nnode)：关联矩阵B（Nbran：支路数，Nnode：节点数）
-        R(numpy.ndarray:Nbran*Nbran)：电阻矩阵（Nbran：支路数）
-        L(numpy.ndarray:Nbran*Nbran)：电感矩阵（Nbran：支路数）
-        G(numpy.ndarray:Nnode*Nnode)：电导矩阵（Nnode：节点数）
-        C(numpy.ndarray:Nnode*Nnode)：电容矩阵（Nnode：节点数）
-        sources(numpy.ndarray:(Nbran+Nnode)*Nt)：电源矩阵（Nbran：支路数，Nnode：节点数）
-        dt(float)：步长
-        Nt(int)：计算总次数
-
-        【出参】
-        out(numpy.ndarray:(Nbran+Nnode)*Nt)：计算结果矩阵（Nbran：支路数，Nnode：节点数）
-        """
-
-        branches, nodes = self.incidence_matrix_A.shape
-        out = np.zeros((branches + nodes, Nt))
-
-        # source = np.array(sources)
-        for i in range(Nt - 1):
-            C = self.capacitance_matrix.to_numpy()  # 点点
-            G = self.conductance_matrix.to_numpy()
-            L = self.inductance_matrix.to_numpy()  # 线线
-            R = self.resistance_matrix.to_numpy()
-            ima = self.incidence_matrix_A.to_numpy()  # 线点
-            imb = self.incidence_matrix_B.T.to_numpy()  # 点线
-            Vnode = out[:nodes, i].reshape((-1, 1))
-            Ibran = out[nodes:, i].reshape((-1, 1))
-            # Isource = source[:,i].reshape((-1,1))
-            LEFT = np.block([[-ima, -R - L / dt], [G + C / dt, -imb]])
-            inv_LEFT = np.linalg.inv(LEFT)
-            RIGHT = np.block([[(-L / dt).dot(Ibran)], [(C / dt).dot(Vnode)]])
-
-            # temp_result = inv_LEFT.dot(Isource + RIGHT)
-            temp_result = inv_LEFT.dot(RIGHT)
-            out[:, i + 1] = np.copy(temp_result)[:, 0]
-            temp_result = pd.DataFrame(temp_result,
-                                       index=self.capacitance_matrix.columns.tolist() + self.inductance_matrix.columns.tolist())
-
-            t = dt * (i + 1)
-            self.update_H(temp_result, t)
-
-        self.solution = pd.DataFrame(out,
-                                     index=self.capacitance_matrix.columns.tolist() + self.inductance_matrix.columns.tolist())
+             #   self.voltage_source_matrix.add(model.voltage_source_matrix, fill_value=0).fillna(0)
+             #   self.current_source_matrix.add(model.current_source_matrix, fill_value=0).fillna(0)
 
     def update_H(self, current_result, time):
         for tower in self.towers:
@@ -250,14 +148,15 @@ class Network:
                         time_controled_switch.bran[0], time_controled_switch.bran[0]] = resistance
 
                 for nolinear_resistor in lumps.nolinear_resistors:
-                    component_current = current_result.loc[nolinear_resistor.bran, 0].values
+                    component_current = abs(current_result.loc[nolinear_resistor.bran, 0].values)
                     resistance = nolinear_resistor.update_parameter(component_current)
                     self.resistance_matrix.loc[nolinear_resistor.bran[0], nolinear_resistor.bran[0]] = resistance
 
+    def calculate(self,strategy):
+        strategy.apply(self)
 
-        # print("更新H矩阵",self.H)
-
-    def run(self, file_name):
+    def run(self,file_name,strategy):
+        # 0. 预设值
         frq = np.concatenate([
             np.arange(1, 91, 10),
             np.arange(100, 1000, 100),
@@ -266,35 +165,22 @@ class Network:
         ])
         VF = {'odc': 10,
               'frq': frq}
-        # 固频的频率值
-        f0 = 2e4
-        dt = 1e-6
-        T = 0.001
-        Nt = int(np.ceil(T / dt))
-        # 线段的最大长度, 后续会按照这个长度, 对不符合长度规范的线段进行切分
-        max_length = 20
+        f0 = 2e4 # 固频的频率值
+        self.dt = 1e-6
+        self.T = 0.001
+        self.Nt = int(np.ceil(self.T/self.dt))
+        max_length = 20 # 线段的最大长度, 后续会按照这个长度, 对不符合长度规范的线段进行切分
 
-        Network.initialize_network(network, f0, frq, max_length, file_name, dt, T)
-        network.calculate_branches(max_length)
-        # network.initialize_source(file_name)
-        # source = network.sources
-        source = 0
-        if network.solution_type['linear'] == True:
-            network.H_calculate(source, dt, Nt)
-        elif network.solution_type['linear'] == False:
-            network.H_calculate_nolinear(source, dt, Nt)
-        # network.H_calculate(source,dt,Nt)
-        # print(x)
-        # print(source)
+        #1. 初始化电网
+        self.initialize_network(f0,frq,max_length,file_name)
 
+        # 2. 初始化源，根据电网信息计算源
+        self.calculate_branches(max_length)
+        self.initialize_source(file_name)
 
-if __name__ == '__main__':
-    # 1. 接收到创建新电网指令
-    file_name = "lump_connnect_ground"
-    network = Network()
-    network.run(file_name)
+        # 3. 计算结果
+        self.calculate(strategy)
+        #network.solution_calculate(dt,Nt)
+        #print(x)
+        #print(source)
 
-    print(network)
-
-    # 2. 接收到所需测试的类型
-    # network.update_H()

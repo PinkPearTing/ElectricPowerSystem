@@ -1,0 +1,236 @@
+{
+  "user_id": "01",
+  "case_id": 2,
+  "Tower": [
+    {
+      "name": "tower_1",
+      "Info": {
+        "name": "tower_1",
+        "id": "1",
+        "type": "10",
+        "Vclass": "10kV",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "Theta": 0,
+        "mode_con": 0,
+        "mode_gnd": 0,
+        "pole_height": 10.5,
+        "pole_head": "X01"
+      },
+      "ground": {
+        "glb": 1,
+        "sig": 1e-2,
+        "mur": 1,
+        "epr": 10,
+        "gnd_model": "Lossy",
+        "ionisation_intensity": "weak",
+        "ionisation_model": "isolational"
+      },
+      "Wire": [
+        {
+          "type": "air",
+          "bran": "Y01_Tower_1",
+          "node1": "X01",
+          "node2": "X02",
+          "pos_1": [
+            0,
+            -0.4,
+            10
+          ],
+          "pos_2": [
+            0,
+            -0.4,
+            9.8
+          ],
+          "oft": 0,
+          "r0": 0.005,
+          "rs2": null,
+          "rs3": null,
+          "r": 0,
+          "l": 0,
+          "sig": 58000000,
+          "mur": 1,
+          "epr": 1,
+          "model1": 0,
+          "model2": 2000,
+          "b0": null,
+          "n1": null,
+          "n2": null,
+          "vfid_d": [],
+          "vfid_h": [],
+          "vfid_r": [],
+          "vfid_a": [],
+          "num": 0,
+          "comments": ""
+        },
+        {
+          "type": "air",
+          "bran": "Y02_Tower_1",
+          "node1": "X03",
+          "node2": "X04",
+          "pos_1": [
+            0,
+            0,
+            9.8
+          ],
+          "pos_2": [
+            0,
+            0,
+            0
+          ],
+          "oft": 0,
+          "r0": 0.005,
+          "rs2": null,
+          "rs3": null,
+          "r": 0,
+          "l": 0,
+          "sig": 58000000,
+          "mur": 1,
+          "epr": 1,
+          "model1": 0,
+          "model2": 2000,
+          "b0": null,
+          "n1": null,
+          "n2": null,
+          "vfid_d": [],
+          "vfid_h": [],
+          "vfid_r": [],
+          "vfid_a": [],
+          "num": 0,
+          "comments": ""
+        }
+      ],
+      "Lump": [
+        {
+          "Type": "RL",
+          "name": "GRID",
+          "probe": null,
+          "bran_name": "Y03_GRID",
+          "node1": "X04",
+          "node2": "ref",
+          "data_type": null,
+          "value1": 5e1,
+          "value2": 1e-6,
+          "value3": null,
+          "value4": null,
+          "value5": null,
+          "pointer": null,
+          "comments": null
+        },
+        {
+          "Type": "Vs",
+          "name": "Vs",
+          "probe": null,
+          "bran_name": "Y04_Vs",
+          "node1": "X01",
+          "node2": "X02",
+          "data_type": 1,
+          "value1": 1e-6,
+          "value2": 220,
+          "value3": 50,
+          "value4": null,
+          "value5": 0,
+          "pointer": null,
+          "comments": null
+        },
+        {
+          "Type": "Is",
+          "name": "Is",
+          "probe": null,
+          "bran_name": "---",
+          "node1": "X02",
+          "node2": "ref",
+          "data_type": 1,
+          "value1": null,
+          "value2": 110,
+          "value3": 50,
+          "value4": null,
+          "value5": 0,
+          "pointer": null,
+          "comments": null
+        },
+        {
+          "Type": "NLR",
+          "name": "NLR",
+          "probe": null,
+          "bran_name": "Y05_NLR",
+          "node1": "X02",
+          "node2": "X03",
+          "data_type": null,
+          "value1": null,
+          "value2": null,
+          "value3": null,
+          "value4": null,
+          "value5": null,
+          "model": "NLE01",
+          "comments": null
+        },
+        {
+          "Type": "SWT",
+          "name": "SWT",
+          "probe": null,
+          "bran_name": "Y06_SWT",
+          "node1": "X03",
+          "node2": "X04",
+          "data_type": 1,
+          "value1": 0.0001,
+          "value2": 0.0002,
+          "value3": null,
+          "value4": null,
+          "value5": null,
+          "model": null,
+          "comments": null
+        },
+        {
+          "Type": "SWV",
+          "name": "SWV",
+          "probe": null,
+          "bran_name": "Y07_SWV",
+          "node1": "X04",
+          "node2": "ref",
+          "data_type": null,
+          "value1": 1e6,
+          "value2": null,
+          "value3": 60,
+          "value4": null,
+          "value5": null,
+          "model": null,
+          "comments": null
+        }
+      ],
+      "Device": [
+        {
+          "name": "insolator_Tower_1",
+          "type": "insulator",
+          "Lump": [
+            {
+              "Type": "swh",
+              "name": "swh_Tower_1_1",
+              "probe": null,
+              "bran_name": "Y08_swh",
+              "node1": "X02",
+              "node2": "X03",
+              "data_type": null,
+              "value1": 1e6,
+              "value2": null,
+              "value3": null,
+              "value4": null,
+              "value5": null,
+              "model": "SWH01",
+              "comments": null
+            }
+          ]
+        }
+      ]
+      }
+  ],
+  "Source":
+    {
+      "area": "tower_1",
+      "wire": "Y01",
+      "position": [1,0,0]
+    }
+}

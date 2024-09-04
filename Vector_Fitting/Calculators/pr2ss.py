@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.sparse import diags, csr_matrix
 
-# 第43行修改
+# 第43行修改 #26 27行修改
 def pr2ss(SER):
     """
     Convert a SER object to state-space representation.
@@ -22,9 +22,9 @@ def pr2ss(SER):
     N = R.shape[2]
 
     # Initialize C, A, B matrices
-    C = np.zeros((Nc, Nc * N))
-    A = np.zeros((Nc * N, 1))
-    B = np.zeros((Nc * N, Nc))
+    C = np.zeros((Nc, Nc * N), dtype=complex)
+    A = np.zeros((Nc * N, 1), dtype=complex)
+    B = np.zeros((Nc * N, Nc), dtype=complex)
 
     poles = np.diag(np.diag(poles))  # Make sure poles is a diagonal matrix
 

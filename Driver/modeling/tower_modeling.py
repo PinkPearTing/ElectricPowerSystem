@@ -217,7 +217,7 @@ def tower_building(tower, frequency, max_length):
     # 6. 构建G矩阵, node*node
     build_conductance_matrix(tower, P, constants)
 
-    # 6. 合并lumps和tower
+    # 7. 合并lumps和tower
     tower.combine_parameter_matrix()
 
 
