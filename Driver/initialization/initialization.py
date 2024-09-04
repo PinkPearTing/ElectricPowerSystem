@@ -427,7 +427,7 @@ def initial_source(network, nodes, file_name):
         for lump in lumps:
             U_out = U_out.add(lump.voltage_source_matrix, fill_value=0).fillna(0)
             I_out = I_out.add(lump.current_source_matrix, fill_value=0).fillna(0)
-    Source_Matrix = pd.concat([I_out, U_out], axis=0)
+    Source_Matrix = pd.concat([U_out, I_out], axis=0)
     return Source_Matrix
 
 def initialize_cable(cable, max_length):

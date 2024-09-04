@@ -1060,7 +1060,7 @@
         "Source":
     {
       "area": "tower_1",
-      "wire": "Y01",
-      "position": [50,0,10.5]
+      "wire": "Y02",
+      "position": [0,-0.4,9.8]
     }
 }
