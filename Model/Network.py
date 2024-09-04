@@ -236,12 +236,13 @@ class Network:
         for tower in self.towers:
             for ith, lumps in enumerate(
                     [tower.lump] + tower.devices.insulators + tower.devices.arrestors + tower.devices.transformers):
-                for jth, component in enumerate(lumps.switch_disruptive_effect_models + lumps.voltage_controled_switchs):
-                    v1 = current_result.loc[component.node1, 0].values if component.node1 != 'ref' else 0
-                    v2 = current_result.loc[component.node2, 0].values if component.node2 != 'ref' else 0
+                for component_list in [lumps.switch_disruptive_effect_models, lumps.voltage_controled_switchs]:
+                    for component in component_list:
+                        v1 = current_result.loc[component.node1, 0].values if component.node1 != 'ref' else 0
+                        v2 = current_result.loc[component.node2, 0].values if component.node2 != 'ref' else 0
 
-                    resistance = component.update_parameter(v1, v2)
-                    self.resistance_matrix.loc[component.bran[0], component.bran[0]] = resistance
+                        resistance = component.update_parameter(v1, v2)
+                        self.resistance_matrix.loc[component.bran[0], component.bran[0]] = resistance
 
                 for time_controled_switch in lumps.time_controled_switchs:
                     resistance = time_controled_switch.update_parameter(time)
