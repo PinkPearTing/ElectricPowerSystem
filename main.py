@@ -15,7 +15,7 @@ if __name__ == '__main__':
     X08 = network.solution.loc["X08"].tolist()
     min = [abs(a - b) for a, b in zip(X05, X08)]
 
-    X05 = network.solution.loc["X05"].tolist()
+    lightning_source = network.sources.loc["X05"].tolist()
     # 生成数据
     x = np.arange(0, 1001, 1)  # 横坐标数据为从0到10之间，步长为0.1的等差数组
     y = Y13_Tower_1  #
