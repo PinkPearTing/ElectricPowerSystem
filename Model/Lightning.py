@@ -14,7 +14,7 @@ class StrokeParameters:
     HEIDLER_PARAMETERS = {
         '0.25/100us': [0.9, 0.25, 100, 2],
         '8/20us': [30.85, 8, 20, 2.4],
-        '2.6/50us': [100000, 2.6, 50, 2.1],
+        '2.6/50us': [10e4, 2.6, 50, 2.1],
         '10/350us': [44.43, 10, 350, 2.1]
     }
 
@@ -40,7 +40,7 @@ class Channel:
 
 
 class Stroke:
-    def __init__(self, stroke_type: str, duration: float, is_calculated: bool, parameter_set: str, parameters=None):
+    def __init__(self, stroke_type: str, duration: float, dt: float, is_calculated: bool, parameter_set: str, parameters=None):
         """
         初始化脉冲对象
 
@@ -55,16 +55,19 @@ class Stroke:
         parameters (list, optional): 脉冲参数, 仅在 'CIGRE' 和 'Heidler' 类型时使用, parameter_set被指定时, 请勿初始化该参数, 如想测试parameter_set之外的参数集, 请在此处初始化参数列表
         """
         self.stroke_type = stroke_type
-        self.duration = duration
+        # self.duration = duration
         self.is_calculated = is_calculated
         # self.dt = 1.0e-8  # 时间步长
         # self.Nt = 1000  # 时间步数
-        self.Nt = 1000  # 每个stroke电流的最大采样点数
+        self.duration = duration
+        self.dt = dt
+        self.Nt = int(duration/dt)  # 每个stroke电流的最大采样点数
         # self.N_max = 200000  # 最大采样点数
 
 
-        self.t_us = np.linspace(0, duration, self.Nt)  # 时刻，单位为us
-        self.dt = self.duration / self.Nt
+        # self.t_us = np.linspace(0, duration, self.Nt)  # 时刻，单位为us
+          # 时刻，单位为us
+        self.t_us = np.arange(0, self.Nt-1) * self.dt
         self.current_waveform = []  # 雷电流波形的时间序列
 
         # self.stroke_interval = 1.0e-3  # 每个stroke的间隔为1ms
@@ -108,11 +111,11 @@ class Stroke:
         # 计算尾部应用余弦窗的点数, n的取值与采样点个数和间隔时间有关，后续待修改
         Ntail = int(np.floor((self.duration / 10) / self.dt))
         # 生成theta值
-        theta = np.linspace(0, np.pi, Ntail, endpoint=False)
+        theta = np.arange(0, Ntail-1) * np.pi/Ntail
         # 计算余弦窗
         coswin = 0.5 * np.cos(theta) + 0.5
         # 应用余弦窗
-        current_waveform[-Ntail:] *= coswin
+        current_waveform[-Ntail+1:] *= coswin
         return current_waveform
 
     def calculate(self):

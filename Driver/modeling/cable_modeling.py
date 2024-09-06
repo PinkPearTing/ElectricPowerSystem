@@ -132,7 +132,7 @@ def build_conductance_matrix(cable):
     print("cable------------------------------------------------")
 
 
-def build_impedance_matrix(cable, Lc, Ls, constants, varied_frequency):
+def build_impedance_matrix(cable, Lc, Ls, constants, varied_frequency, ground):
     # Z矩阵
     print("cable------------------------------------------------")
     print("cableZ matrix is building...")
@@ -140,7 +140,7 @@ def build_impedance_matrix(cable, Lc, Ls, constants, varied_frequency):
     tube_wire = cable.wires.tube_wires[0]
     Npha = tube_wire.inner_num
 
-    Zgf = calculate_ground_impedance(cable.ground.mur, cable.ground.epr, cable.ground.sig,
+    Zgf = calculate_ground_impedance(ground.mur, ground.epr, ground.sig,
                                      tube_wire.get_coreWires_endNodeZ(), tube_wire.outer_radius,
                                      np.zeros((Npha, 1)), varied_frequency, constants)
     Zcf = calculate_coreWires_impedance(tube_wire.get_coreWires_radii(),
@@ -193,7 +193,7 @@ def build_core_sheath_merged_impedance_matrix(tubeWire, frequency, constants):
     return Zin, Zcs, Zsc
 
 
-def cable_building(cable, frequency, varied_frequency):
+def cable_building(cable, frequency, varied_frequency, ground):
     print("cable------------------------------------------------")
     print("cableCable building...")
     # 0.参数准备
@@ -225,6 +225,6 @@ def cable_building(cable, frequency, varied_frequency):
     build_conductance_matrix(cable)
 
     # 6. 构建Z矩阵
-    build_impedance_matrix(cable, Lc, Ls, constants, varied_frequency)
+    build_impedance_matrix(cable, Lc, Ls, constants, varied_frequency, ground)
     print("cableCable building is completed.")
     print("cable------------------------------------------------")

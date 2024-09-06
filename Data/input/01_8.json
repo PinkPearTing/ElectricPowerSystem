@@ -1057,10 +1057,28 @@
       }
     }
   ],
-        "Source":
-    {
-      "area": "tower_1",
-      "wire": "Y02",
-      "position": [0,-0.4,9.8]
-    }
+  "Source": {
+    "area": "tower_1",
+    "wire": "Y02",
+    "position": [
+      0,
+      -0.4,
+      9.8
+    ]
+  },
+  "Global": {
+    "delta_time": 1e-8,
+    "time": 0.00002,
+    "constant_frequency": 2e4,
+    "max_length": 20,
+    "ground": {
+        "glb": 1,
+        "sig": 0.01,
+        "mur": 1,
+        "epr": 10,
+        "gnd_model": "1",
+        "ionisation_intensity": "",
+        "ionisation_model": ""
+      }
+  }
 }

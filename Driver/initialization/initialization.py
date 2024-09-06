@@ -378,13 +378,14 @@ def initial_device(device_data, dt, T):
 
     return devices
 
-def initial_source(network, nodes, file_name):
+def initial_source(network, nodes, file_name, dt=1e-8, duration = 1e-3):
     json_file_path = "Data/input/" + file_name + ".json"
     # 0. read json file
     with open(json_file_path, 'r') as j:
         load_dict = json.load(j)
 
-    stroke = Stroke('Heidler', duration=1.0e-3, is_calculated=True, parameter_set='2.6/50us', parameters=None)
+    stroke = Stroke('Heidler', duration=duration, dt=dt, is_calculated=True, parameter_set='2.6/50us', parameters=None)
+
     stroke.calculate()
     channel = Channel(hit_pos=[10, 10, 0])
     lightning =Lightning(id=1, type='Direct', strokes=[stroke], channel=channel)

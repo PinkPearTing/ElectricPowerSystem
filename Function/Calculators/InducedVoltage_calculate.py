@@ -61,11 +61,11 @@ def LightningCurrrent_calculate(p1, p2, position, network, node_index, lightning
 
     if lightning.type == 'Direct':
         # 初始化一个 DataFrame，行索引为 Nodes，列数为 Nt
-        I_out = pd.DataFrame(0, index=node_index, columns=range(lightning.strokes[stroke_sequence].Nt), dtype=np.float64)
+        I_out = pd.DataFrame(0, index=node_index, columns=range(lightning.strokes[stroke_sequence].Nt-1), dtype=np.float64)
         I_out.loc[closest_point.name] = lightning.strokes[stroke_sequence].current_waveform
         return I_out
     elif lightning.type == 'Indirect':
-        I_out = pd.DataFrame(0, index=node_index, columns=range(lightning.strokes[stroke_sequence].Nt), dtype=np.float64)
+        I_out = pd.DataFrame(0, index=node_index, columns=range(lightning.strokes[stroke_sequence].Nt-1), dtype=np.float64)
         return I_out
 
 

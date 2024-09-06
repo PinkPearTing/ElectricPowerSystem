@@ -62,7 +62,7 @@ def build_inductance_matrix(tower, L, Lin, Lx):
     print("------------------------------------------------")
 
 # P
-def build_potential_matrix(tower, P):
+def build_potential_matrix(tower, P, ground_epr):
     # P矩阵
     print("------------------------------------------------")
     print("P_tower matrix is building...")
@@ -70,7 +70,7 @@ def build_potential_matrix(tower, P):
     Nair = tower.wires.count_distinct_airPoints()
     Ngnd = tower.wires.count_distinct_gndPoints()
     Pg = np.copy(P)
-    Pg[Nair:Nair + Ngnd] = Pg[Nair:Nair+Ngnd]/tower.ground.epr
+    Pg[Nair:Nair + Ngnd] = Pg[Nair:Nair+Ngnd]/ground_epr
 
     tower.initialize_potential_matrix()
 
@@ -86,13 +86,13 @@ def build_potential_matrix(tower, P):
     print("------------------------------------------------")
 
 
-def build_conductance_matrix(tower, P, constants):
+def build_conductance_matrix(tower, P, constants, ground_sig):
     # P矩阵
     print("------------------------------------------------")
     print("G_tower matrix is building...")
 
     ep0 = constants.ep0
-    k = ep0/tower.ground.sig
+    k = ep0/ground_sig
     Nair = tower.wires.count_distinct_airPoints()
     Ngnd = tower.wires.count_distinct_gndPoints()
     G = np.zeros_like(P)
@@ -188,7 +188,7 @@ def prepare_building_parameters(tubeWire, max_length, frequency, constants):
     return Rin, Rx, Lin, Lx, Cin
 
 
-def tower_building(tower, frequency, max_length):
+def tower_building(tower, frequency, max_length, ground):
     print("------------------------------------------------")
     print(f"Tower:{tower.name} building...")
     # 0.参数准备
@@ -197,7 +197,7 @@ def tower_building(tower, frequency, max_length):
         Rin, Rx, Lin, Lx, Cin = prepare_building_parameters(tower.tubeWire, max_length, frequency, constants)
     else:
         Rin, Rx, Lin, Lx, Cin = 0, 0, 0, 0, 0
-    L, P = calculate_wires_inductance_potential_with_ground(tower.wires, tower.ground, constants)
+    L, P = calculate_wires_inductance_potential_with_ground(tower.wires, ground, constants)
 
     # 1. 构建A矩阵
     build_incidence_matrix(tower)
@@ -209,13 +209,13 @@ def tower_building(tower, frequency, max_length):
     build_inductance_matrix(tower, L, Lin, Lx)
 
     # 4. 构建P矩阵, node*node
-    build_potential_matrix(tower, P)
+    build_potential_matrix(tower, P, ground.epr)
 
     # 5. 构建C矩阵
     build_capacitance_matrix(tower, Cin)
 
     # 6. 构建G矩阵, node*node
-    build_conductance_matrix(tower, P, constants)
+    build_conductance_matrix(tower, P, constants, ground.sig)
 
     # 7. 合并lumps和tower
     tower.combine_parameter_matrix()

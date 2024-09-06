@@ -58,7 +58,7 @@ class flash_Insulator(Strategy):
     def apply(self,network):
         network.towers[0].lump
 
-class NonLiear(Strategy):
+class NoLinear(Strategy):
     def apply(self, network):
         """
         【函数功能】非线性电路求解
@@ -80,7 +80,7 @@ class NonLiear(Strategy):
         branches, nodes = network.incidence_matrix_A.shape
         out = np.zeros((branches + nodes, network.Nt))
         source = np.array(network.sources)
-
+        out_index = network.capacitance_matrix.columns.tolist() + network.inductance_matrix.columns.tolist()
         # source = np.array(sources)
         for i in range(network.Nt - 1):
             C = network.capacitance_matrix.to_numpy()  # 点点
@@ -99,12 +99,10 @@ class NonLiear(Strategy):
             temp_result = inv_LEFT.dot(Isource + RIGHT)
             #temp_result = inv_LEFT.dot(RIGHT)
             out[:, i + 1] = np.copy(temp_result)[:, 0]
-            temp_result = pd.DataFrame(temp_result,
-                                       index=network.capacitance_matrix.columns.tolist() + network.inductance_matrix.columns.tolist())
+            temp_result = pd.DataFrame(temp_result,index=out_index)
 
             t = network.dt * (i + 1)
             network.update_H(temp_result, t)
 
-        network.solution = pd.DataFrame(out,
-                                     index=network.capacitance_matrix.columns.tolist() + network.inductance_matrix.columns.tolist())
+        network.solution = pd.DataFrame(out,index=out_index)
 

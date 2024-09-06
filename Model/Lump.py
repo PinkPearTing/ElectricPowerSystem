@@ -810,16 +810,15 @@ class Switch_Disruptive_Effect_Model(Component):
                          {"resistance": resistance, "type_of_data": type_of_data, "DE_max": DE_max,
                           "v_initial": v_initial, "k": k})
 
-    def update_parameter(self, v_primary, v_secondary):
+    def update_parameter(self, voltage, dt):
         """
         【函数功能】破坏效应值计算
         【入参】
-        v_primary (float): 首端节点电压。
-        v_secondary(float): 末端节点电压
+        voltage (float): 器件电压。
         """
-        voltage = abs(v_primary - v_secondary)
         if voltage > self.parameters['v_initial']:
-            self.DE += (voltage - self.parameters['v_initial']) ** self.parameters['k']
+            # self.DE += (voltage - self.parameters['v_initial']) ** self.parameters['k']
+            self.DE = self.DE + (voltage - self.parameters['v_initial'])*dt
 
         if self.DE >= self.parameters['DE_max']:
             self.on_off = -1
