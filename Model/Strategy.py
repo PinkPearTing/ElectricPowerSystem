@@ -88,11 +88,17 @@ class NoLinear(Strategy):
             L = network.inductance_matrix.to_numpy()  # 线线
             R = network.resistance_matrix.to_numpy()
             ima = network.incidence_matrix_A.to_numpy()  # 线点
-            imb = network.incidence_matrix_B.T.to_numpy()  # 点线
+            imb = network.incidence_matrix_B.T.to_numpy()
+            # 点线
             Vnode = out[:nodes, i].reshape((-1, 1))
             Ibran = out[nodes:, i].reshape((-1, 1))
-            Isource = source[:,i].reshape((-1,1))
+            Isource = source[:,i+1].reshape((-1,1))
             LEFT = np.block([[-ima, -R - L / network.dt], [G + C / network.dt, -imb]])
+            # L_py_index = ['L_'+ind for ind in network.incidence_matrix_A.index.to_list()+network.conductance_matrix.index.to_list()]
+            # R_py_index = ['R_'+ind for ind in network.incidence_matrix_A.columns.to_list()+network.resistance_matrix.columns.to_list()]
+            # LEFT_py = pd.DataFrame(LEFT, index=L_py_index, columns=R_py_index)
+            # LEFT_py.sort_index(axis=0, inplace=True)
+            # LEFT_py.sort_index(axis=1, inplace=True)
             inv_LEFT = np.linalg.inv(LEFT)
             RIGHT = np.block([[(-L / network.dt).dot(Ibran)], [(C / network.dt).dot(Vnode)]])
 

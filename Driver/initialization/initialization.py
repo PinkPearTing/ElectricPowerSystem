@@ -351,6 +351,13 @@ def initial_lump(lump_data, dt, T):
                     k = lump['value4']
                 lumps.add_switch_disruptive_effect_model(
                     Switch_Disruptive_Effect_Model(name, bran_name, node1, node2, resistance, 0, DE_max, v_initial, k))
+            case 'MTCK':
+                dist = np.array(lump['distance'])
+                high = np.array(lump['high'])
+                radius = np.array(lump['r0'])
+
+
+
     # 获取器件不重复的支路列表和节点列表
     lumps.brans_nodes_list_initial()
     # 初始化Lumps参数矩阵

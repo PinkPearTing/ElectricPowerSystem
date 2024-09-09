@@ -4,6 +4,9 @@ import os
 import collections
 import pandas as pd
 
+from Function.Calculators.Inductance import calculate_OHL_mutual_inductance
+from Model.Contant import Constant
+
 curPath = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(curPath)
 
@@ -824,6 +827,53 @@ class Switch_Disruptive_Effect_Model(Component):
             self.on_off = -1
         return 10 ** (self.on_off * 6)
 
+class MTCK(Component):
+    def __init__(self, name: str, bran: np.ndarray, node1: np.ndarray, distance: np.ndarray,
+                 high: np.ndarray, radius: np.ndarray):
+        """
+        传输线阻抗匹配类，继承自 Component 类。
+
+        Args:
+            name (str): 电压控制开关名称。
+            bran (np.ndarray, n*1): 器件支路名称。
+            node1 (np.ndarray, n*1): 器件节点1名称。
+            node2 (np.ndarray, n*1): 器件节点2名称。
+            distance (float): horizontal distance。
+            high (int): 高度。
+            DE_max(float): 破坏效应值。
+            radius(float): 半径。
+        """
+        super().__init__(name, bran, node1, None, {"distance": distance, "high": high, "radius": radius})
+
+    def ima_parameter_assign(self, ima):
+        """
+        【函数功能】关联矩阵A参数分配
+        【入参】
+        ima(pandas.Dataframe:Nbran*Nnode)：关联矩阵A（Nbran：支路数，Nnode：节点数）
+        """
+        for node in self.node1:
+            self.assign_incidence_matrix_value(ima, self.bran[0], node, 1)
+
+    def imb_parameter_assign(self, imb):
+        """
+        【函数功能】关联矩阵B参数分配
+        【入参】
+        imb(pandas.Dataframe:Nbran*Nnode)：关联矩阵B（Nbran：支路数，Nnode：节点数）
+        """
+        for node in self.node1:
+            self.assign_incidence_matrix_value(imb, self.bran[0], node, 1)
+
+    def r_parameter_assign(self, r):
+        """
+        【函数功能】电阻参数分配
+        【入参】
+        r(pandas.Dataframe:Nbran*Nbran)：电阻矩阵（Nbran：支路数）
+        """
+        constants = Constant()
+        Vair = constants.Vair
+        Lm = calculate_OHL_mutual_inductance(self.parameters['radius'], self.parameters['high'], self.parameters['offset'], constants)
+        resistance = Lm*Vair
+        r.loc[self.bran, self.bran] = resistance
 
 class Lumps:
     def __init__(self, resistor_inductors=None, conductor_capacitors=None, voltage_control_voltage_sources=None,
@@ -834,7 +884,7 @@ class Lumps:
                  voltage_controled_switchs=None, time_controled_switchs=None, a2gs=None, grounds=None,
                  switch_disruptive_effect_models=None,
                  current_sources_cosine=None, current_sources_empirical=None, voltage_sources_cosine=None,
-                 voltage_sources_empirical=None
+                 voltage_sources_empirical=None, MTCKs=None
                  ):
         """
         初始化Lumps对象
@@ -887,6 +937,7 @@ class Lumps:
         self.a2gs = a2gs or []
         self.grounds = grounds or []
         self.switch_disruptive_effect_models = switch_disruptive_effect_models or []
+        self.MTCKs = MTCKs or []
     
     def brans_nodes_list_initial(self):
         """
@@ -917,7 +968,7 @@ class Lumps:
         for component_list in [self.voltage_control_voltage_sources, self.current_control_voltage_sources,
                                self.voltage_control_current_sources, self.current_control_current_sources, 
                                self.transformers_one_phase, self.transformers_three_phase,
-                               self.mutual_inductors_two_port, self.mutual_inductors_three_port]:
+                               self.mutual_inductors_two_port, self.mutual_inductors_three_port, self.MTCKs]:
             for component in component_list:
                 for node1 in component.node1:
                     all_nodes[node1] = True
@@ -1133,6 +1184,12 @@ class Lumps:
         """
         self.grounds.append(ground)
 
+    def add_MTCK(self, MTCK):
+        """
+        添加大地
+        """
+        self.MTCKs.append(MTCK)
+
     def parameters_assign(self):
         """
         【函数功能】Lump元件参数分配
@@ -1154,7 +1211,7 @@ class Lumps:
                 self.voltage_control_current_sources + self.transformers_one_phase + self.transformers_three_phase +
                 self.a2gs + self.voltage_sources_empirical + self.voltage_sources_cosine +
                 self.switch_disruptive_effect_models + self.nolinear_resistors + self.voltage_controled_switchs +
-                self.time_controled_switchs):
+                self.time_controled_switchs + self.MTCKs):
             component.ima_parameter_assign(self.incidence_matrix_A)
             component.imb_parameter_assign(self.incidence_matrix_B)
             component.r_parameter_assign(self.resistance_matrix)

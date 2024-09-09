@@ -439,7 +439,9 @@ def INT_SLAN_2D(ps1, ps2, rs, pf1, pf2, rf, PROD_MOD, COEF_MOD):
 
 def calculate_wires_inductance_potential_with_ground(wires, ground, constants):
     # （0) Intial constants
-    ep0, mu0, ke, km = constants.ep0, constants.mu0, constants.ke, constants.km
+    ep0, mu0 = constants.ep0, constants.mu0
+    ke = 1/(4*np.pi*ep0)
+    km = mu0/(4*np.pi)
     # Nba所有空气中支路的数量
     Nba = wires.count_airWires()
     # Ngn所有地面支路的数量
@@ -526,17 +528,15 @@ def calculate_wires_inductance_potential_with_ground(wires, ground, constants):
         P0 = P0 - Pai
 
     # (2bii) lossy ground model
-    if ground.gnd_model == "Lossy":
-        if not rb1.size or not rb2.size:
-            Lag = np.array([])
-            Lga = np.array([])
-            Pag = np.array([])
-            Pga = np.array([])
-        else:
-            Lag = Lout[rb1[:, np.newaxis], rb2]
-            Lga = Lout[rb2[:, np.newaxis], rb1]
-            Pag = Pout[rn1[:, np.newaxis], rn2]
-            Pga = Pout[rn2[:, np.newaxis], rn1]
+    elif ground.gnd_model == "Lossy":
+        Lag = Lout[rb1, :]
+        Lag = np.copy(Lag[:, rb2])
+        Lga = Lout[rb2, :]
+        Lga = np.copy(Lga[:, rb1])
+        Pag = Pout[rn1, :]
+        Pag = np.copy(Pag[:, rn2])
+        Pga = Pout[rn2, :]
+        Pga = np.copy(Pga[:, rn1])
 
         # image effect
         # (i) f./s. wire in air
@@ -570,7 +570,7 @@ def calculate_wires_inductance_potential_with_ground(wires, ground, constants):
     return L0, P0
 
 
-def calculate_OHL_mutual_inductance(radius, height, end_node_y, constants):
+def calculate_OHL_mutual_inductance(radius, height, offset, constants):
     """
     【函数功能】架空线电感电容矩阵参数计算
     【入参】
@@ -589,7 +589,7 @@ def calculate_OHL_mutual_inductance(radius, height, end_node_y, constants):
     Lm = np.diag(out.reshape(-1))
     for i in range(Ncon - 1):
         for j in range(i + 1, Ncon):
-            d = abs(end_node_y[i] - end_node_y[j])
+            d = abs(offset[i] - offset[j])
             h1 = height[i]
             h2 = height[j]
             Lm[i, j] = 0.5 * np.log((d ** 2 + (h1 + h2) ** 2) / (d ** 2 + (h1 - h2) ** 2))

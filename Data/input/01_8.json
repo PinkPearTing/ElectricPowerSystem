@@ -217,12 +217,12 @@
           "node2": "X10",
           "pos_1": [
             0,
-            0.1,
+            0,
             9.8
           ],
           "pos_2": [
             0,
-            0,
+            0.1,
             9.8
           ],
           "oft": 0,
@@ -253,12 +253,12 @@
           "node2": "X10",
           "pos_1": [
             0,
-            0.6,
+            0.1,
             9.8
           ],
           "pos_2": [
             0,
-            0.1,
+            0.6,
             9.8
           ],
           "oft": 0,
@@ -330,6 +330,70 @@
           "data_type": null,
           "value1": 5e1,
           "value2": 1e-6,
+          "value3": null,
+          "value4": null,
+          "value5": null,
+          "pointer": null,
+          "comments": null
+        },
+        {
+          "Type": "RL",
+          "name": "Tower_1_connect_OHL_S",
+          "probe": null,
+          "bran_name": "Y_T12O_S",
+          "node1": "X01_OHL",
+          "node2": "X01",
+          "data_type": null,
+          "value1": 1E-9,
+          "value2": 1e-12,
+          "value3": null,
+          "value4": null,
+          "value5": null,
+          "pointer": null,
+          "comments": null
+        },
+        {
+          "Type": "RL",
+          "name": "Tower_1_connect_OHL_A",
+          "probe": null,
+          "bran_name": "Y_T12O_A",
+          "node1": "X02_OHL",
+          "node2": "X02",
+          "data_type": null,
+          "value1": 1E-9,
+          "value2": 1e-12,
+          "value3": null,
+          "value4": null,
+          "value5": null,
+          "pointer": null,
+          "comments": null
+        },
+        {
+          "Type": "RL",
+          "name": "Tower_1_connect_OHL_B",
+          "probe": null,
+          "bran_name": "Y_T12O_B",
+          "node1": "X03_OHL",
+          "node2": "X03",
+          "data_type": null,
+          "value1": 1E-9,
+          "value2": 1e-12,
+          "value3": null,
+          "value4": null,
+          "value5": null,
+          "pointer": null,
+          "comments": null
+        },
+        {
+          "Type": "RL",
+          "name": "Tower_1_connect_OHL_S",
+          "probe": null,
+          "bran_name": "Y_T12O_C",
+          "node1": "X04_OHL",
+          "node2": "X04",
+          "data_type": null,
+          "value1": 1E-9,
+          "value2": 1e-12,
           "value3": null,
           "value4": null,
           "value5": null,
@@ -450,7 +514,7 @@
         "type": "1",
         "Vclass": "10kV",
         "position": [
-          100,
+          20,
           0,
           0
         ],
@@ -657,12 +721,12 @@
           "node2": "X26",
           "pos_1": [
             0,
-            0.1,
+            0,
             9.8
           ],
           "pos_2": [
             0,
-            0,
+            0.1,
             9.8
           ],
           "oft": 0,
@@ -693,12 +757,12 @@
           "node2": "X26",
           "pos_1": [
             0,
-            0.6,
+            0.1,
             9.8
           ],
           "pos_2": [
             0,
-            0.1,
+            0.6,
             9.8
           ],
           "oft": 0,
@@ -770,6 +834,70 @@
           "data_type": null,
           "value1": 5e1,
           "value2": 1e-6,
+          "value3": null,
+          "value4": null,
+          "value5": null,
+          "pointer": null,
+          "comments": null
+        },
+        {
+          "Type": "RL",
+          "name": "Tower_2_connect_OHL_S",
+          "probe": null,
+          "bran_name": "Y_T22O_S",
+          "node1": "X17_OHL",
+          "node2": "X17",
+          "data_type": null,
+          "value1": 1E-9,
+          "value2": 1e-12,
+          "value3": null,
+          "value4": null,
+          "value5": null,
+          "pointer": null,
+          "comments": null
+        },
+        {
+          "Type": "RL",
+          "name": "Tower_2_connect_OHL_A",
+          "probe": null,
+          "bran_name": "Y_T22O_A",
+          "node1": "X18_OHL",
+          "node2": "X18",
+          "data_type": null,
+          "value1": 1E-9,
+          "value2": 1e-12,
+          "value3": null,
+          "value4": null,
+          "value5": null,
+          "pointer": null,
+          "comments": null
+        },
+        {
+          "Type": "RL",
+          "name": "Tower_2_connect_OHL_B",
+          "probe": null,
+          "bran_name": "Y_T22O_B",
+          "node1": "X19_OHL",
+          "node2": "X19",
+          "data_type": null,
+          "value1": 1E-9,
+          "value2": 1e-12,
+          "value3": null,
+          "value4": null,
+          "value5": null,
+          "pointer": null,
+          "comments": null
+        },
+        {
+          "Type": "RL",
+          "name": "Tower_2_connect_OHL_S",
+          "probe": null,
+          "bran_name": "Y_T22O_C",
+          "node1": "X20_OHL",
+          "node2": "X20",
+          "data_type": null,
+          "value1": 1E-9,
+          "value2": 1e-12,
           "value3": null,
           "value4": null,
           "value5": null,
@@ -903,7 +1031,7 @@
         "Tower_tail": "tower_2",
         "Tower_tail_id": 2,
         "Tower_tail_pos": [
-          100,
+          20,
           0,
           0
         ]
@@ -912,8 +1040,8 @@
         {
           "type": "SW",
           "bran": "",
-          "node1": "X01",
-          "node2": "X17",
+          "node1": "X01_OHL",
+          "node2": "X17_OHL",
           "node1_pos": [
             0,
             0,
@@ -946,8 +1074,8 @@
         {
           "type": "CIRO",
           "bran": "",
-          "node1": "X02",
-          "node2": "X18",
+          "node1": "X02_OHL",
+          "node2": "X18_OHL",
           "node1_pos": [
             0,
             -0.4,
@@ -980,8 +1108,8 @@
         {
           "type": "CIRO",
           "bran": "",
-          "node1": "X03",
-          "node2": "X19",
+          "node1": "X03_OHL",
+          "node2": "X19_OHL",
           "node1_pos": [
             0,
             0.1,
@@ -1014,8 +1142,8 @@
         {
           "type": "CIRO",
           "bran": "",
-          "node1": "X04",
-          "node2": "X20",
+          "node1": "X04_OHL",
+          "node2": "X20_OHL",
           "node1_pos": [
             0,
             0.6,
@@ -1072,11 +1200,11 @@
     "constant_frequency": 2e4,
     "max_length": 20,
     "ground": {
-        "glb": 1,
+        "glb": 0,
         "sig": 0.01,
         "mur": 1,
         "epr": 10,
-        "gnd_model": "1",
+        "gnd_model": "Perfect",
         "ionisation_intensity": "",
         "ionisation_model": ""
       }

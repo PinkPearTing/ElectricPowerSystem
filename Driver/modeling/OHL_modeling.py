@@ -113,13 +113,12 @@ def OHL_building(OHL,  max_length, frequency, ground):
     constants = Constant()
     OHL_r = OHL.wires.get_radii()
     OHL_height = OHL.wires.get_heights()
-    start_node = OHL.wires.get_start_points()
     length = distance(OHL.info.HeadTower_pos,OHL.info.TailTower_pos)
 
     segment_num = int(np.ceil(length / max_length))
     segment_length = length/segment_num
 
-    Lm = calculate_OHL_mutual_inductance(OHL_r, OHL_height, start_node[:, 1], constants)
+    Lm = calculate_OHL_mutual_inductance(OHL_r, OHL_height, OHL.wires.get_offsets(), constants)
 
     OHL.get_brans_nodes_list(segment_num)
 
