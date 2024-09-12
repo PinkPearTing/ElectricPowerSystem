@@ -83,7 +83,7 @@ def update_matrix(matrix, indices, submatrix):
     updated_matrix = matrix.copy()  # 创建输入矩阵的副本
     i = 0
     for index in indices:
-        updated_matrix[index, indices] = submatrix[i, :]
+        updated_matrix[index, indices] += submatrix[i, :]
         i += 1
 
     return updated_matrix
@@ -108,6 +108,6 @@ def update_and_sum_matrix(matrix):
         new_matrix[0, j] = -np.sum(new_matrix[1:, j])
 
     # 处理第一行和第一列
-    new_matrix[0, 0] = -0.5* (np.sum(new_matrix[0, 1:]) + np.sum(new_matrix[1:, 0]))
+    new_matrix[0, 0] = -0.5 * (np.sum(new_matrix[0, 1:]) + np.sum(new_matrix[1:, 0]))
 
     return new_matrix

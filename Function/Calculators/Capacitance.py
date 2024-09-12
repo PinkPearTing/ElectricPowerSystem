@@ -22,7 +22,7 @@ def calculate_coreWires_capacitance(sheath_outer_radius, sheath_inner_radius, co
     return Cc
 
 
-def calculate_sheath_capacitance(end_node_z, sheath_epr, Ls, constants):
+def calculate_sheath_capacitance(tubeposition, sheath_epr, Ls, constants):
     """
     【函数功能】套管电容计算
     【入参】
@@ -35,13 +35,13 @@ def calculate_sheath_capacitance(end_node_z, sheath_epr, Ls, constants):
     """
     V0 = constants.Vair
     Vduct = 1e6
-    if end_node_z[0] >= Vduct:
+    if tubeposition >= Vduct:
         Cs = 0
-    elif end_node_z[0] > 0:
+    elif tubeposition > 0:
         Cs = 1 / (Ls * V0 ** 2)
-    elif end_node_z[0] == 0:
+    elif tubeposition == 0:
         Cs = 1 / (Ls * V0 ** 2)
-    elif end_node_z[0] < 0:
+    elif tubeposition < 0:
         Vs = V0 / np.sqrt(sheath_epr)
         Cs = 1 / (Ls * Vs ** 2)
     else:

@@ -139,8 +139,8 @@ def initialize_tower(tower_dict, max_length, dt, T):
     wires.split_long_wires_all(max_length)
 
     # 将表皮线段添加到空气线段集合中
-    for tubeWire in wires.tube_wires:
-        wires.add_air_wire(tubeWire.sheath)  # sheath wire is in the air, we need to calculate it in air part.
+    # for tubeWire in wires.tube_wires:
+    #     wires.add_air_wire(tubeWire.sheath)  # sheath wire is in the air, we need to calculate it in air part.
  #   wires.display()
     # 2. initialize ground
     ground_dic = tower_dict['ground']
@@ -332,7 +332,7 @@ def initial_lump(lump_data, dt, T):
                 resistance = lump['value1']
                 lumps.add_a2g(
                     A2G(name, bran_name, node1, node2, resistance))
-            case 'GOD':
+            case 'ROD':
                 resistance = lump['value1']
                 inductance = lump['value2']
                 lumps.add_a2g(

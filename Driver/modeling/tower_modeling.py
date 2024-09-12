@@ -1,7 +1,7 @@
 import numpy as np
 from Function.Calculators.Inductance import calculate_coreWires_inductance, calculate_sheath_inductance, calculate_wires_inductance_potential_with_ground
 from Function.Calculators.Capacitance import calculate_coreWires_capacitance, calculate_sheath_capacitance
-from Function.Calculators.Impedance import calculate_coreWires_impedance, calculate_sheath_impedance, calculate_multual_impedance
+from Function.Calculators.Impedance import calculate_coreWires_impedance, calculate_sheath_impedance, calculate_multual_impedance, calculate_OHL_wire_impedance
 from Model.Contant import Constant
 from scipy.linalg import block_diag
 
@@ -21,7 +21,7 @@ def build_incidence_matrix(tower):
     print("------------------------------------------------")
 
 # R
-def build_resistance_matrix(tower, Rin, Rx):
+def build_resistance_matrix(tower, Rin, Rx, tube_length):
     # R矩阵
     print("------------------------------------------------")
     print("R_tower matrix is building...")
@@ -32,14 +32,14 @@ def build_resistance_matrix(tower, Rin, Rx):
 
         tower.expand_resistance_matrix()
 
-        tower.update_resistance_matrix_by_tubeWires(Rin, Rx)
+        tower.update_resistance_matrix_by_tubeWires(Rin, Rx, tube_length)
 
-    df_R = pd.DataFrame(tower.resistance_matrix, index=tower.wires_name, columns=tower.wires_name)
+    # df_R = pd.DataFrame(tower.resistance_matrix, index=tower.wires_name, columns=tower.wires_name)
     print("R_tower matrix is built successfully")
     print("------------------------------------------------")
 
 # L
-def build_inductance_matrix(tower, L, Lin, Lx):
+def build_inductance_matrix(tower, L, Lin, Lx, tube_length):
     # L矩阵
     print("------------------------------------------------")
     print("L_tower matrix is building...")
@@ -54,12 +54,15 @@ def build_inductance_matrix(tower, L, Lin, Lx):
 
         sheath_inductance_matrix = tower.update_inductance_matrix_by_coreWires()
 
-        tower.update_inductance_matrix_by_tubeWires(sheath_inductance_matrix, Lin, Lx)
+        tower.update_inductance_matrix_by_tubeWires(sheath_inductance_matrix, Lin, Lx, tube_length)
+
+        return sheath_inductance_matrix
     #构建L矩阵df表，便于后续索引
     #tower.inductance_matrix_df = pd.DataFrame(tower.inductance_matrix, index=tower.wires_name, columns=tower.wires_name)
     #print(tower.inductance_matrix)
     print("L_tower matrix is built successfully")
     print("------------------------------------------------")
+    return 0
 
 # P
 def build_potential_matrix(tower, P, ground_epr):
@@ -67,16 +70,9 @@ def build_potential_matrix(tower, P, ground_epr):
     print("------------------------------------------------")
     print("P_tower matrix is building...")
 
-    Nair = tower.wires.count_distinct_airPoints()
-    Ngnd = tower.wires.count_distinct_gndPoints()
-    Pg = np.copy(P)
-    Pg[Nair:Nair + Ngnd] = Pg[Nair:Nair+Ngnd]/ground_epr
+    tower.initialize_potential_matrix(P)
 
-    tower.initialize_potential_matrix()
-
-    tower.add_potential_matrix(Pg)
-
-
+    tower.update_potential_matrix_by_ground(ground_epr)
 
     #构建P矩阵df表，便于后续索引
     # df_R = pd.DataFrame(tower.potential_matrix, index=tower.wires_name, columns=tower.wires_name)
@@ -91,16 +87,11 @@ def build_conductance_matrix(tower, P, constants, ground_sig):
     print("------------------------------------------------")
     print("G_tower matrix is building...")
 
-    ep0 = constants.ep0
-    k = ep0/ground_sig
-    Nair = tower.wires.count_distinct_airPoints()
-    Ngnd = tower.wires.count_distinct_gndPoints()
-    G = np.zeros_like(P)
-    G[Nair:Nair+Ngnd] = k * P[Nair:Nair + Ngnd]
-
     tower.initialize_conductance_matrix()
 
-    tower.add_conductance_matrix(G)
+    tower.update_conductance_matrix_by_ground(P, ground_sig, constants)
+
+
 
     # 构建P矩阵df表，便于后续索引
     # df_R = pd.DataFrame(tower.potential_matrix, index=tower.wires_name, columns=tower.wires_name)
@@ -126,7 +117,23 @@ def build_capacitance_matrix(tower, Cin):
     print("------------------------------------------------")
 
 
-def build_impedance_matrix(tubeWire, frequency, constants):
+def build_impedance_matrix(tower, L, Lin, sheath_inductance_matrix, tube_length, varied_frequency, constants):
+    # 计算套管和芯线内部的阻抗矩阵
+    # Core wires impedance
+
+    Nf = varied_frequency.size
+
+    tower.initialize_impedance_matrix(L, varied_frequency, constants)
+
+    if tower.tubeWire != None:
+        Zcf, Zsf, Zcsf, Zscf = calculate_impedance_matrix(tower.tubeWire, varied_frequency, constants)
+
+        tower.expand_impedance_matrix(Nf)
+
+        tower.update_impedance_matrix_by_tubeWires(Zcf, Zsf, Zcsf, Zscf, Lin, sheath_inductance_matrix, tube_length, varied_frequency)
+
+
+def calculate_impedance_matrix(tubeWire, frequency, constants):
     # 计算套管和芯线内部的阻抗矩阵
     # Core wires impedance
     Zc = calculate_coreWires_impedance(tubeWire.get_coreWires_radii(), tubeWire.get_coreWires_innerOffset(),
@@ -143,70 +150,87 @@ def build_impedance_matrix(tubeWire, frequency, constants):
                                            tubeWire.inner_radius, tubeWire.sheath.r, frequency, constants)
 
     # 构成套管和芯线内部的阻抗矩阵，其中实部为电阻、虚部为电感，后续将会按照实部和虚部分别取出
-    Zin = np.block([[Zs, Zsc],
-                    [Zcs, Zc]])
-    return Zin, Zcs, Zsc
+    # Zin = np.block([[Zs, Zsc],
+    #                 [Zcs, Zc]])
+
+    return Zc, Zs, Zcs, Zsc
 
 
 def build_tubeWire_inductance_capacitance(tubeWire, constants):
+    Vtube = 1e6
+
     # Core wires inductance
     Lc = calculate_coreWires_inductance(tubeWire.get_coreWires_radii(), tubeWire.get_coreWires_innerOffset(),
-                                        tubeWire.get_coreWires_innerAngle(), tubeWire.sheath.r, constants)
+                                        tubeWire.get_coreWires_innerAngle(), tubeWire.inner_radius, constants)
 
     # Core wires capacitance
     Cc = calculate_coreWires_capacitance(tubeWire.outer_radius, tubeWire.inner_radius, tubeWire.get_coreWires_epr(), Lc,
                                          constants)
 
     # Sheath inductance
-    Ls = calculate_sheath_inductance(tubeWire.get_coreWires_endNodeZ(), tubeWire.sheath.r, tubeWire.outer_radius,
+    Ls = calculate_sheath_inductance(Vtube, tubeWire.sheath.r, tubeWire.outer_radius,
                                      constants)
 
     # Sheath capacitance
-    Cs = calculate_sheath_capacitance(tubeWire.get_coreWires_endNodeZ(), tubeWire.sheath.epr, Ls, constants)
+    Cs = calculate_sheath_capacitance(Vtube, tubeWire.sheath.epr, Ls, constants)
 
     return Lc, Cc, Ls, Cs
 
 
-def prepare_building_parameters(tubeWire, max_length, frequency, constants):
-    Zin, Zcs, Zsc = build_impedance_matrix(tubeWire, frequency, constants)
+def prepare_building_parameters(tubeWire, frequency, constants):
+    Zc, Zs, Zcs, Zsc = calculate_impedance_matrix(tubeWire, frequency, constants)
+    Zin = np.block([[Zs, Zsc],
+                    [Zcs, Zc]])
+
     Lc, Cc, Ls, Cs = build_tubeWire_inductance_capacitance(tubeWire, constants)
     # 构成套管和芯线内部的电阻矩阵
-    Rin = np.real(Zin) * max_length
+    Rin = np.real(Zin)
 
     # 构成套管和芯线内部的电感矩阵
-    Lin = (np.imag(Zin) / (2 * np.pi * frequency) + block_diag(Ls, Lc)) * max_length
+    Lin = (np.imag(Zin) / (2 * np.pi * frequency) + block_diag(Ls, Lc))
 
     # 构建套管和芯线内部的电容矩阵
     Cin = block_diag(Cs, Cc)
 
     # 计算套管和芯线的电感矩阵
     Lx = block_diag(0, (np.tile(np.imag(Zcs) / (2 * np.pi * frequency), (1, 3)) + np.tile(
-        np.imag(Zsc) / (2 * np.pi * frequency), (3, 1))) * max_length)
+        np.imag(Zsc) / (2 * np.pi * frequency), (3, 1))))
     # 计算套管和芯线的电阻矩阵
-    Rx = block_diag(0, (np.real(Zsc) + np.real(Zcs)) * max_length)
+    Rx = block_diag(0, (np.real(Zsc) + np.real(Zcs)))
 
     return Rin, Rx, Lin, Lx, Cin
 
+def prepare_sheath_inductance(tower):
+    # 获取矩阵中表皮开始的索引和结束的索引
+    sheath_start_index = len(tower.wires.air_wires) + len(tower.wires.ground_wires)
+    sheath_end_index = len(tower.wires.air_wires) + len(tower.wires.ground_wires) + len(tower.wires.tube_wires)
+    # 单独获取表皮的电感矩阵
+    sheath_inductance_matrix = np.copy(
+        tower.inductance_matrix[sheath_start_index:sheath_end_index, sheath_start_index:sheath_end_index])
+    return sheath_inductance_matrix
 
-def tower_building(tower, frequency, max_length, ground):
+
+def tower_building(tower, frequency, max_length, ground, varied_frequency):
     print("------------------------------------------------")
     print(f"Tower:{tower.name} building...")
     # 0.参数准备
     constants = Constant()
     if tower.tubeWire != None:
-        Rin, Rx, Lin, Lx, Cin = prepare_building_parameters(tower.tubeWire, max_length, frequency, constants)
+        Rin, Rx, Lin, Lx, Cin = prepare_building_parameters(tower.tubeWire, frequency, constants)
+        tube_length = tower.wires.get_tube_lengths()[0]
     else:
         Rin, Rx, Lin, Lx, Cin = 0, 0, 0, 0, 0
+        tube_length = 0
     L, P = calculate_wires_inductance_potential_with_ground(tower.wires, ground, constants)
 
     # 1. 构建A矩阵
     build_incidence_matrix(tower)
 
     # 2. 构建R矩阵
-    build_resistance_matrix(tower, Rin, Rx)
+    build_resistance_matrix(tower, Rin, Rx, tube_length)
 
     # 3. 构建L矩阵
-    build_inductance_matrix(tower, L, Lin, Lx)
+    sheath_inductance_matrix = build_inductance_matrix(tower, L, Lin, Lx, tube_length)
 
     # 4. 构建P矩阵, node*node
     build_potential_matrix(tower, P, ground.epr)
@@ -216,6 +240,9 @@ def tower_building(tower, frequency, max_length, ground):
 
     # 6. 构建G矩阵, node*node
     build_conductance_matrix(tower, P, constants, ground.sig)
+
+
+    build_impedance_matrix(tower, L, Lin, sheath_inductance_matrix, tube_length, varied_frequency, constants)
 
     # 7. 合并lumps和tower
     tower.combine_parameter_matrix()

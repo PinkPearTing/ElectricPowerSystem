@@ -34,7 +34,7 @@ def calculate_coreWires_inductance(core_wires_r, core_wires_offset, core_wires_a
     return Lc
 
 
-def calculate_sheath_inductance(end_node_z, sheath_r, sheath_outer_radius, constants):
+def calculate_sheath_inductance(tubeposition, sheath_r, sheath_outer_radius, constants):
     """
     【函数功能】套管电感计算
     【入参】
@@ -47,13 +47,13 @@ def calculate_sheath_inductance(end_node_z, sheath_r, sheath_outer_radius, const
     """
     mu0 = constants.mu0
     Vduct = 1e6
-    if end_node_z[0] >= Vduct:
+    if tubeposition >= Vduct:
         Ls = 0
-    elif end_node_z[0] > 0:
-        Ls = mu0 / (2 * np.pi) * np.log(2 * end_node_z[0] / sheath_r)
-    elif end_node_z[0] == 0:
+    elif tubeposition > 0:
+        Ls = mu0 / (2 * np.pi) * np.log(2 * tubeposition / sheath_r)
+    elif tubeposition == 0:
         Ls = mu0(2 * np.pi) * np.log(2 * (2 * sheath_outer_radius) / sheath_r)
-    elif end_node_z[0] < 0:
+    elif tubeposition < 0:
         Ls = mu0 / (2 * np.pi) * np.log(sheath_outer_radius / sheath_r)
     else:
         Ls = 0
@@ -442,29 +442,30 @@ def calculate_wires_inductance_potential_with_ground(wires, ground, constants):
     ep0, mu0 = constants.ep0, constants.mu0
     ke = 1/(4*np.pi*ep0)
     km = mu0/(4*np.pi)
+
     # Nba所有空气中支路的数量
-    Nba = wires.count_airWires()
+    Nbas = wires.count_airWires() + wires.count_tubeWires()
     # Ngn所有地面支路的数量
     Ngn = wires.count_gndWires()
-    # Nna所有空气中节点的数量
-    Nna = wires.count_distinct_airPoints()
+    # 所有airwire和sheathwire的节点数量
+    Nnas = wires.count_distinct_air_sheathPoints()
+    # 所有airwire、groundwire和sheathwire的节点数量
+    Nn = wires.count_distinct_air_gnd_sheathPoints()
     # Nng所有地面节点的数量
     Nng = wires.count_distinct_gndPoints()
 
-    # Nn所有节点的数量, 默认空气中节点和地面节点无重复, 可以直接相加 
-    Nn = Nna + Nng
     # rb1 空气中的支路index集合(n*1)
     # 由于支路和节点矩阵，都是根据air_wires -> ground_wires -> a2g_wires -> short_wires -> tube_wires顺序进行拼接，因此可以通过支路数量进行数据切分，取出空气中和地面的线段的参数
-    rb1 = np.arange(0, Nba)  # air bran
+    rb1 = np.arange(0, Nbas)  # air bran
     rb1 = rb1.flatten()
     # rb2 地面导线的支路index集合（n*1）
-    rb2 = np.arange(Nba, Nba + Ngn)  # gnd bran
+    rb2 = np.arange(Nbas, Nbas + Ngn)  # gnd bran
     rb2 = rb2.flatten()
     # rn1 空气中节点index（n*1）
-    rn1 = np.arange(0, Nna)  # air node
+    rn1 = np.arange(0, Nnas)  # air node
     rn1 = rn1.flatten()
     # rn2 地面导线的节点index（n*1）
-    rn2 = np.arange(Nna, Nna + Nng)  # gnd node,此处可能会有问题，因为wires不仅只包含空气中导线和地面导线，数据切分可能会有问题，应该为np.arange(空气导线数量, 空气导线数量+地面导线数量)
+    rn2 = np.arange(Nnas, Nn)  # gnd node,此处可能会有问题，因为wires不仅只包含空气中导线和地面导线，数据切分可能会有问题，应该为np.arange(空气导线数量, 空气导线数量+地面导线数量)
     rn2 = rn2.flatten()
 
     # (1) Obtain L and P matrices without considering the ground effect
@@ -517,10 +518,10 @@ def calculate_wires_inductance_potential_with_ground(wires, ground, constants):
 
         # L and P matrices for air and gnd segments
         Lai = calculate_inductance(start_points[rb1, :], end_points[rb1, :], radii[rb1, 0], pf1[rb1, :], pf2[rb1, :], radii[rb1, 0])
-        Pai = calculate_potential(start_points[rb1, :], end_points[rb1, :], lengths[rb1, 0], radii[rb1, 0], pf1[rb1, :], pf2[rb1, :], lengths[rb1, 0], radii[rb1, 0], At[rb1, :], Nna)
+        Pai = calculate_potential(start_points[rb1, :], end_points[rb1, :], lengths[rb1, 0], radii[rb1, 0], pf1[rb1, :], pf2[rb1, :], lengths[rb1, 0], radii[rb1, 0], At[rb1, :], Nnas)
 
         Lgi = calculate_inductance(start_points[rb2, :], end_points[rb2, :], radii[rb2, 0], pf1[rb2, :], pf2[rb2, :], radii[rb2, 0])
-        Pgi = calculate_potential(start_points[rb2, :], end_points[rb2, :], lengths[rb2, 0], radii[rb2, 0], pf1[rb2, :], pf2[rb2, :], lengths[rb2, 0], radii[rb2, 0], At[rb2, :]-Nna, Nng) if Nng != 0 else 0
+        Pgi = calculate_potential(start_points[rb2, :], end_points[rb2, :], lengths[rb2, 0], radii[rb2, 0], pf1[rb2, :], pf2[rb2, :], lengths[rb2, 0], radii[rb2, 0], At[rb2, :]-Nnas, Nng) if Nng != 0 else 0
 
     # (2bi) perfect ground
     if ground.gnd_model == "Perfect":

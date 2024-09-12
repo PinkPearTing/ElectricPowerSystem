@@ -245,7 +245,7 @@ def calculate_OHL_wire_impedance(radius, mur, sig, epr, constants, frq=frq_defau
     Zc = np.zeros((Ncon, Ncon, Nf), dtype='complex')
     omega = 2 * np.pi * frq
     for i in range(Nf):
-        gamma = np.sqrt(1j * mu0 * mur * omega[i] * sig + 1j * omega[i] * ep0 * epr)
+        gamma = np.sqrt(1j * mu0 * mur * omega[i] * (sig + 1j * omega[i] * ep0 * epr))
         Ri = radius * gamma
         I0i = besseli(0, Ri)
         I1i = besseli(1, Ri)

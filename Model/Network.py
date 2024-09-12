@@ -113,7 +113,7 @@ class Network:
         # segment_length = 50  # 预设的参数
         for tower in self.towers:
             gnd = self.ground if self.global_ground == 1 else tower.ground
-            tower_building(tower, self.f0, self.max_length, gnd)
+            tower_building(tower, self.f0, self.max_length, gnd, varied_frequency)
             self.switch_disruptive_effect_models.extend(tower.lump.switch_disruptive_effect_models)
             self.voltage_controled_switchs.extend(tower.lump.voltage_controled_switchs)
             self.time_controled_switchs.extend(tower.lump.time_controled_switchs)
@@ -124,12 +124,8 @@ class Network:
                     self.voltage_controled_switchs.extend(device.voltage_controled_switchs)
                     self.time_controled_switchs.extend(device.time_controled_switchs)
                     self.nolinear_resistors.extend(device.nolinear_resistors)
-        for ohl in self.OHLs:
-            gnd = self.ground if self.global_ground == 1 else ohl.ground
-            OHL_building(ohl, self.max_length, self.varied_frequency, gnd)
-        for cable in self.cables:
-            gnd = self.ground if self.global_ground == 1 else cable.ground
-            cable_building(cable, self.f0, self.varied_frequency, gnd)
+
+
 
         # 3. combine matrix
         self.combine_parameter_matrix()
@@ -184,12 +180,8 @@ class Network:
 
     def run(self, file_name, strategy):
         # 0. 预设值
-        frq = np.concatenate([
-            np.arange(1, 91, 10),
-            np.arange(100, 1000, 100),
-            np.arange(1000, 10000, 1000),
-            np.arange(10000, 100000, 10000)
-        ])
+        frq = np.logspace(0, 9, 37)
+
         VF = {'odc': 10,
               'frq': frq}
 
