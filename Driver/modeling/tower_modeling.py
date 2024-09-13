@@ -74,6 +74,10 @@ def build_potential_matrix(tower, P, ground_epr):
 
     tower.update_potential_matrix_by_ground(ground_epr)
 
+    if tower.tubeWire != None:
+
+        tower.updated_potential_matrix_by_tubeWires()
+
     #构建P矩阵df表，便于后续索引
     # df_R = pd.DataFrame(tower.potential_matrix, index=tower.wires_name, columns=tower.wires_name)
     # print(df_R)

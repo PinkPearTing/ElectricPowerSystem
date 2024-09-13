@@ -150,7 +150,7 @@ def drive(bigH, s, poles, opts):
         print('****Stacking matrix elements (lower triangle) into single column ...')
 
     tell = 0
-    f = np.zeros((Nc * (Nc + 1) // 2, bigH.size), dtype=complex)
+    f = np.zeros((Nc * (Nc + 1) // 2, bigH.shape[2]), dtype=complex)
     for col in range(Nc):
         for row in range(col, Nc):
             tell += 1

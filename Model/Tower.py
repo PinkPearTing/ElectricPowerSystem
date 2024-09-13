@@ -207,6 +207,13 @@ class Tower:
         Nnags = self.wires.count_distinct_air_gnd_sheathPoints()
         self.potential_matrix[Nnas:Nnags] = self.potential_matrix[Nnas:Nnags] / ground_epr
 
+    def update_potential_matrix_by_tubeWires(self):
+        Nnags = self.wires.count_distinct_air_gnd_sheathPoints()
+        Nnode = self.wires.count_distinct_points()
+        max_potential = self.potential_matrix.max()
+        potential_matrix = np.diag(np.ones((1, Nnode-Nnags)) * max_potential)
+        self.potential_matrix[Nnode:, Nnode:] = potential_matrix
+
     def update_conductance_matrix_by_ground(self, P, ground_sig, constants):
         ep0 = constants.ep0
         k = ep0 / ground_sig
@@ -304,10 +311,12 @@ class Tower:
         # 获取节点名称列表
         node_name_list = self.wires.get_all_nodes()
 
+        capacitance_matrix = np.linalg.inv(self.potential_matrix) + self.capacitance_matrix
+
         df_A = pd.DataFrame(self.incidence_matrix, index=wire_name_list, columns=node_name_list)
         df_R = pd.DataFrame(self.resistance_matrix, index=wire_name_list, columns=wire_name_list)
         df_L = pd.DataFrame(self.inductance_matrix, index=wire_name_list, columns=wire_name_list)
-        df_C = pd.DataFrame(self.capacitance_matrix, index=node_name_list, columns=node_name_list)
+        df_C = pd.DataFrame(capacitance_matrix, index=node_name_list, columns=node_name_list)
         df_G = pd.DataFrame(self.conductance_matrix, index=node_name_list, columns=node_name_list)
 
         self.incidence_matrix_A = df_A.add(self.lump.incidence_matrix_A, fill_value=0).fillna(0)
