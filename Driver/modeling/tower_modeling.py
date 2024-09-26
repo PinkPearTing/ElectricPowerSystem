@@ -234,9 +234,11 @@ def tower_building(tower, fixed_frequency, ground):
     if tower.tubeWire != None:
         Rin, Rx, Lin, Lx, Cin = prepare_building_parameters(tower.tubeWire, fixed_frequency, constants)
         tube_length = tower.wires.get_tube_lengths()[0]
+        sheath_inductance_matrix = prepare_sheath_inductance(tower)
     else:
         Rin, Rx, Lin, Lx, Cin = 0, 0, 0, 0, 0
         tube_length = 0
+        sheath_inductance_matrix = 0
     L, P = calculate_wires_inductance_potential_with_ground(tower.wires, ground, constants)
 
     # 1. 构建A矩阵
@@ -246,7 +248,7 @@ def tower_building(tower, fixed_frequency, ground):
     build_resistance_matrix(tower, Rin, Rx, tube_length)
 
     # 3. 构建L矩阵
-    build_inductance_matrix(tower, L, Lin, Lx, tube_length)
+    build_inductance_matrix(tower, L, Lin, Lx, tube_length, sheath_inductance_matrix)
 
     # 4. 构建P矩阵, node*node
     build_potential_matrix(tower, P, ground.epr)
@@ -277,11 +279,12 @@ def tower_building_variant_frequency(tower, frequency, ground, varied_frequency,
     if tower.tubeWire != None:
         Rin, Rx, Lin, Lx, Cin = prepare_building_parameters(tower.tubeWire, frequency, constants)
         tube_length = tower.wires.get_tube_lengths()[0]
+        sheath_inductance_matrix = prepare_sheath_inductance(tower)
     else:
         Rin, Rx, Lin, Lx, Cin = 0, 0, 0, 0, 0
         tube_length = 0
+        sheath_inductance_matrix = 0
     L, P = calculate_wires_inductance_potential_with_ground(tower.wires, ground, constants)
-    sheath_inductance_matrix = prepare_sheath_inductance(tower)
 
     # 1. 构建A矩阵
     build_incidence_matrix(tower)
