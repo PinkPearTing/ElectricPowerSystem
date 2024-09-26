@@ -3,8 +3,10 @@ from Function.Calculators.Inductance import calculate_coreWires_inductance, calc
 from Function.Calculators.Capacitance import calculate_coreWires_capacitance, calculate_sheath_capacitance
 from Function.Calculators.Impedance import calculate_coreWires_impedance, calculate_sheath_impedance, calculate_multual_impedance, calculate_OHL_wire_impedance
 from Model.Contant import Constant
-from scipy.linalg import block_diag
+from Vector_Fitting.Drivers.MatrixFitting import matrix_vector_fitting
+from Driver.modeling_varient_freqency.recursive_convolution import preparing_parameters
 
+from scipy.linalg import block_diag
 import pandas as pd
 
 # A
@@ -39,7 +41,7 @@ def build_resistance_matrix(tower, Rin, Rx, tube_length):
     print("------------------------------------------------")
 
 # L
-def build_inductance_matrix(tower, L, Lin, Lx, tube_length):
+def build_inductance_matrix(tower, L, Lin, Lx, tube_length, sheath_inductance_matrix):
     # L矩阵
     print("------------------------------------------------")
     print("L_tower matrix is building...")
@@ -52,11 +54,9 @@ def build_inductance_matrix(tower, L, Lin, Lx, tube_length):
 
         tower.expand_inductance_matrix()
 
-        sheath_inductance_matrix = tower.update_inductance_matrix_by_coreWires()
+        tower.update_inductance_matrix_by_coreWires(sheath_inductance_matrix)
 
         tower.update_inductance_matrix_by_tubeWires(sheath_inductance_matrix, Lin, Lx, tube_length)
-
-        return sheath_inductance_matrix
     #构建L矩阵df表，便于后续索引
     #tower.inductance_matrix_df = pd.DataFrame(tower.inductance_matrix, index=tower.wires_name, columns=tower.wires_name)
     #print(tower.inductance_matrix)
@@ -76,7 +76,7 @@ def build_potential_matrix(tower, P, ground_epr):
 
     if tower.tubeWire != None:
 
-        tower.updated_potential_matrix_by_tubeWires()
+        tower.update_potential_matrix_by_tubeWires()
 
     #构建P矩阵df表，便于后续索引
     # df_R = pd.DataFrame(tower.potential_matrix, index=tower.wires_name, columns=tower.wires_name)
@@ -204,6 +204,7 @@ def prepare_building_parameters(tubeWire, frequency, constants):
 
     return Rin, Rx, Lin, Lx, Cin
 
+
 def prepare_sheath_inductance(tower):
     # 获取矩阵中表皮开始的索引和结束的索引
     sheath_start_index = len(tower.wires.air_wires) + len(tower.wires.ground_wires)
@@ -214,13 +215,24 @@ def prepare_sheath_inductance(tower):
     return sheath_inductance_matrix
 
 
-def tower_building(tower, frequency, max_length, ground, varied_frequency):
+def build_current_source_matrix(tower, I):
+    node_name_list = tower.wires.get_all_nodes()
+    tower.current_source_matrix = pd.DataFrame(I, index=node_name_list, columns=[0])
+
+
+def build_voltage_source_matrix(tower, V):
+    # 获取线名称列表
+    wire_name_list = tower.wires_name
+    tower.voltage_source_matrix = pd.DataFrame(V, index=wire_name_list, columns=[0])
+
+
+def tower_building(tower, fixed_frequency, ground):
     print("------------------------------------------------")
     print(f"Tower:{tower.name} building...")
     # 0.参数准备
     constants = Constant()
     if tower.tubeWire != None:
-        Rin, Rx, Lin, Lx, Cin = prepare_building_parameters(tower.tubeWire, frequency, constants)
+        Rin, Rx, Lin, Lx, Cin = prepare_building_parameters(tower.tubeWire, fixed_frequency, constants)
         tube_length = tower.wires.get_tube_lengths()[0]
     else:
         Rin, Rx, Lin, Lx, Cin = 0, 0, 0, 0, 0
@@ -234,7 +246,45 @@ def tower_building(tower, frequency, max_length, ground, varied_frequency):
     build_resistance_matrix(tower, Rin, Rx, tube_length)
 
     # 3. 构建L矩阵
-    sheath_inductance_matrix = build_inductance_matrix(tower, L, Lin, Lx, tube_length)
+    build_inductance_matrix(tower, L, Lin, Lx, tube_length)
+
+    # 4. 构建P矩阵, node*node
+    build_potential_matrix(tower, P, ground.epr)
+
+    # 5. 构建C矩阵
+    build_capacitance_matrix(tower, Cin)
+
+    # 6. 构建G矩阵, node*node
+    build_conductance_matrix(tower, P, constants, ground.sig)
+
+    build_current_source_matrix(tower, 0)
+
+    build_voltage_source_matrix(tower, 0)
+
+    # 7. 合并lumps和tower
+    tower.combine_parameter_matrix()
+
+
+    print(f"Tower:{tower.name}  building is completed.")
+    print("------------------------------------------------")
+
+
+def tower_building_variant_frequency(tower, frequency, ground, varied_frequency, dt):
+    print("------------------------------------------------")
+    print(f"Tower:{tower.name} building...")
+    # 0.参数准备
+    constants = Constant()
+    if tower.tubeWire != None:
+        Rin, Rx, Lin, Lx, Cin = prepare_building_parameters(tower.tubeWire, frequency, constants)
+        tube_length = tower.wires.get_tube_lengths()[0]
+    else:
+        Rin, Rx, Lin, Lx, Cin = 0, 0, 0, 0, 0
+        tube_length = 0
+    L, P = calculate_wires_inductance_potential_with_ground(tower.wires, ground, constants)
+    sheath_inductance_matrix = prepare_sheath_inductance(tower)
+
+    # 1. 构建A矩阵
+    build_incidence_matrix(tower)
 
     # 4. 构建P矩阵, node*node
     build_potential_matrix(tower, P, ground.epr)
@@ -248,9 +298,20 @@ def tower_building(tower, frequency, max_length, ground, varied_frequency):
 
     build_impedance_matrix(tower, L, Lin, sheath_inductance_matrix, tube_length, varied_frequency, constants)
 
+    SER = matrix_vector_fitting(tower.impedance_matrix, varied_frequency)
+
+    preparing_parameters(tower, SER, dt)
+
+    tower.resistance_matrix = SER['D'] + tower.A.sum(-1)
+
+    tower.inductance_matrix = SER['E']
+
+    build_current_source_matrix(tower, 0)
+
+    build_voltage_source_matrix(tower, (tower.B * tower.phi).sum(-1))
+
     # 7. 合并lumps和tower
     tower.combine_parameter_matrix()
-
 
     print(f"Tower:{tower.name}  building is completed.")
     print("------------------------------------------------")

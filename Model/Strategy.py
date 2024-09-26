@@ -7,7 +7,7 @@ class Strategy(ABC):
         self.capacitance_matrix = None
 
     @abstractmethod
-    def apply(netwotk):
+    def apply(self,netwotk,dt,Nt):
         C = np.array(netwotk.capacitance_matrix)  # 点点
         G = np.array(netwotk.conductance_matrix)
         L = np.array(netwotk.inductance_matrix)  # 线线
@@ -15,100 +15,171 @@ class Strategy(ABC):
         ima = np.array(netwotk.incidence_matrix_A)  # 线点
         imb = np.array(netwotk.incidence_matrix_B.T)  # 点线
 
-class LinearStrategy(Strategy):
-    def apply(network):
+class Linear(Strategy):
+    def apply(self,network,dt):
+        print("linear calculation is used")
         C = np.array(network.capacitance_matrix)  # 点点
         G = np.array(network.conductance_matrix)
         L = np.array(network.inductance_matrix)  # 线线
         R = np.array(network.resistance_matrix)
         ima = np.array(network.incidence_matrix_A)  # 线点
         imb = np.array(network.incidence_matrix_B.T)  # 点线
-        LEFT = np.block([[-ima, -R - L / network.dt], [G + C / network.dt, -imb]])
-
-        print("solution for linear component")
-        return LEFT
-
-class baseStrategy(Strategy):
-    def apply(self,network):
-
-        C = np.array(network.capacitance_matrix)#点点
-        G = np.array(network.conductance_matrix)
-        L = np.array(network.inductance_matrix)#线线
-        R = np.array(network.resistance_matrix)
-        ima = np.array(network.incidence_matrix_A)#线点
-        imb = np.array(network.incidence_matrix_B.T)#点线
         source = np.array(network.sources)
         nodes = len(network.capacitance_matrix.columns.tolist())
         branches = len(network.inductance_matrix.columns.tolist())
+        time_length = len(network.sources.columns.tolist())
 
-        out = np.zeros((branches + nodes, network.Nt))
+        out = np.zeros((branches + nodes, time_length))
         branches, nodes = ima.shape
-        for i in range(network.Nt - 1):
-            Vnode = out[:nodes, i].reshape((-1,1))
-            Ibran = out[nodes:, i].reshape((-1,1))
-            Isource = source[:,i].reshape((-1,1))
-            LEFT = np.block([[-ima, -R - L / network.dt], [G + C / network.dt, -imb]])
+        for i in range(time_length - 1):
+            Vnode = out[:nodes, i].reshape((-1, 1))
+            Ibran = out[nodes:, i].reshape((-1, 1))
+            Isource = source[:, i + 1].reshape((-1, 1))
+            LEFT = np.block([[-ima, -R - L / dt], [G + C / dt, -imb]])
             inv_LEFT = np.linalg.inv(LEFT)
-            RIGHT = np.block([[(-L / network.dt).dot(Ibran)], [(C / network.dt).dot(Vnode)]])
+            RIGHT = np.block([[(-L / dt).dot(Ibran)], [(C / dt).dot(Vnode)]])
+            # temp_result = inv_LEFT.dot(RIGHT)
             temp_result = inv_LEFT.dot(Isource + RIGHT)
-            out[:, i + 1] = np.copy(temp_result)[:,0]
-        network.solution = pd.DataFrame(out, index=network.capacitance_matrix.columns.tolist()+network.inductance_matrix.columns.tolist())
+            out[:, i + 1] = np.copy(temp_result)[:, 0]
+        network.solution = pd.DataFrame(out,
+                                        index=network.capacitance_matrix.columns.tolist() + network.inductance_matrix.columns.tolist())
 
-class flash_Insulator(Strategy):
-    def apply(self,network):
-        network.towers[0].lump
-
-class NoLinear(Strategy):
-    def apply(self, network):
-        """
-        【函数功能】非线性电路求解
-        【入参】
-        ima(numpy.ndarray:Nbran*Nnode)：关联矩阵A（Nbran：支路数，Nnode：节点数）
-        imb(numpy.ndarray:Nbran*Nnode)：关联矩阵B（Nbran：支路数，Nnode：节点数）
-        R(numpy.ndarray:Nbran*Nbran)：电阻矩阵（Nbran：支路数）
-        L(numpy.ndarray:Nbran*Nbran)：电感矩阵（Nbran：支路数）
-        G(numpy.ndarray:Nnode*Nnode)：电导矩阵（Nnode：节点数）
-        C(numpy.ndarray:Nnode*Nnode)：电容矩阵（Nnode：节点数）
-        sources(numpy.ndarray:(Nbran+Nnode)*Nt)：电源矩阵（Nbran：支路数，Nnode：节点数）
-        dt(float)：步长
-        Nt(int)：计算总次数
-
-        【出参】
-        out(numpy.ndarray:(Nbran+Nnode)*Nt)：计算结果矩阵（Nbran：支路数，Nnode：节点数）
-        """
-
+class NonLinear(Strategy):
+    def apply(self,network,dt):
+        print("Nonlinear calculation is used")
         branches, nodes = network.incidence_matrix_A.shape
-        out = np.zeros((branches + nodes, network.Nt))
         source = np.array(network.sources)
-        out_index = network.capacitance_matrix.columns.tolist() + network.inductance_matrix.columns.tolist()
+        time_length = len(network.sources.columns.tolist())
+        out = np.zeros((branches + nodes, time_length))
         # source = np.array(sources)
-        for i in range(network.Nt - 1):
+        for i in range(time_length - 1):
             C = network.capacitance_matrix.to_numpy()  # 点点
             G = network.conductance_matrix.to_numpy()
             L = network.inductance_matrix.to_numpy()  # 线线
             R = network.resistance_matrix.to_numpy()
             ima = network.incidence_matrix_A.to_numpy()  # 线点
-            imb = network.incidence_matrix_B.T.to_numpy()
-            # 点线
+            imb = network.incidence_matrix_B.T.to_numpy()  # 点线
             Vnode = out[:nodes, i].reshape((-1, 1))
             Ibran = out[nodes:, i].reshape((-1, 1))
-            Isource = source[:,i+1].reshape((-1,1))
-            LEFT = np.block([[-ima, -R - L / network.dt], [G + C / network.dt, -imb]])
-            # L_py_index = ['L_'+ind for ind in network.incidence_matrix_A.index.to_list()+network.conductance_matrix.index.to_list()]
-            # R_py_index = ['R_'+ind for ind in network.incidence_matrix_A.columns.to_list()+network.resistance_matrix.columns.to_list()]
-            # LEFT_py = pd.DataFrame(LEFT, index=L_py_index, columns=R_py_index)
-            # LEFT_py.sort_index(axis=0, inplace=True)
-            # LEFT_py.sort_index(axis=1, inplace=True)
+            Isource = source[:, i + 1].reshape((-1, 1))
+            LEFT = np.block([[-ima, -R - L / dt], [G + C / dt, -imb]])
             inv_LEFT = np.linalg.inv(LEFT)
-            RIGHT = np.block([[(-L / network.dt).dot(Ibran)], [(C / network.dt).dot(Vnode)]])
+            RIGHT = np.block([[(-L / dt).dot(Ibran)], [(C / dt).dot(Vnode)]])
 
             temp_result = inv_LEFT.dot(Isource + RIGHT)
-            #temp_result = inv_LEFT.dot(RIGHT)
+            # temp_result = inv_LEFT.dot(RIGHT)
             out[:, i + 1] = np.copy(temp_result)[:, 0]
-            temp_result = pd.DataFrame(temp_result,index=out_index)
+            temp_result = pd.DataFrame(temp_result,
+                                       index=network.capacitance_matrix.columns.tolist() + network.inductance_matrix.columns.tolist())
 
-            t = network.dt * (i + 1)
+            t = dt * (i + 1)
             network.update_H(temp_result, t)
 
-        network.solution = pd.DataFrame(out,index=out_index)
+        network.solution = pd.DataFrame(out,
+                                        index=network.capacitance_matrix.columns.tolist() + network.inductance_matrix.columns.tolist())
+
+
+class variant_frequency(Strategy):
+    def apply(self, network, dt):
+        print("Nonlinear calculation is used")
+        branches, nodes = network.incidence_matrix_A.shape
+        time_length = len(network.sources.columns.tolist())
+        out = np.zeros((branches + nodes, time_length))
+        C = network.capacitance_matrix.to_numpy()  # 点点
+        G = network.conductance_matrix.to_numpy()
+        L = network.inductance_matrix.to_numpy()  # 线线
+        R = network.resistance_matrix.to_numpy()
+        ima = network.incidence_matrix_A.to_numpy()  # 线点
+        imb = network.incidence_matrix_B.T.to_numpy()  # 点线
+        # source = np.array(sources)
+        for i in range(time_length - 1):
+            source = np.array(network.sources)
+            Vnode = out[:nodes, i].reshape((-1, 1))
+            Ibran = out[nodes:, i].reshape((-1, 1))
+            Isource = source[:, i + 1].reshape((-1, 1))
+            LEFT = np.block([[-ima, -R - L / dt], [G + C / dt, -imb]])
+            inv_LEFT = np.linalg.inv(LEFT)
+            RIGHT = np.block([[(-L / dt).dot(Ibran)], [(C / dt).dot(Vnode)]])
+
+            temp_result = inv_LEFT.dot(Isource + RIGHT)
+            # temp_result = inv_LEFT.dot(RIGHT)
+            out[:, i + 1] = np.copy(temp_result)[:, 0]
+            temp_result = pd.DataFrame(temp_result,
+                                       index=network.capacitance_matrix.columns.tolist() + network.inductance_matrix.columns.tolist())
+
+            network.update_source_variant_frequency(temp_result, i+2)
+
+        network.solution = pd.DataFrame(out,
+                                        index=network.capacitance_matrix.columns.tolist() + network.inductance_matrix.columns.tolist())
+
+
+class Change_DE_max(Strategy):
+    def apply(self,network,dt):
+        network.reverse_H()
+        for lump in network.switch_disruptive_effect_models.parameters:
+            lump['DE_max'] = 100
+        network.calculate(dt)
+
+
+class Change_Source(Strategy):
+    def apply(self,network,dt):
+        network.s
+
+class Measurement(Strategy):
+    def apply(self,measurement,solution,dt):
+        results = {}
+        for key, value in measurement.items():
+            data_type = value[0]  # 0:'branch',1: 'normal lump'
+            measurement_type = value[1]  # 1:'current',2:'voltage'
+            # 处理支路名或节点名
+            if data_type == 0:
+                branch_name = key
+                current = solution.loc[branch_name].tolist() if branch_name in solution.index else None
+                node1 = solution.loc[value[3]].tolist() if value[3] in solution.index else None
+                node2 = solution.loc[value[4]].tolist() if value[4] in solution.index else None
+                voltage = [abs(a - b) for a, b in zip(node1, node2)] if node1 and node2 else None
+                p = [a * b for a, b in zip(current, voltage)] if current and voltage else None
+                E = sum([i * dt for i in p]) if p else None
+                if measurement_type == 1:
+                    results[(key,value[3],value[4])] = {"current":current}
+                elif measurement_type == 2:
+                    results[(key,value[3],value[4])] = {"voltage":voltage}
+                elif measurement_type == 3:
+                    results[(key,value[3],value[4])] = {"P":p}
+                elif measurement_type == 4:
+                    results[(key,value[3],value[4])] = {"E":E}
+                elif measurement_type == 11:
+                    results[(key,value[3],value[4])] = {"current":current,
+                                                        "voltage":voltage,
+                                                        "E":E,"P":p}
+            elif data_type == 1:
+                lump_name = key
+                # 处理支路名可能是列表的情况
+                branches = value[3]
+                dict_result = {}
+                for bran,n1,n2 in zip(value[2],value[3],value[4]):
+                    current = solution.loc[bran].tolist() if bran in solution.index else None
+                    node1 = solution.loc[n1].tolist() if n1 in solution.index else None
+                    node2 = solution.loc[n2].tolist() if n2 in solution.index else None
+                    voltage = [abs(a - b) for a, b in zip(node1, node2)] if (node1 and node2)  else None
+                    p = [a * b for a, b in zip(current, voltage)] if (current and voltage)  else None
+                    E = sum([i*dt for i in p ]) if p else None
+
+                    if measurement_type == 1:
+                        dict_result[bran] = {"current":current}
+                    elif measurement_type == 2:
+                        dict_result[(n1,n2)] = {"voltage":voltage}
+                    elif measurement_type == 3:
+                        dict_result[(bran,n1,n2)] = {"P": p}
+                    elif measurement_type == 4:
+                        dict_result[(bran,n1,n2)] ={"current":current,"voltage":voltage,"P":p,"E":E}
+                    elif measurement_type == 11:
+                        dict_result[(bran,n1,n2)] ={"E":E}
+
+                results[lump_name] = dict_result
+        return results
+
+class Monteclarlo(Strategy):
+    def apply(self, network):
+        print("montecarlo")
 

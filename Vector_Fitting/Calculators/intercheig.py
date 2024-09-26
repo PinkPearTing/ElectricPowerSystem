@@ -1,70 +1,96 @@
-import numpy as np
+""" intercheig.py
 
+Author: Jennifer Houle
+Date: 3/25/2020
+
+This program is based off intercheig.m from [4].
+
+[1] B. Gustavsen and A. Semlyen, "Rational approximation of frequency
+    domain responses by Vector Fitting", IEEE Trans. Power Delivery,
+    vol. 14, no. 3, pp. 1052-1061, July 1999.
+
+[2] B. Gustavsen, "Improving the pole relocating properties of vector
+    fitting", IEEE Trans. Power Delivery, vol. 21, no. 3, pp. 1587-1592,
+    July 2006.
+
+[3] D. Deschrijver, M. Mrozowski, T. Dhaene, and D. De Zutter,
+    "Macromodeling of Multiport Systems Using a Fast Implementation of
+    the Vector Fitting Method", IEEE Microwave and Wireless Components
+    Letters, vol. 18, no. 6, pp. 383-385, June 2008.
+
+[4] B. Gustavsen, Matrix Fitting Toolbox, The Vector Fitting Website.
+    March 20, 2013. Accessed on: Feb. 25, 2020. [Online]. Available:
+    https://www.sintef.no/projectweb/vectorfitting/downloads/matrix-fitting-toolbox/.
+
+"""
+
+import numpy as np
 
 def intercheig(V, oldV, D, Nc, fstep):
     """
-    Interchange eigenvectors and corresponding eigenvalues to ensure smooth functions of frequency.
-
-    Parameters:
-        V: ndarray, new eigenvectors
-        oldV: ndarray, old eigenvectors
-        D: ndarray, associated eigenvalues
-        Nc: int, number of columns (or eigenvectors)
-        fstep: int, frequency step
-
-    Returns:
-        V: ndarray, updated eigenvectors
-        D: ndarray, updated eigenvalues
+    Sort eigenvalues, eigenvectors
     """
-
     if fstep > 1:
-        UGH = np.abs(np.real(oldV.T @ V))
+        UGH = np.abs((oldV.conj().T @ V))
         dot = np.zeros(Nc)
-        ind = np.arange(Nc)
-        taken = np.zeros(Nc, dtype=int)
+        ind = dot.copy()
+        taken = [False] * Nc
 
-        # Find largest dot products
         for ii in range(Nc):
             ilargest = 0
             rlargest = 0
             for j in range(Nc):
-                dotprod = UGH[ii, j]
+                dotprod = UGH[ii, j].copy()
                 if dotprod > rlargest:
-                    rlargest = np.abs(np.real(dotprod))
+                    rlargest = np.abs(dotprod.real)
                     ilargest = j
             dot[ii] = rlargest
             ind[ii] = ii
-            taken[ii] = 0
+            taken[ii] = False
 
-        # Sort indices based on dot products in descending order
-        ind = ind[np.argsort(-dot)]
+        # Sorting inner products abs(realde1) in descending order:
+        for ii in range(Nc):
+            for j in range(Nc - 1):
+                if(dot[j] < dot[j + 1]):
+                    hjelp = dot[j + 1]
+                    ihjelp = ind[j + 1]
+                    dot[j + 1] = dot[j]
+                    ind[j + 1] = ind[j]
+                    dot[j] = hjelp
+                    ind[j] = ihjelp
 
-        # Perform interchanges in prioritized sequence
+        # Doing the interchange in a prioritized sequence:
         for l in range(Nc):
-            ii = ind[l]
+            ii = int(ind[l])
             ilargest = 0
             rlargest = 0
 
             for j in range(Nc):
-                if taken[j] == 0:
-                    dotprod = UGH[ii, j]
+                if not taken[j]:
+                    dotprod = UGH[ii, j].copy()
                     if dotprod > rlargest:
-                        rlargest = np.abs(np.real(dotprod))
+                        rlargest = np.abs(dotprod.real)
                         ilargest = j
 
-            taken[ii] = 1
+            taken[ii] = True
 
-            # Swap eigenvectors and corresponding eigenvalues
-            V[:, [ii, ilargest]] = V[:, [ilargest, ii]]
-            D[ii, ii], D[ilargest, ilargest] = D[ilargest, ilargest], D[ii, ii]
+            hjelp = V[:, ii].copy()
+            V[:, ii] = V[:, ilargest].copy()
+            V[:, ilargest] = hjelp
 
-            # Swap columns in UGH
-            UGH[:, [ii, ilargest]] = UGH[:, [ilargest, ii]]
+            hjelp = D[ii, ii].copy()
+            D[ii, ii] = D[ilargest, ilargest].copy()
+            D[ilargest, ilargest] = hjelp
 
-        # Adjust signs of eigenvectors if needed
+            dum = UGH[:, ii].copy()
+            UGH[:, ii] = UGH[:, ilargest].copy()
+            UGH[:, ilargest] = dum
+
+        # Finding out whether the direction of e-vectors are 180 deg is done by comparing
+        # sign of dotproducts of e-vectors, for new and old V-matrix
         for ii in range(Nc):
-            dotprod = oldV[:, ii].T @ V[:, ii]
-            if np.sign(np.real(dotprod)) < 0:
+            dotprod = oldV[:, ii].conj().T @ V[:, j]
+            if np.sign(dotprod.real) < 0:
                 V[:, ii] = -V[:, ii]
 
     return V, D

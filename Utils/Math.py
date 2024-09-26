@@ -88,6 +88,32 @@ def calculate_direction_cosines(start_points, end_points, lengths):
 
     return x_cosines, y_cosines, z_cosines
 
+
+def segment_branch(network_branches):
+    """
+    【功能】对于传进来的branches，按照读取的Nt进行分段
+    """
+    branches = network_branches.copy()  # branches的副本，用于新增或删减支路
+    for key, value in network_branches.items():
+        keys_tobe_delete = []
+        if 'OHL' in value[2]:
+            start_node_coord = list(value[0].values())[0]
+            end_node_coord = list(value[1].values())[0]
+            # 生成新节点
+            x = np.linspace(start_node_coord[0], end_node_coord[0], value[3] + 1, dtype=float)
+            y = np.linspace(start_node_coord[1], end_node_coord[1], value[3] + 1, dtype=float)
+            z = np.linspace(start_node_coord[2], end_node_coord[2], value[3] + 1, dtype=float)
+            new_nodes_name = [key + '_MiddleNode_{:02d}'.format(i) for i in range(1, value[3])]
+            new_nodes_name.insert(0, list(value[0].keys())[0])
+            new_nodes_name.append(list(value[1].keys())[0])
+            for i in range(len(new_nodes_name) - 1):
+                start_node_after_seg_dict = {new_nodes_name[i]: [x[i], y[i], z[i]]}
+                end_node_after_seg_dict = {new_nodes_name[i+1]: [x[i+1], y[i+1], z[i+1]]}
+                branches[f"{key}_splited_{i+1}"] = [start_node_after_seg_dict, end_node_after_seg_dict, value[2], value[3]]
+            del branches[key]
+    return branches
+
+
 def calculate_distances_between_lineseg_and_channelseg(points_a, points_b):
     """
     计算points_a中每个点到points_b中每个点的距离矩阵
@@ -151,8 +177,6 @@ def calculate_electric_field_down_r_and_z(pt_start, pt_end, stroke, channel, z_c
     # 初始化径向和垂直方向的电场
     a00 = pt_start.shape[0]  # 观察点或导体分段的总数
     b00 = z_channel.shape[0]
-    Er_T = np.zeros((stroke.Nt, a00))
-    Ez_T = np.zeros((stroke.Nt, a00))
 
     line_mid_points = (pt_start + pt_end) / 2
     channel_mid_points = np.column_stack( (np.full(z_channel.shape[0], channel.hit_pos[0]), np.full(z_channel.shape[0], channel.hit_pos[1]), z_channel))
@@ -166,10 +190,11 @@ def calculate_electric_field_down_r_and_z(pt_start, pt_end, stroke, channel, z_c
     t_sr_expand = np.tile(t_sr, (a00, b00, 1))  # 变成 (1, 1, 2000)
 
     # 计算时间延迟，获取时间索引
-    n_td_tmp = np.floor((t_sr_expand - t_delay_expand) / stroke.dt).astype(int)
-    # n_td_tmp = np.floor((t_sr_expand * 1e-6 - t_delay_expand) / stroke.dt).astype(int)
+    # n_td_tmp = np.floor((t_sr_expand - t_delay_expand) / stroke.dt).astype(int)
+    n_td_tmp = np.floor((t_sr_expand * 1e-6 - t_delay_expand) / stroke.dt).astype(int)
     index_head = np.apply_along_axis(get_t_delay_index1, 2, n_td_tmp)
     index_tail = np.apply_along_axis(get_t_delay_index2, 2, n_td_tmp)
+    del n_td_tmp, t_sr_expand # 清内存
     index_head = np.where(index_head == 1)
     index_tail = np.where(index_tail == 1)
     # id_t = n_td_tmp > 0
@@ -209,6 +234,7 @@ def calculate_electric_field_down_r_and_z(pt_start, pt_end, stroke, channel, z_c
     dEr_2_cof = np.expand_dims(dEr_2_cof, axis=-1)
     dEr_3_cof = np.expand_dims(dEr_3_cof, axis=-1)
 
+    del Rxyz, Rz, Rxy
 
     # 使用广播和布尔索引来累加对应时刻的贡献
     i_sr_expand = np.tile(i_sr, (a00, b00, 1))
@@ -264,8 +290,6 @@ def calculate_H_magnetic_field_down_r(pt_start, pt_end, stroke, channel, z_chann
 
     a00 = pt_start.shape[0]  # 观察点或导体分段的总数
     b00 = z_channel.shape[0]
-    Er_T = np.zeros((stroke.Nt, a00))
-    Ez_T = np.zeros((stroke.Nt, a00))
 
     line_mid_points = (pt_start + pt_end) / 2
     channel_mid_points = np.column_stack( (np.full(z_channel.shape[0], channel.hit_pos[0]), np.full(z_channel.shape[0], channel.hit_pos[1]), z_channel))
@@ -280,10 +304,11 @@ def calculate_H_magnetic_field_down_r(pt_start, pt_end, stroke, channel, z_chann
     t_sr_expand = np.tile(t_sr, (a00, b00, 1))  # 变成 (1, 1, 2000)
 
     # 计算时间延迟，获取时间索引
-    n_td_tmp = np.floor((t_sr_expand - t_delay_expand) / stroke.dt).astype(int)
-    # n_td_tmp = np.floor((t_sr_expand * 1e-6 - t_delay_expand) / stroke.dt).astype(int)
+    # n_td_tmp = np.floor((t_sr_expand - t_delay_expand) / stroke.dt).astype(int)
+    n_td_tmp = np.floor((t_sr_expand * 1e-6 - t_delay_expand) / stroke.dt).astype(int)
     index_head = np.apply_along_axis(get_t_delay_index1, 2, n_td_tmp)
     index_tail = np.apply_along_axis(get_t_delay_index2, 2, n_td_tmp)
+    del t_delay_expand, n_td_tmp # 清除变量，释放内存
     index_head = np.where(index_head == 1)
     index_tail = np.where(index_tail == 1)
     # id_t = n_td_tmp > 0
@@ -307,28 +332,174 @@ def calculate_H_magnetic_field_down_r(pt_start, pt_end, stroke, channel, z_chann
             cof_isr = 1 / (4 * np.pi * ep0) * np.exp(-np.abs(z_channel) / channel.lamda)
 
     dEr_1_cof = 0 * cof_isr * (3 * Rz * Rxy) / Rxyz ** 5
-    dEr_2_cof = cof_isr * (Rxy) / Rxyz ** 3
-    dEr_3_cof = cof_isr * (Rxy) / Rxyz ** 2 / vc
-
     dEr_1_cof = np.expand_dims(dEr_1_cof, axis=-1)
-    dEr_2_cof = np.expand_dims(dEr_2_cof, axis=-1)
-    dEr_3_cof = np.expand_dims(dEr_3_cof, axis=-1)
-
-
-    # 使用广播和布尔索引来累加对应时刻的贡献
-    i_sr_expand = np.tile(i_sr, (a00, b00, 1))
-    i_sr_int_expand = np.tile(i_sr_int, (a00, b00, 1))
-    i_sr_div_expand = np.tile(i_sr_div, (a00, b00, 1))
-
+    i_sr_int_expand = np.tile(i_sr_int, (a00, b00, 1))  # 使用广播和布尔索引来累加对应时刻的贡献
     dEr1 = np.zeros((a00, b00, stroke.Nt))
-    dEr2 = np.zeros((a00, b00, stroke.Nt))
-    dEr3 = np.zeros((a00, b00, stroke.Nt))
-
     dEr1[index_tail] = (dEr_1_cof * i_sr_int_expand)[index_head]
+    del dEr_1_cof, i_sr_int_expand
+
+    dEr_2_cof = cof_isr * (Rxy) / Rxyz ** 3
+    dEr_2_cof = np.expand_dims(dEr_2_cof, axis=-1)
+    i_sr_expand = np.tile(i_sr, (a00, b00, 1))
+    dEr2 = np.zeros((a00, b00, stroke.Nt))
     dEr2[index_tail] = (dEr_2_cof * i_sr_expand)[index_head]
+    del dEr_2_cof, i_sr_expand
+
+    dEr_3_cof = cof_isr * (Rxy) / Rxyz ** 2 / vc
+    dEr_3_cof = np.expand_dims(dEr_3_cof, axis=-1)
+    i_sr_div_expand = np.tile(i_sr_div, (a00, b00, 1))
+    dEr3 = np.zeros((a00, b00, stroke.Nt))
     dEr3[index_tail] = (dEr_3_cof * i_sr_div_expand)[index_head]
+    del dEr_3_cof, i_sr_div_expand
 
     Er = np.sum(dEr1 + dEr2 + dEr3, axis=1)
     # 转置电场矩阵
     Er = Er.T
     return Er
+
+
+# def calculate_electric_field_down_r_and_z(pt_start, pt_end, stroke, channel, z_channel, i_sr, t_sr, i_sr_int, i_sr_div, ep0, vc, air_or_img):
+#     # 初始化径向和垂直方向的电场
+#     a00 = pt_start.shape[0]  # 观察点或导体分段的总数
+#     b00 = z_channel.shape[0]
+#
+#     # 雷击点位置
+#     hit_pos = channel.hit_pos[0:2]
+#
+#     Rx = (pt_start[:, 0] + pt_end[:, 0]) / 2 - hit_pos[0]  # 雷击点在x方向到每个导线段中点的距离
+#     Ry = (pt_start[:, 1] + pt_end[:, 1]) / 2 - hit_pos[1]  # 雷击点在y方向到每个导线段中点的距离
+#     Rxy = np.sqrt(Rx ** 2 + Ry ** 2)  # 水平距离
+#
+#     # 初始化径向和垂直方向的电场
+#     Er = np.zeros((stroke.Nt, a00))
+#     Ez = np.zeros((stroke.Nt, a00))
+#
+#     for ik in range(a00):
+#         x1, y1, z1 = pt_start[ik, :]
+#         x2, y2, z2 = pt_end[ik, :]
+#
+#         dEz1, dEz2, dEz3 = np.zeros((stroke.Nt, channel.N_channel_segment)), np.zeros((stroke.Nt, channel.N_channel_segment)), np.zeros((stroke.Nt, channel.N_channel_segment))
+#         dEr1, dEr2, dEr3 = np.zeros((stroke.Nt, channel.N_channel_segment)), np.zeros((stroke.Nt, channel.N_channel_segment)), np.zeros((stroke.Nt, channel.N_channel_segment))
+#         Rxyz = np.zeros(channel.N_channel_segment)
+#         Rz = np.zeros(channel.N_channel_segment)
+#
+#         # 自由空间的电场计算
+#         for ig in range(channel.N_channel_segment):
+#             Rxyz[ig] = np.sqrt(Rxy[ik] ** 2 + ((z1 + z2) / 2 - z_channel[ig]) ** 2)  # 第ig个通道段与导体段的空间距离
+#
+#             n_td_tmp = np.floor((t_sr * 1e-6 - (abs(z_channel[ig]) / vc / channel.vcof + Rxyz[ig] / vc)) / stroke.dt).astype(int)
+#             index_head = np.apply_along_axis(get_t_delay_index1, 1, n_td_tmp)
+#             index_tail = np.apply_along_axis(get_t_delay_index2, 1, n_td_tmp)
+#             index_head = np.where(index_head == 1)
+#             index_tail = np.where(index_tail == 1)
+#             id_t = n_td_tmp > 0
+#
+#             Rz[ig] = (z1 + z2) / 2 - z_channel[ig]
+#
+#             if air_or_img == 0:
+#                 # 根据不同的传播模型，选择系数
+#                 if channel.channel_model == 'TL':
+#                     cof_isr = 1 / (4 * np.pi * ep0)
+#                 elif channel.channel_model == 'MTLL':
+#                     cof_isr = 1 / (4 * np.pi * ep0) * (1 - z_channel[ig] / channel.H)
+#                 else:
+#                     cof_isr = 1 / (4 * np.pi * ep0) * np.exp(-z_channel[ig] / channel.lamda)
+#             else:
+#                 if channel.channel_model == 'TL':
+#                     cof_isr = 1 / (4 * np.pi * ep0)
+#                 elif channel.channel_model == 'MTLL':
+#                     cof_isr = 1 / (4 * np.pi * ep0) * (1 + z_channel[ig] / channel.H)
+#                 else:
+#                     cof_isr = 1 / (4 * np.pi * ep0) * np.exp(-np.abs(z_channel[ig]) / channel.lamda)
+#
+#             dEz_1_cof = cof_isr * (2 * Rz[ig] ** 2 - Rxy[ik] ** 2) / Rxyz[ig] ** 5
+#             dEz_2_cof = cof_isr * (2 * Rz[ig] ** 2 - Rxy[ik] ** 2) / Rxyz[ig] ** 4 / vc
+#             dEz_3_cof = cof_isr * Rxy[ik] ** 2 / Rxyz[ig] ** 3 / vc ** 2
+#
+#             dEr_1_cof = cof_isr * 3 * Rz[ig] * Rxy[ik] / Rxyz[ig] ** 5
+#             dEr_2_cof = cof_isr * 3 * Rz[ig] * Rxy[ik] / Rxyz[ig] ** 4 / vc
+#             dEr_3_cof = cof_isr * Rz[ig] * Rxy[ik] / Rxyz[ig] ** 3 / vc ** 2
+#
+#             dEz1[index_tail[1], ig] = (dEz_1_cof * i_sr_int)[index_head]
+#             dEz2[index_tail[1], ig] = (dEz_2_cof * i_sr)[index_head]
+#             dEz3[index_tail[1], ig] = (dEz_3_cof * i_sr_div)[index_head]
+#
+#             dEr1[index_tail[1], ig] = (dEr_1_cof * i_sr_int)[index_head]
+#             dEr2[index_tail[1], ig] = (dEr_2_cof * i_sr)[index_head]
+#             dEr3[index_tail[1], ig] = (dEr_3_cof * i_sr_div)[index_head]
+#
+#         Ez[:, ik] = np.sum(dEz1 + dEz2 - dEz3, axis=1)
+#         Er[:, ik] = np.sum(dEr1 + dEr2 + dEr3, axis=1)
+#
+#     # # 转置电场矩阵
+#     # Ez = Ez.T
+#     # Er = Er.T
+#
+#     return Ez, Er
+#
+#
+# def calculate_H_magnetic_field_down_r(pt_start, pt_end, stroke, channel, z_channel, i_sr, t_sr, i_sr_int, i_sr_div, ep0, vc, air_or_img):
+#     # 初始化径向和垂直方向的电场
+#     a00 = pt_start.shape[0]  # 观察点或导体分段的总数
+#     b00 = z_channel.shape[0]
+#
+#     # 雷击点位置
+#     hit_pos = channel.hit_pos[0:2]
+#
+#
+#     Rx = (pt_start[:, 0] + pt_end[:, 0]) / 2 - hit_pos[0]  # 雷击点在x方向到每个导线段中点的距离
+#     Ry = (pt_start[:, 1] + pt_end[:, 1]) / 2 - hit_pos[1]  # 雷击点在y方向到每个导线段中点的距离
+#     Rxy = np.sqrt(Rx ** 2 + Ry ** 2)  # 水平距离
+#
+#     # 初始化径向和垂直方向的电场
+#     Er = np.zeros((stroke.Nt, a00))
+#     Rxyz = np.zeros(channel.N_channel_segment)
+#     Rz = np.zeros(channel.N_channel_segment)
+#
+#     for ik in range(a00):
+#         x1, y1, z1 = pt_start[ik, :]
+#         x2, y2, z2 = pt_end[ik, :]
+#
+#         dEr1, dEr2, dEr3 = np.zeros((stroke.Nt, channel.N_channel_segment)), np.zeros((stroke.Nt, channel.N_channel_segment)), np.zeros((stroke.Nt, channel.N_channel_segment))
+#
+#         Rxyz = np.sqrt(Rxy[ik] ** 2 + (z1 + z2) / 2 - z_channel) ** 2  # 第ig个通道段与导体段的空间距离
+#
+#         # 自由空间的电场计算
+#         for ig in range(channel.N_channel_segment):
+#             Rxyz[ig] = np.sqrt(Rxy[ik] ** 2 + ((z1 + z2) / 2 - z_channel[ig]) ** 2)  # 第ig个通道段与导体段的空间距离
+#             n_td_tmp = np.floor((t_sr * 1e-6 - (abs(z_channel[ig]) / vc / channel.vcof + Rxyz[ig] / vc)) / stroke.dt).astype(int)
+#             index_head = np.apply_along_axis(get_t_delay_index1, 1, n_td_tmp)
+#             index_tail = np.apply_along_axis(get_t_delay_index2, 1, n_td_tmp)
+#             index_head = np.where(index_head == 1)
+#             index_tail = np.where(index_tail == 1)
+#
+#             Rz[ig] = (z1 + z2) / 2 - z_channel[ig]
+#
+#             if air_or_img == 0:
+#                 # 根据不同的传播模型，选择系数
+#                 if channel.channel_model == 'TL':
+#                     cof_isr = 1 / (4 * np.pi * ep0)
+#                 elif channel.channel_model == 'MTLL':
+#                     cof_isr = 1 / (4 * np.pi * ep0) * (1 - z_channel[ig] / channel.H)
+#                 else:
+#                     cof_isr = 1 / (4 * np.pi * ep0) * np.exp(-z_channel[ig] / channel.lamda)
+#             else:
+#                 if channel.channel_model == 'TL':
+#                     cof_isr = 1 / (4 * np.pi * ep0)
+#                 elif channel.channel_model == 'MTLL':
+#                     cof_isr = 1 / (4 * np.pi * ep0) * (1 + z_channel[ig] / channel.H)
+#                 else:
+#                     cof_isr = 1 / (4 * np.pi * ep0) * np.exp(-np.abs(z_channel[ig]) / channel.lamda)
+#
+#             dEr_1_cof = 0 * cof_isr * 3 * Rz[ig] * Rxy[ik] / Rxyz[ig] ** 5
+#             dEr_2_cof = cof_isr * Rxy[ik] * Rxy[ik] / Rxyz[ig] ** 3
+#             dEr_3_cof = cof_isr * Rxy[ik] * Rxy[ik] / Rxyz[ig] ** 2 / vc
+#
+#             dEr1[index_tail[1], ig] = dEr_1_cof * i_sr_int[index_head]
+#             dEr2[index_tail[1], ig] = dEr_2_cof * i_sr[index_head]
+#             dEr3[index_tail[1], ig] = dEr_3_cof * i_sr_div[index_head]
+#
+#         Er[:, ik] = np.sum(dEr1 + dEr2 + dEr3, axis=1)
+#     # # 转置电场矩阵
+#     # Er = Er.T
+#     return Er

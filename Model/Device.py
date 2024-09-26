@@ -21,7 +21,7 @@ class Devices:
         添加变压器
         """
         self.transformers.append(transformer)
-    
+
     def __repr__(self):
         """
         返回对象的字符串表示形式。

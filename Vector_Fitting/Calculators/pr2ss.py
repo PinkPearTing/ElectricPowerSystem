@@ -1,50 +1,58 @@
-import numpy as np
-from scipy.sparse import diags, csr_matrix
+""" pr2ss.py
 
-# 第43行修改 #26 27行修改
+Author: Jennifer Houle
+Date: 3/19/2020
+
+This program is based off pr2ss.m from [4]. From [4],
+
+[1] B. Gustavsen and A. Semlyen, "Rational approximation of frequency
+    domain responses by Vector Fitting", IEEE Trans. Power Delivery,
+    vol. 14, no. 3, pp. 1052-1061, July 1999.
+
+[2] B. Gustavsen, "Improving the pole relocating properties of vector
+    fitting", IEEE Trans. Power Delivery, vol. 21, no. 3, pp. 1587-1592,
+    July 2006.
+
+[3] D. Deschrijver, M. Mrozowski, T. Dhaene, and D. De Zutter,
+    "Macromodeling of Multiport Systems Using a Fast Implementation of
+    the Vector Fitting Method", IEEE Microwave and Wireless Components
+    Letters, vol. 18, no. 6, pp. 383-385, June 2008.
+
+[4] B. Gustavsen, Matrix Fitting Toolbox, The Vector Fitting Website.
+    March 20, 2013. Accessed on: Feb. 25, 2020. [Online]. Available:
+    https://www.sintef.no/projectweb/vectorfitting/downloads/matrix-fitting-toolbox/.
+
+"""
+
+import numpy as np
+
+
 def pr2ss(SER):
     """
-    Convert a SER object to state-space representation.
-
-    Parameters:
-        SER: dict containing the following keys:
-            - R: (Nc, Nc, N) array
-            - poles: (Nc, Nc) array
-            - D: (Nc,) array
-
-    Returns:
-        SER with updated A, B, C matrices.
+    This function completes the state space model
+    :param SER: R, poles
+    :return: SER, now with A, B, C also filled in
     """
-
     R = SER['R']
-    poles = SER['poles']
-    Nc = len(SER['D'])
+    poles = SER['poles'].reshape(-1, 1)
+    Nc = SER['D'].shape[0]
     N = R.shape[2]
-
-    # Initialize C, A, B matrices
-    C = np.zeros((Nc, Nc * N), dtype=complex)
-    A = np.zeros((Nc * N, 1), dtype=complex)
-    B = np.zeros((Nc * N, Nc), dtype=complex)
-
-    poles = np.diag(np.diag(poles))  # Make sure poles is a diagonal matrix
+    C = np.zeros((Nc, Nc * N), dtype=np.complex128)
+    A = np.zeros((Nc * N, 1), dtype=np.complex128)
+    B = np.zeros((Nc * N, Nc), dtype=np.complex128)
 
     for m in range(N):
         Rdum = R[:, :, m]
         for n in range(Nc):
             ind = n * N + m
-            C[:, ind] = Rdum[:, n]
-
+            C[:, ind] = Rdum[:, n].copy()
     for n in range(Nc):
-        A[n * N:(n + 1) * N] = poles.reshape(-1, 1)
-        B[n * N:(n + 1) * N, n] = np.ones((N,))
+        A[n * N: (n + 1) * N, 0] = poles[:, 0].copy()
+        B[n * N: (n + 1) * N, n] = np.ones((N, 1), dtype=complex)[:, 0]
+    A = np.diagflat(A)
 
-    # Create sparse diagonal matrix for A
-    A_sparse = diags(A.flatten())
-    A_sparse = csr_matrix(A_sparse)
-
-    # Update SER dictionary
-    SER['A'] = A_sparse
-    SER['B'] = B
-    SER['C'] = C
+    SER['A'] = A.copy()
+    SER['B'] = B.copy()
+    SER['C'] = C.copy()
 
     return SER

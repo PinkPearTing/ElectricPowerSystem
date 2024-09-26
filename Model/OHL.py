@@ -37,8 +37,16 @@ class OHL:
         self.capacitance_matrix = None
         # 电导矩阵 (pandas.Dataframe,self.nodes_name*self.nodes_name)
         self.conductance_matrix = None
-        # 阻抗矩阵 (pandas.Dataframe,self.wires_name*(self.wires_name*frequency_num))
-        self.impedance_martix = None
+        # 阻抗矩阵
+        self.impedance_matrix = np.array([])
+        # 电压矩阵
+        self.voltage_source_matrix = pd.DataFrame()
+        # 电流矩阵
+        self.current_source_matrix = pd.DataFrame()
+        # vector fitting 相关参数
+        self.A = np.array([])
+        self.B = np.array([])
+        self.phi = np.array([])
 
     def get_brans_nodes_list(self, segment_num):
         """

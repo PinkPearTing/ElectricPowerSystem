@@ -6,9 +6,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 if __name__ == '__main__':
     # 1. 接收到创建新电网指令
-    file_name = "01_tube"
-    varied_frequency = np.arange(0, 37, 9)
-    strategy = Strategy.NoLinear()
+    file_name = "01_8"
+    varied_frequency = np.logspace(0, 37, 9)
+    strategy = Strategy.variant_frequency()
     network = Network()
     network.run(file_name, strategy)
     print(network.solution)

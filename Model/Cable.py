@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 from Ground import Ground
 from Wires import Wires, TubeWire
@@ -25,7 +26,16 @@ class Cable:
         self.capcitance_matrix = None
         self.conductance_matrix = None
         self.Cw = CW(0)
-        self.impedance_matrix = None
+        # 阻抗矩阵
+        self.impedance_matrix = np.array([])
+        # 电压矩阵
+        self.voltage_source_matrix = pd.DataFrame()
+        # 电流矩阵
+        self.current_source_matrix = pd.DataFrame()
+        # vector fitting 相关参数
+        self.A = np.array([])
+        self.B = np.array([])
+        self.phi = np.array([])
 
 
 

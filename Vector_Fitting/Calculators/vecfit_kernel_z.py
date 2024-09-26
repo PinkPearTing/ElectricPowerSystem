@@ -1,7 +1,7 @@
 import numpy as np
 import warnings
-import Vector_Fitting.Drivers.RP_Driver as RPdriver
-import Vector_Fitting.Drivers.VF_Driver as VFdriver
+from Vector_Fitting.Drivers.RPdriver import RPdriver
+from Vector_Fitting.Drivers.VFdriver import VFdriver
 import scipy.io
 # 40 41行修改
 def vecfit_kernel_Z_Ding(Zi, f0, Nfit, vf_mod=None):
@@ -22,12 +22,28 @@ def vecfit_kernel_Z_Ding(Zi, f0, Nfit, vf_mod=None):
 
     VFopts = {'asymp': vf_mod if vf_mod is not None else 3, 'plot': 0, 'N': Nfit, 'Niter1': 10, 'Niter2': 5}
 
-    s = 1j * 2 * np.pi * f0
-    poles = []  # Initial poles are automatically generated
-    SER, *_ = VFdriver.drive(Zi, s, poles, VFopts)
+    s = np.squeeze(1j * 2 * np.pi * f0)
+    poles = None  # Initial poles are automatically generated
 
-    RFopts = {'Niter_in': 5}
-    SER, Zfit, *_ = RPdriver.drive(SER, s, RFopts)
+    # Pole-Residue Fitting
+    vf_driver = VFdriver(N=Nfit,
+                         poletype='lincmplx',
+                         weightparam='common_1',
+                         Niter1=10,
+                         Niter2=5,
+                         asymp='DE',
+                         plot=False
+                         )
+    SER, *_ = vf_driver.vfdriver(Zi, s, poles)
+
+    # Passivity Enforcement
+    rp_driver = RPdriver(parametertype='y',
+                         Niter_in=5,
+                         plot=False
+                         # s_pass=2*np.pi*1j*np.linspace(0, 2e5, 1001).T,
+                         # ylim=np.array((-2e-3, 2e-3))
+                         )
+    SER, Zfit, *_ = rp_driver.rpdriver(SER, s)
 
     R0 = np.real(SER['D'])  # 只取实部
     L0 = np.real(SER['E'])  # 只取实部

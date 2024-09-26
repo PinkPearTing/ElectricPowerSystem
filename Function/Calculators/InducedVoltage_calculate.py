@@ -1,7 +1,4 @@
 import numpy as np
-from Utils.Math import calculate_distances
-import sys
-sys.path.append(r'D:\Documents\a实验室\过电压计算程序\ElectricModelBuilding_python\ElectricPowerSystem\Vector_Fitting')
 from scipy.interpolate import interp1d
 from scipy.signal import convolve2d
 from Model.Contant import Constant
@@ -17,7 +14,7 @@ def distance(node1, node2):
                      (node1.y - node2[1]) ** 2 +
                      (node1.z - node2[2]) ** 2)
 
-def LightningCurrrent_calculate(p1, p2, position, network, node_index, lightning, stroke_sequence):
+def LightningCurrent_calculate(p1, p2, position, network, node_index, lightning, stroke_sequence):
     """
     【功能】
     计算直击雷的电流源矩阵
@@ -31,41 +28,45 @@ def LightningCurrrent_calculate(p1, p2, position, network, node_index, lightning
     :param stroke_sequence:
     :return:
     """
-    area = p1.split("_")[0]
-    # 1. find the wire that is hit
-    selected_wire = None
-    if area == "tower":
-
-        selected_tower = [tower for tower in network.towers if tower.info.name == p1]
-        selected_wire = [wire for wire in list(selected_tower[0].wires.get_all_wires().values()) if wire.name.split("_")[0] == p2]
-    elif area == "OHL":
-        selected_ohl = [ohl for ohl in network.ohls if ohl.name == p1]
-        selected_wire = [wire for wire in list(selected_ohl[0].wires.get_all_wires().values()) if wire.name.split("_")[0] == p2]
-    elif area == "cable":
-        selected_cable = [cable for cable in network.cables if cable.name == p1]
-        selected_wire = [wire for wire in list(selected_cable[0].wires.get_all_wires().values()) if wire.name.split("_")[0] == p2]
-    # 2. find the closest node among nodes in the hit wire.
-    nodes = set()
-    for wire in selected_wire:
-        nodes.add(wire.start_node)
-        nodes.add(wire.end_node)
-
-    closest_point = None
-    min_distance = float('inf')
-
-    for node in nodes:
-        dist = distance(node, position)
-        if dist < min_distance:
-            min_distance = dist
-            closest_point = node
 
     if lightning.type == 'Direct':
-        # 初始化一个 DataFrame，行索引为 Nodes，列数为 Nt
-        I_out = pd.DataFrame(0, index=node_index, columns=range(lightning.strokes[stroke_sequence].Nt-1), dtype=np.float64)
+        area = p1.split("_")[0]
+        # 1. 找到用户指定点所在的wire
+        selected_wire = None
+        if area == "tower":
+            selected_tower = [tower for tower in network.towers if tower.info.name == p1]
+            selected_wire = [wire for wire in list(selected_tower[0].wires.get_all_wires().values()) if
+                             wire.name.split("_")[0] == p2]
+        elif area == "OHL":
+            selected_ohl = [ohl for ohl in network.ohls if ohl.name == p1]
+            selected_wire = [wire for wire in list(selected_ohl[0].wires.get_all_wires().values()) if
+                             wire.name.split("_")[0] == p2]
+        elif area == "cable":
+            selected_cable = [cable for cable in network.cables if cable.name == p1]
+            selected_wire = [wire for wire in list(selected_cable[0].wires.get_all_wires().values()) if
+                             wire.name.split("_")[0] == p2]
+        # 2. 找到用户指定点距离该wire上最近的node
+        nodes = set()
+        for wire in selected_wire:
+            nodes.add(wire.start_node)
+            nodes.add(wire.end_node)
+
+        closest_point = None
+        min_distance = float('inf')
+
+        for node in nodes:
+            dist = distance(node, position)
+            if dist < min_distance:
+                min_distance = dist
+                closest_point = node
+
+        # 3. 初始化一个 DataFrame，行索引为 Nodes，列数为 Nt
+        I_out = pd.DataFrame(0, index=node_index, columns=range(lightning.strokes[stroke_sequence].Nt), dtype=np.float64)
         I_out.loc[closest_point.name] = lightning.strokes[stroke_sequence].current_waveform
         return I_out
     elif lightning.type == 'Indirect':
-        I_out = pd.DataFrame(0, index=node_index, columns=range(lightning.strokes[stroke_sequence].Nt-1), dtype=np.float64)
+        # 间接雷，电流源为0
+        I_out = pd.DataFrame(0, index=node_index, columns=range(lightning.strokes[stroke_sequence].Nt), dtype=np.float64)
         return I_out
 
 
@@ -74,6 +75,7 @@ def InducedVoltage_calculate(pt_start, pt_end, branch_list, lightning: Lightning
     【功能】：
     计算每个导体段，在每个时刻的感应电动势
     【输入】
+    pt_start (n * 3, np.array):  起点坐标
     conduct_object:  Tower, OHL or Cable对象
     stroke: 雷电对象
     constants: 常数对象
@@ -138,7 +140,7 @@ def ElectricField_calculate(pt_start, pt_end, stroke: Stroke, channel, ep0, vc):
 
     # 时刻的序列
     # t_sr = np.arange(1, stroke.Nt + 1) * stroke.dt * 1e6
-    t_sr = stroke.t_us
+    t_sr = stroke.t_us * 1.0e6  # 避免太多小数
     t_sr = t_sr.reshape(1, -1)
 
     # 雷电通道每段的中点z坐标和镜像通道的z坐标
@@ -185,7 +187,7 @@ def H_MagneticField_calculate(pt_start, pt_end, stroke, channel, ep0, vc):
     i_sr = i_sr.reshape(1, -1)
 
     # 时刻的序列
-    t_sr = stroke.t_us
+    t_sr = stroke.t_us * 1e6
     t_sr = t_sr.reshape(1, -1)
 
     # 雷电通道每段的中点z坐标和镜像通道的z坐标

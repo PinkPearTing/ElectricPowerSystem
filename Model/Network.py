@@ -3,12 +3,13 @@ import json
 import numpy as np
 import pandas as pd
 from functools import reduce
+from scipy.linalg import block_diag
 
 from Driver.initialization.initialization import initialize_OHL, initialize_tower, initial_source, initial_lump, \
     initialize_cable, initialize_ground
-from Driver.modeling.OHL_modeling import OHL_building
-from Driver.modeling.cable_modeling import cable_building
-from Driver.modeling.tower_modeling import tower_building
+from Driver.modeling.OHL_modeling import OHL_building, OHL_building_variant_frequency
+from Driver.modeling.cable_modeling import cable_building, cable_building_variant_frequency
+from Driver.modeling.tower_modeling import tower_building, tower_building_variant_frequency
 
 from Model.Cable import Cable
 from Model.Lightning import Lightning
@@ -103,7 +104,7 @@ class Network:
         # segment_length = 50  # 预设的参数
         for tower in self.towers:
             gnd = self.ground if self.global_ground == 1 else tower.ground
-            tower_building(tower, self.f0, self.max_length, gnd)
+            tower_building_variant_frequency(tower, self.f0, gnd, self.varied_frequency, self.dt)
             self.switch_disruptive_effect_models.extend(tower.lump.switch_disruptive_effect_models)
             self.voltage_controled_switchs.extend(tower.lump.voltage_controled_switchs)
             self.time_controled_switchs.extend(tower.lump.time_controled_switchs)
@@ -116,10 +117,10 @@ class Network:
                     self.nolinear_resistors.extend(device.nolinear_resistors)
         for ohl in self.OHLs:
             gnd = self.ground if self.global_ground == 1 else ohl.ground
-            OHL_building(ohl, self.max_length, self.varied_frequency, gnd)
+            OHL_building_variant_frequency(ohl, self.max_length, self.varied_frequency, gnd, self.dt)
         for cable in self.cables:
             gnd = self.ground if self.global_ground == 1 else cable.ground
-            cable_building(cable, self.f0, self.varied_frequency, gnd)
+            cable_building_variant_frequency(cable, self.f0, self.varied_frequency, gnd, self.dt)
 
         # 3. combine matrix
         self.combine_parameter_matrix()
@@ -129,39 +130,9 @@ class Network:
         nodes = self.capacitance_matrix.columns.tolist()
         self.sources =initial_source(self, nodes, load_dict, dt=dt)
 
-    def run_measurement(self):
+    def run_measurement(self,strategy):
         #lumpname/branname: label,probe,branname,n1,n2,(towername)
-        measure_result = {}
-        for k,v in self.measurement.items():
-            print("ddd")
-            # if v[0] == 0 or v[0]==1:
-            #     for bran in v[2]:
-            #         voltage = {bran:self.solution.loc[bran].tolist()}
-            #
-            #     node1 = self.solution.loc[v[3]].tolist()
-            #     node2 = self.solution.loc[v[4]].tolist()
-            #     current = [abs(a-b) for a,b in zip(node1,node2)]
-            #     if v[1] == 1:
-            #         measure_result[k] = current
-            #     elif v[1] == 2:
-            #         measure_result[k] = voltage
-            #     elif v[1] == 3:
-            #         measure_result[k] = [a*b for a,b in zip(current,voltage)]
-            #     elif v[1] == 4:
-            #         measure_result[k] = [current,voltage]
-            #     elif v[1] == 11:
-            #         p = [a*b for a,b in zip(current,voltage)]
-            #         measure_result[k] = sum([i*self.dt for i in p])
-            #
-            #
-            #
-            #     print('Current of ' +k+' is:')
-            #     print(current)
-            #     print('Voltage of ' +k+' is:')
-            #     print(voltage)
-
-
-
+        return strategy.apply(measurement=self.measurement,solution=self.solution)
 
 
     #R,L,G,C矩阵合并
@@ -195,14 +166,20 @@ class Network:
         self.H["capacitance_matrix"] = self.capacitance_matrix
         self.H["conductance_matrix"] = self.conductance_matrix
 
-
-
+    def reverse_H(self):
+        self.incidence_matrix_A = self.H["incidence_matrix_A"]
+        self.incidence_matrix_B = self.H["incidence_matrix_B"]
+        self.resistance_matrix = self.H["resistance_matrix"]
+        self.inductance_matrix = self.H["inductance_matrix"]
+        self.capacitance_matrix = self.H["capacitance_matrix"]
+        self.conductance_matrix = self.H["conductance_matrix"]
     #更新H矩阵和判断绝缘子是否闪络
     def update_H(self, current_result, time):
         for switch_v_list in [self.switch_disruptive_effect_models, self.voltage_controled_switchs]:
             for switch_v in switch_v_list:
                 v1 = current_result.loc[switch_v.node1[0], 0] if switch_v.node1[0] != 'ref' else 0
                 v2 = current_result.loc[switch_v.node2[0], 0] if switch_v.node2[0] != 'ref' else 0
+
                 resistance = switch_v.update_parameter(abs(v1-v2), self.dt)
                 self.resistance_matrix.loc[switch_v.bran[0], switch_v.bran[0]] = resistance
 
@@ -215,15 +192,43 @@ class Network:
             resistance = nolinear_resistor.update_parameter(component_current)
             self.resistance_matrix.loc[nolinear_resistor.bran[0], nolinear_resistor.bran[0]] = resistance
 
+    def update_source_variant_frequency(self, current_result, next_point):
+        for tower in self.towers:
+            I = current_result.loc[tower.wires_name, 0].to_numpy()
+            tower.phi = tower.A.dot(I) + tower.B * tower.phi
+            phi_hist = (tower.B * tower.phi).sum(-1)
+            self.sources.loc[tower.wires_name, next_point] += phi_hist
+
+        for model_list in [self.OHLs, self.cables]:
+            for model in model_list:
+                I = current_result.loc[model.wires_name, 0].to_numpy()
+                n = int(I.shape[0] / model.A.shape[0])
+                A = np.array([])
+                for i in range(n):
+                    A = block_diag(A, model.A)
+                model.phi = A.dot(I) + model.B * model.phi
+                phi_hist = (model.B * model.phi).sum(-1)
+                self.sources.loc[model.wires_name, next_point] += phi_hist
+
     #执行不同的算法
-    def calculate(self,strategy,dt):
+    def calculate(self,dt):
+        if not self.switch_disruptive_effect_models and not self.voltage_controled_switchs and not self.time_controled_switchs and not self.nolinear_resistors:
+            strategy = Strategy.Linear()
+        else:
+            strategy = Strategy.NonLinear()
         strategy.apply(self,dt)
 
-    def run(self,file_name,*basestrategy):
+        if self.measurement:
+            self.measurement = Strategy.Measurement().apply(measurement=self.measurement, solution=self.solution,dt=dt)
+
+    def change_parameter(self,strategy):
+        strategy.apply(self, self.dt)
+
+    def run(self,file_name,*change):
 
         json_file_path = "Data/input/" + file_name + ".json"
         # 0. read json file
-        with open(json_file_path, 'r', encoding='utf-8') as j:
+        with open(json_file_path, 'r',encoding="utf-8") as j:
             load_dict = json.load(j)
 
 
@@ -257,7 +262,13 @@ class Network:
             light = load_dict["Source"]["Lightning"]
             self.initialize_source(light,self.dt)
 
-        self.calculate(basestrategy[0],self.dt)
+
+
+        self.calculate(self.dt)
+
+        self.change_parameter(change[0])
+
+        #Strategy.Change_DE_max().apply(self,self.dt)
 
         print("you are measuring")
 
