@@ -18,7 +18,7 @@ This program is based off violextremaY.m from [4]. From [4],
     the Vector Fitting Method", IEEE Microwave and Wireless Components
     Letters, vol. 18, no. 6, pp. 383-385, June 2008.
 
-[4] B. Gustavsen, atrix Fitting Toolbox, The Vector Fitting Website.
+[4] B. Gustavsen, Matrix Fitting Toolbox, The Vector Fitting Website.
     March 20, 2013. Accessed on: Feb. 25, 2020. [Online]. Available:
     https://www.sintef.no/projectweb/vectorfitting/downloads/matrix-fitting-toolbox/.
 

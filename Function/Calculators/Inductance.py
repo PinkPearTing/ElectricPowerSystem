@@ -47,13 +47,13 @@ def calculate_sheath_inductance(tubeposition, sheath_r, sheath_outer_radius, con
     """
     mu0 = constants.mu0
     Vduct = 1e6
-    if tubeposition >= Vduct:
+    if tubeposition[0] >= Vduct:
         Ls = 0
-    elif tubeposition > 0:
-        Ls = mu0 / (2 * np.pi) * np.log(2 * tubeposition / sheath_r)
-    elif tubeposition == 0:
-        Ls = mu0(2 * np.pi) * np.log(2 * (2 * sheath_outer_radius) / sheath_r)
-    elif tubeposition < 0:
+    elif tubeposition[0] > 0:
+        Ls = mu0 / (2 * np.pi) * np.log(2 * tubeposition[0] / sheath_r)
+    elif tubeposition[0] == 0:
+        Ls = mu0 / (2 * np.pi) * np.log(2 * (2 * sheath_outer_radius) / sheath_r)
+    elif tubeposition[0] < 0:
         Ls = mu0 / (2 * np.pi) * np.log(sheath_outer_radius / sheath_r)
     else:
         Ls = 0

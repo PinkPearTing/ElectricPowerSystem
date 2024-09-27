@@ -23,7 +23,7 @@ simulation.
     domain responses by Vector Fitting", IEEE Trans. Power Delivery,
     vol. 14, no. 3, pp. 1052-1061, July 1999.
 
-[2] B. Gustavsen, "Improving the pole reloating properties of vector
+[2] B. Gustavsen, "Improving the pole relocating properties of vector
     fitting", IEEE Trans. Power Delivery, vol. 21, no. 3, pp. 1587-1592,
     July 2006.
 

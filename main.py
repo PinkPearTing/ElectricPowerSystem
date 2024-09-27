@@ -6,23 +6,46 @@ import matplotlib.pyplot as plt
 import numpy as np
 if __name__ == '__main__':
     # 1. 接收到创建新电网指令
-    file_name = "01_8"
+    file_name = "01_cable"
     varied_frequency = np.logspace(0, 37, 9)
-    strategy = Strategy.variant_frequency()
+    # strategy = Strategy.variant_frequency()
+    strategy = Strategy.NonLinear()
     network = Network()
     network.run(file_name, strategy)
     print(network.solution)
     Y13_Tower_1 = [abs(i)for i in network.solution.loc["Y13_Tower_1"].tolist()]
     Y02_Tower_1 = [abs(i) for i in network.solution.loc["Y02_Tower_1"].tolist()]
+    Y01_core = [abs(i) for i in network.solution.loc["Y01_core"].tolist()]
+    Y02_core = [abs(i) for i in network.solution.loc["Y02_core"].tolist()]
+    Y03_core = [abs(i) for i in network.solution.loc["Y03_core"].tolist()]
+    Y01_sheath = [abs(i) for i in network.solution.loc["Y01_sheath"].tolist()]
+    Y_T12O_A = [abs(i) for i in network.solution.loc["Y_T12O_A"].tolist()]
 
     X05 = network.solution.loc["X05"].tolist()
     X08 = network.solution.loc["X08"].tolist()
-    min = [abs(a - b) for a, b in zip(X05, X08)]
+    min = [abs(a-b) for a, b in zip(X05, X08)]
 
-    lightning_source = network.sources.loc["X05"].tolist()[:network.Nt]
+    lightning_source = network.sources.loc["X02"].tolist()[:network.Nt]
     # 生成数据
     x = np.arange(0, network.Nt, 1)  # 横坐标数据为从0到10之间，步长为0.1的等差数组
     y = Y13_Tower_1  #
+
+    plt.plot(x, np.array(Y_T12O_A) - np.array(Y02_Tower_1))
+    plt.title('equal_source')
+    plt.show()
+
+    plt.plot(x, Y01_core)
+    plt.title('Y01_core')
+    plt.show()
+    plt.plot(x, Y02_core)
+    plt.title('Y02_core')
+    plt.show()
+    plt.plot(x, Y03_core)
+    plt.title('Y03_core')
+    plt.show()
+    plt.plot(x, Y01_sheath)
+    plt.title('Y01_sheath')
+    plt.show()
 
     # 生成图形
     plt.plot(x, lightning_source)

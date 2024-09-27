@@ -40,7 +40,7 @@ from math import pi, sqrt
 
 import numpy as np
 from matplotlib import pyplot as plt
-from numpy import linalg as LA, dtype
+from numpy import linalg as LA
 
 from Vector_Fitting.Calculators.utils import PoleTypes, AsympOptions, chop
 
@@ -348,7 +348,6 @@ class VectorFit3:
                     # A_temp is a vector  accounting for Eq. (8) in [2]; it is stacked below the last row of A
                     # A is called [X -HvX] in Eq. (10) in [3].  Used to avoid the null solution by adding to the LS problem.
                     A = np.vstack((A, A_temp))
-
                 Q, R = np.linalg.qr(A)  # Solve as in Eq. (10) in [3] to implement the fast implementation of VF
                 ind1 = self.N + offs
                 ind2 = self.N + offs + self.N + 1

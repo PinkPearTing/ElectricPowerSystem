@@ -96,6 +96,7 @@ def pass_check_Y(A, C, D):
     Nc = D.shape[0]
 
     E = np.zeros((Nc, Nc))
+
     if np.sum(LA.eig(D) == 0):
         Ahat = LA.solve(A, np.eye(N))
         Bhat = - Ahat @ B

@@ -95,8 +95,9 @@ def segment_branch(network_branches):
     """
     branches = network_branches.copy()  # branches的副本，用于新增或删减支路
     for key, value in network_branches.items():
+        # key是支路， value是起点，终点，分段数
         keys_tobe_delete = []
-        if 'OHL' in value[2]:
+        if 'OHL' in value[2]  and value[3] != 1:
             start_node_coord = list(value[0].values())[0]
             end_node_coord = list(value[1].values())[0]
             # 生成新节点
@@ -262,6 +263,14 @@ def calculate_electric_field_down_r_and_z(pt_start, pt_end, stroke, channel, z_c
     # 转置电场矩阵
     Ez = Ez.T
     Er = Er.T
+    import psutil
+    import os
+    import time
+
+    process = psutil.Process(os.getpid())  # 获取当前进程 ID
+
+    mem_info = process.memory_info()
+    print(f"内存使用: {mem_info.rss / 1024 / 1024:.2f} MB")
     return Ez, Er
 
 def calculate_H_magnetic_field_down_r(pt_start, pt_end, stroke, channel, z_channel, i_sr, t_sr, i_sr_int, i_sr_div, ep0, vc, air_or_img):
@@ -355,6 +364,14 @@ def calculate_H_magnetic_field_down_r(pt_start, pt_end, stroke, channel, z_chann
     Er = np.sum(dEr1 + dEr2 + dEr3, axis=1)
     # 转置电场矩阵
     Er = Er.T
+    import psutil
+    import os
+    import time
+
+    process = psutil.Process(os.getpid())  # 获取当前进程 ID
+
+    mem_info = process.memory_info()
+    print(f"内存使用: {mem_info.rss / 1024 / 1024:.2f} MB")
     return Er
 
 

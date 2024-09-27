@@ -16,7 +16,7 @@ class StrokeParameters:
         '0.25/100us': [0.9, 0.25, 100, 2],
         '0.25/2.5us': [10.7, 0.25, 2.5, 2],
         '8/20us': [30.85, 8, 20, 2.4],
-        '2.6/50us': [10e4, 2.6, 50, 2.1],
+        '2.6/50us': [10e5, 2.6, 50, 2.1],
         '10/350us': [44.43, 10, 350, 2.1]
     }
 
@@ -53,8 +53,6 @@ class Stroke:
         dt (float): 仿真步长，单位s
         is_calculated (bool): 脉冲是否要被计算
         parameter_set (str): 脉冲参数集, 目前只支持 '0.25/100us', '8/20us', '2.6/50us', '10/350us'
-        hit_pos (list): 雷击点坐标(x, y, 0)
-        model (str): 模型选择
         parameters (list, optional): 脉冲参数, 仅在 'CIGRE' 和 'Heidler' 类型时使用, parameter_set被指定时, 请勿初始化该参数, 如想测试parameter_set之外的参数集, 请在此处初始化参数列表
         """
         self.stroke_type = stroke_type
@@ -103,7 +101,7 @@ class Stroke:
         Ip, tau1, tau2, n = self.parameters
         tau1 = tau1 * 1.0e-06
         tau2 = tau2 * 1.0e-06
-        #eta = math.exp(-(tau1 / tau2) * ((n * tau2 / tau1) ** (1 / n)))
+        # eta = math.exp(-(tau1 / tau2) * ((n * tau2 / tau1) ** (1 / n)))
         eta = 1
         Iout = ((Ip / eta) * ((t / tau1) ** n) / (1 + (t / tau1) ** n)) * np.exp(-t / tau2)
 
@@ -136,12 +134,12 @@ class Stroke:
         # Calculate only when is_calculated==True
         if self.is_calculated:
             if self.stroke_type == 'CIGRE':
-                self.current_waveform = self.add_cos_window_to_waveform_tail(self.cigre_waveform(self.t_us))
-                # self.current_waveform = self.cigre_waveform(self.t_us)
+                # self.current_waveform = self.add_cos_window_to_waveform_tail(self.cigre_waveform(self.t_us))
+                self.current_waveform = self.cigre_waveform(self.t_us)
                 return self.current_waveform
             elif self.stroke_type == 'Heidler':
-                self.current_waveform = self.add_cos_window_to_waveform_tail(self.heidler_waveform(self.t_us))
-                # self.current_waveform = self.heidler_waveform(self.t_us)
+                # self.current_waveform = self.add_cos_window_to_waveform_tail(self.heidler_waveform(self.t_us))
+                self.current_waveform = self.heidler_waveform(self.t_us)
                 return self.current_waveform
         return 0
 

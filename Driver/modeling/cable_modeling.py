@@ -21,7 +21,7 @@ def build_incidence_matrix(cable):
 
     segment_num = len(cable.wires.tube_wires)
 
-    for i in range(segment_num):
+    for i in range(segment_num*wires_num):
         incidence_matrix[i, i] = -1
         incidence_matrix[i, i+wires_num] = 1
 

@@ -104,7 +104,7 @@ class Network:
         # segment_length = 50  # 预设的参数
         for tower in self.towers:
             gnd = self.ground if self.global_ground == 1 else tower.ground
-            tower_building_variant_frequency(tower, self.f0, gnd, self.varied_frequency, self.dt)
+            tower_building(tower, self.f0, gnd)
             self.switch_disruptive_effect_models.extend(tower.lump.switch_disruptive_effect_models)
             self.voltage_controled_switchs.extend(tower.lump.voltage_controled_switchs)
             self.time_controled_switchs.extend(tower.lump.time_controled_switchs)
@@ -117,10 +117,10 @@ class Network:
                     self.nolinear_resistors.extend(device.nolinear_resistors)
         for ohl in self.OHLs:
             gnd = self.ground if self.global_ground == 1 else ohl.ground
-            OHL_building_variant_frequency(ohl, self.max_length, self.varied_frequency, gnd, self.dt)
+            OHL_building(ohl, self.max_length)
         for cable in self.cables:
             gnd = self.ground if self.global_ground == 1 else cable.ground
-            cable_building_variant_frequency(cable, self.f0, self.varied_frequency, gnd, self.dt)
+            cable_building(cable, self.f0)
 
         # 3. combine matrix
         self.combine_parameter_matrix()
@@ -173,6 +173,7 @@ class Network:
         self.inductance_matrix = self.H["inductance_matrix"]
         self.capacitance_matrix = self.H["capacitance_matrix"]
         self.conductance_matrix = self.H["conductance_matrix"]
+
     #更新H矩阵和判断绝缘子是否闪络
     def update_H(self, current_result, time):
         for switch_v_list in [self.switch_disruptive_effect_models, self.voltage_controled_switchs]:
@@ -228,7 +229,7 @@ class Network:
 
         json_file_path = "Data/input/" + file_name + ".json"
         # 0. read json file
-        with open(json_file_path, 'r',encoding="utf-8") as j:
+        with open(json_file_path, 'r', encoding="utf-8") as j:
             load_dict = json.load(j)
 
 
@@ -252,13 +253,13 @@ class Network:
             global_ground = load_dict['Global']['ground']['glb']
             ground = initialize_ground(load_dict['Global']['ground']) if 'ground' in load_dict['Global'] else None
         # 2. 初始化电网，根据电网信息计算源
-        self.initialize_network(load_dict, frq,VF,self.dt,self.T)
-        self.Nt = int(np.ceil(self.T/self.dt))
+        self.initialize_network(load_dict, frq, VF, self.dt, self.T)
+        self.Nt = int(np.ceil(self.T / self.dt))
         # 2. 保存支路节点信息
         self.calculate_branches(self.max_length)
 
         # 3. 初始化源，计算结果
-        if load_dict["Source"]["Lightning"]:
+        if "Source" in load_dict:
             light = load_dict["Source"]["Lightning"]
             self.initialize_source(light,self.dt)
 
@@ -266,7 +267,7 @@ class Network:
 
         self.calculate(self.dt)
 
-        self.change_parameter(change[0])
+        # self.change_parameter(change[0])
 
         #Strategy.Change_DE_max().apply(self,self.dt)
 
