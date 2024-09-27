@@ -9,7 +9,7 @@ from Model.Lump import Lumps, Resistor_Inductor, Conductor_Capacitor, \
     Voltage_Control_Voltage_Source, Current_Control_Voltage_Source, Voltage_Control_Current_Source, \
     Current_Control_Current_Source, Transformer_One_Phase, Transformer_Three_Phase, Mutual_Inductance_Two_Port, \
     Mutual_Inductance_Three_Port, Nolinear_Resistor, Nolinear_F, Voltage_Controled_Switch, Time_Controled_Switch, A2G, \
-    Switch_Disruptive_Effect_Model, Nolinear_Element_Parameters, Switch_Parameters
+    Switch_Disruptive_Effect_Model, Nolinear_Element_Parameters, Switch_Parameters, ROD
 from Model.Node import Node
 from Model.Wires import Wire, Wires, CoreWire, TubeWire
 from Model.Ground import Ground
@@ -353,8 +353,8 @@ def initial_lump(lump_data, dt, T,measurement):
             case 'ROD':
                 resistance = lump['value1']
                 inductance = lump['value2']
-                lumps.add_a2g(
-                    Ground(name, bran_name, node1, node2, resistance, inductance))
+                lumps.add_ROD(
+                    ROD(name, bran_name, node1, node2, resistance, inductance))
             case "swh":
                 resistance = lump['value1']
                 model = lump['model']
@@ -403,7 +403,7 @@ def initial_device(device_data, dt, T,measurement):
 
     return devices,measurement
 
-def initial_source(network, nodes, load_dict,dt):
+def initial_lightning_source(network, nodes, load_dict,dt):
     # 0. read json file
     stroke_list = []
     for stroke_dict in load_dict['Stroke']:
@@ -428,12 +428,7 @@ def initial_source(network, nodes, load_dict,dt):
         I_out = pd.concat([I_out, LightningCurrent_calculate(load_dict["area"], load_dict["wire"], load_dict["position"],
                             network, nodes, lightning, stroke_sequence=i)],axis=1,ignore_index=True)
    # Source_Matrix = pd.concat([I_out, U_out], axis=0)
-    for model_list in [network.towers, network.OHLs, network.cables]:
-        for model in model_list:
-            U_out = U_out.add(model.voltage_source_matrix, fill_value=0).fillna(0)
-            I_out = I_out.add(model.current_source_matrix, fill_value=0).fillna(0)
-    Source_Matrix = pd.concat([U_out, I_out], axis=0)
-    return Source_Matrix
+    return U_out, I_out
 
 def initialize_cable(cable, max_length,VF):
 

@@ -473,21 +473,21 @@
   "comments": null
 },
         {
-  "Type": "Is",
-  "name": "lightning_source",
-  "probe": null,
-  "bran_name": "---",
-  "node1": "X02",
-  "node2": "ref",
-  "data_type": 1,
-  "value1": 100e3,
-  "value2": 0,
-  "value3": 25e3,
-  "value4": null,
-  "value5": 0,
-  "pointer": null,
-  "comments": null
-}
+          "Type": "Is",
+          "name": "lightning_source",
+          "probe": null,
+          "bran_name": "---",
+          "node1": "X02",
+          "node2": "ref",
+          "data_type": 1,
+          "value1": 0,
+          "value2": 100e3,
+          "value3": 25e3,
+          "value4": null,
+          "value5": 0,
+          "pointer": null,
+          "comments": null
+        }
       ],
       "Device": [
         {

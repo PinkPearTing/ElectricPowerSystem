@@ -755,7 +755,7 @@ class A2G(Component):
         super().__init__(name, bran, node1, node2, {"resistance": resistance})
 
 
-class Ground(Component):
+class ROD(Component):
     def __init__(self, name: str, bran: np.ndarray, node1: np.ndarray, node2: np.ndarray, resistance: float, inductance: float):
         """
         电阻电感类，继承自 Component 类。
@@ -883,7 +883,7 @@ class Lumps:
                  current_control_current_sources=None, transformers_one_phase=None,
                  transformers_three_phase=None, mutual_inductors_two_port=None, mutual_inductors_three_port=None,
                  nolinear_resistors=None, nolinear_fs=None,
-                 voltage_controled_switchs=None, time_controled_switchs=None, a2gs=None, grounds=None,
+                 voltage_controled_switchs=None, time_controled_switchs=None, a2gs=None, RODs=None,
                  switch_disruptive_effect_models=None,
                  current_sources_cosine=None, current_sources_empirical=None, voltage_sources_cosine=None,
                  voltage_sources_empirical=None, MTCKs=None
@@ -937,7 +937,7 @@ class Lumps:
         self.voltage_controled_switchs = voltage_controled_switchs or []
         self.time_controled_switchs = time_controled_switchs or []
         self.a2gs = a2gs or []
-        self.grounds = grounds or []
+        self.RODs = RODs or []
         self.switch_disruptive_effect_models = switch_disruptive_effect_models or []
         self.MTCKs = MTCKs or []
 
@@ -961,7 +961,7 @@ class Lumps:
                                self.current_sources_empirical, self.voltage_sources_cosine,
                                self.voltage_sources_empirical, self.switch_disruptive_effect_models,
                                self.nolinear_resistors, self.nolinear_fs, self.voltage_controled_switchs,
-                               self.time_controled_switchs, self.grounds]:
+                               self.time_controled_switchs, self.RODs]:
             for component in component_list:
                 all_nodes[component.node1[0]] = True
                 all_nodes[component.node2[0]] = True
@@ -1180,11 +1180,11 @@ class Lumps:
         """
         self.a2gs.append(a2g)
 
-    def add_ground(self, ground):
+    def add_ROD(self, ROD):
         """
         添加大地
         """
-        self.grounds.append(ground)
+        self.RODs.append(ROD)
 
     def add_MTCK(self, MTCK):
         """
@@ -1198,7 +1198,7 @@ class Lumps:
         """
         for ith_com, component in enumerate(
                 self.resistor_inductors + self.mutual_inductors_two_port + self.mutual_inductors_three_port +
-                self.grounds):
+                self.RODs):
             component.ima_parameter_assign(self.incidence_matrix_A)
             component.imb_parameter_assign(self.incidence_matrix_B)
             component.r_parameter_assign(self.resistance_matrix)

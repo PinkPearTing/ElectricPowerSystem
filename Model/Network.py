@@ -5,7 +5,7 @@ import pandas as pd
 from functools import reduce
 from scipy.linalg import block_diag
 
-from Driver.initialization.initialization import initialize_OHL, initialize_tower, initial_source, initial_lump, \
+from Driver.initialization.initialization import initialize_OHL, initialize_tower, initial_lightning_source, initial_lump, \
     initialize_cable, initialize_ground
 from Driver.modeling.OHL_modeling import OHL_building, OHL_building_variant_frequency
 from Driver.modeling.cable_modeling import cable_building, cable_building_variant_frequency
@@ -128,7 +128,21 @@ class Network:
     # initialize external source
     def initialize_source(self, load_dict,dt):
         nodes = self.capacitance_matrix.columns.tolist()
-        self.sources =initial_source(self, nodes, load_dict, dt=dt)
+        U_out = pd.DataFrame()
+        I_out = pd.DataFrame()
+        for model_list in [self.towers, self.OHLs, self.cables]:
+            for model in model_list:
+                U_out = U_out.add(model.voltage_source_matrix, fill_value=0).fillna(0)
+                I_out = I_out.add(model.current_source_matrix, fill_value=0).fillna(0)
+
+        if "Source" in load_dict:
+            light = load_dict["Source"]["Lightning"]
+            lgt_U_source, lgt_I_ource = initial_lightning_source(self, nodes, light, dt=dt)
+            U_out = U_out.add(lgt_U_source, fill_value=0).fillna(0)
+            I_out = I_out.add(lgt_I_ource, fill_value=0).fillna(0)
+
+        Source_Matrix = pd.concat([U_out, I_out], axis=0)
+        self.sources = Source_Matrix
 
     def run_measurement(self,strategy):
         #lumpname/branname: label,probe,branname,n1,n2,(towername)
@@ -259,9 +273,7 @@ class Network:
         self.calculate_branches(self.max_length)
 
         # 3. 初始化源，计算结果
-        if "Source" in load_dict:
-            light = load_dict["Source"]["Lightning"]
-            self.initialize_source(light,self.dt)
+        self.initialize_source(load_dict,self.dt)
 
 
 

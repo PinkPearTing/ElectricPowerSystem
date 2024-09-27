@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 if __name__ == '__main__':
     # 1. 接收到创建新电网指令
-    file_name = "01_cable"
+    file_name = "01_8"
     varied_frequency = np.logspace(0, 37, 9)
     # strategy = Strategy.variant_frequency()
     strategy = Strategy.NonLinear()

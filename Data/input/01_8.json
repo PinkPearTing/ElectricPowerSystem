@@ -329,7 +329,7 @@
       ],
       "Lump": [
         {
-          "Type": "RL",
+          "Type": "ROD",
           "name": "GRID",
           "probe": null,
           "bran_name": "Y09_Tower_1",
