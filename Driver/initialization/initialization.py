@@ -9,7 +9,7 @@ from Model.Lump import Lumps, Resistor_Inductor, Conductor_Capacitor, \
     Voltage_Control_Voltage_Source, Current_Control_Voltage_Source, Voltage_Control_Current_Source, \
     Current_Control_Current_Source, Transformer_One_Phase, Transformer_Three_Phase, Mutual_Inductance_Two_Port, \
     Mutual_Inductance_Three_Port, Nolinear_Resistor, Nolinear_F, Voltage_Controled_Switch, Time_Controled_Switch, A2G, \
-    Switch_Disruptive_Effect_Model, Nolinear_Element_Parameters, Switch_Parameters, ROD
+    Switch_Disruptive_Effect_Model, Nolinear_Element_Parameters, Switch_Parameters, ROD, MTCK
 from Model.Node import Node
 from Model.Wires import Wire, Wires, CoreWire, TubeWire
 from Model.Ground import Ground
@@ -20,12 +20,13 @@ from Model.Contant import Constant
 from Function.Calculators.InducedVoltage_calculate import InducedVoltage_calculate, LightningCurrent_calculate
 import pandas as pd
 from Model.Cable import Cable
-from Model.Info import TowerInfo,OHLInfo, CableInfo
+from Model.Info import TowerInfo, OHLInfo, CableInfo
 from Model.Device import Devices
 from Utils.Math import segment_branch
 
+
 # initialize wire in tower
-def initialize_wire(wire, nodes,VF):
+def initialize_wire(wire, VF):
     bran = wire['bran']
     node_name_start = wire['node1']
     pos_start = wire['pos_1']
@@ -50,6 +51,7 @@ def initialize_wire(wire, nodes,VF):
         radius = wire['rc']
         return CoreWire(bran, node_start, node_end, offset, radius, R, L, sig, mur, epr, VF, wire['oft'], wire['cita'])
 
+
 # initialize wire in OHL
 def initialize_OHL_wire(wire):
     cir_id = wire['cir_id']
@@ -65,7 +67,6 @@ def initialize_OHL_wire(wire):
     pos_end = wire['node2_pos']
     node_start = Node(name=node_name_start, x=pos_start[0], y=pos_start[1], z=pos_start[2])
     node_end = Node(name=node_name_end, x=pos_end[0], y=pos_end[1], z=pos_end[2])
-
 
     offset = wire['offset']
     radius = wire['r0']
@@ -87,6 +88,7 @@ def initialize_OHL_wire(wire):
 
     return Wire(bran, node_start, node_end, offset, radius, R, L, sig, mur, epr, VF)
 
+
 # initialize ground in tower
 def initialize_ground(ground_dic):
     sig = ground_dic['sig']
@@ -98,77 +100,74 @@ def initialize_ground(ground_dic):
 
     return Ground(sig, mur, epr, model, ionisation_intensity, ionisation_model)
 
-def initalize_wire_measurement(wire,measurement,tower_name):
+
+def initalize_wire_measurement(wire, measurement, tower_name):
     if wire['probe']:
-        measurement[wire['bran']] = [0,wire[ 'probe'],wire['bran'],wire['node1'],wire['node2'],tower_name]
+        measurement[wire['bran']] = [0, wire['probe'], wire['bran'], wire['node1'], wire['node2'], tower_name]
 
 
-
-
-def initialize_tower(tower_dict, max_length, dt, T,VF):
-
-
+def initialize_tower(tower_dict, max_length, dt, T, VF):
     # tower_dict['Wire']
     # 1. initialize wires
     wires = Wires()
     tube_wire = None
-    nodes = []
     measurement = {}
     for wire in tower_dict['Wire']:
 
-        initalize_wire_measurement(wire,measurement,tower_dict['Info']['name'])
+        initalize_wire_measurement(wire, measurement, tower_dict['Info']['name'])
         # 1.1 initialize air wire
         if wire['type'] == 'air':
-            wire_air = initialize_wire(wire, nodes,VF)
+            wire_air = initialize_wire(wire, VF)
             wires.add_air_wire(wire_air)  # add air wire in wires
 
         # 1.2 initialize ground wire
         elif wire['type'] == 'ground':
-            wire_ground = initialize_wire(wire, nodes,VF)
+            wire_ground = initialize_wire(wire, VF)
             wires.add_ground_wire(wire_ground)  # add ground wire in wires
 
         # 1.3 initialize tube
         elif wire['type'] == 'tube':
-            sheath_wire = initialize_wire(wire['sheath'], nodes,VF)
+            sheath_wire = initialize_wire(wire['sheath'], VF)
             tube_wire = TubeWire(sheath_wire, wire['sheath']['rs1'], wire['sheath']['rs3'], wire['sheath']['num'])
 
             for core in wire['core']:
-                core_wire = initialize_wire(core, nodes,VF)
+                core_wire = initialize_wire(core, VF)
                 tube_wire.add_core_wire(core_wire)
 
             wires.add_tube_wire(tube_wire)  # add tube in wires
 
     # ---对所有线段进行切分----
-   # wires.display()
+    # wires.display()
     wires.split_long_wires_all(max_length)
 
     # 将表皮线段添加到空气线段集合中
     for tubeWire in wires.tube_wires:
         wires.add_air_wire(tubeWire.sheath)  # sheath wire is in the air, we need to calculate it in air part.
- #   wires.display()
+    #   wires.display()
     # 2. initialize ground
     ground_dic = tower_dict['ground']
     ground = initialize_ground(ground_dic)
 
     # 3. initialize lumps
-    lumps,measurement = initial_lump(tower_dict['Lump'], dt, T,measurement)
+    lumps, measurement = initial_lump(tower_dict['Lump'], dt, T, measurement)
 
     # 4. initialize devices
-    devices,measurement = initial_device(tower_dict['Device'], dt, T,measurement)
+    devices, measurement = initial_device(tower_dict['Device'], dt, T, measurement)
 
     # 5. information of tower
     tower_info = tower_dict['Info']
-    info = TowerInfo(tower_info['name'],tower_info['id'],tower_info['type'],tower_info['position'],tower_info['Vclass'],
-         tower_info['Theta'],tower_info['mode_con'],tower_info['mode_gnd'], tower_info['pole_height'], tower_info['pole_head'])
+    info = TowerInfo(tower_info['name'], tower_info['id'], tower_info['type'], tower_info['position'],
+                     tower_info['Vclass'],
+                     tower_info['Theta'], tower_info['mode_con'], tower_info['mode_gnd'], tower_info['pole_height'],
+                     tower_info['pole_head'])
 
     # 6. initalize tower
     tower = Tower(tower_dict['name'], info, wires, tube_wire, lumps, ground, devices, measurement)
     print(f"Tower:{tower.name} loaded.")
     return tower
 
+
 def initialize_OHL(OHL_dict, max_length):
-
-
     # 1. initialize wires
     wires = Wires()
     for wire in OHL_dict['Wire']:
@@ -184,23 +183,24 @@ def initialize_OHL(OHL_dict, max_length):
 
         wires.add_air_wire(wire_air)  # add air wire in wires
 
-   # wires.display()
+    # wires.display()
 
     # 2. initialize ground
     ground_dic = OHL_dict['ground']
     ground = initialize_ground(ground_dic)
     # 3. initialize info
     OHL_info = OHL_dict['Info']
-    info = OHLInfo(OHL_info['name'],OHL_info['id'],OHL_info['type'],OHL_info['dL'],OHL_info['model1'],
-         OHL_info['model2'],OHL_info['Tower_head'],OHL_info['Tower_head_id'], OHL_info['Tower_head_pos'],
-                     OHL_info['Tower_tail'],OHL_info['Tower_tail_id'],  OHL_info['Tower_tail_pos'])
+    info = OHLInfo(OHL_info['name'], OHL_info['id'], OHL_info['type'], OHL_info['dL'], OHL_info['model1'],
+                   OHL_info['model2'], OHL_info['Tower_head'], OHL_info['Tower_head_id'], OHL_info['Tower_head_pos'],
+                   OHL_info['Tower_tail'], OHL_info['Tower_tail_id'], OHL_info['Tower_tail_pos'])
 
     # 4. initalize ohl
     ohl = OHL(OHL_info['name'], info, wires, None, len(OHL_dict['Wire']), ground)
-   # ohl.wires_name = list(ohl.wires.get_all_wires().keys())
-   # ohl.nodes_name = ohl.wires.get_all_nodes()
+    # ohl.wires_name = list(ohl.wires.get_all_wires().keys())
+    # ohl.nodes_name = ohl.wires.get_all_nodes()
     print(f"OHL:{ohl.info.name} loaded.")
     return ohl
+
 
 def initialize_measurement(file_name):
     json_file_path = "Data/" + file_name + ".json"
@@ -208,7 +208,8 @@ def initialize_measurement(file_name):
     with open(json_file_path, 'r') as j:
         load_dict = json.load(j)
 
-def initial_lump(lump_data, dt, T,measurement):
+
+def initial_lump(lump_data, dt, T, measurement):
     Nt = int(np.ceil(T / dt))
 
     lumps = Lumps()
@@ -223,7 +224,7 @@ def initial_lump(lump_data, dt, T,measurement):
         node2 = np.array([lump['node2']]).reshape(-1)
         label = 1
         if lump['probe']:
-            measurement[lump['name']]= [label,lump['probe'],bran_name,node1,node2]
+            measurement[lump['name']] = [label, lump['probe'], bran_name, node1, node2]
         # 判断器件类型
         match lump_type:
             case 'RL':
@@ -235,7 +236,7 @@ def initial_lump(lump_data, dt, T,measurement):
                 conductance = lump['value1']
                 capacitance = lump['value2']
                 lumps.add_conductor_capacitor(
-                    Conductor_Capacitor(name, bran_name, node1, node2,  conductance, capacitance))
+                    Conductor_Capacitor(name, bran_name, node1, node2, conductance, capacitance))
             case 'Vs':
                 type_of_data = lump['data_type']
                 resistance = lump['value1']
@@ -249,7 +250,7 @@ def initial_lump(lump_data, dt, T,measurement):
                 elif type_of_data == 0:
                     voltages = np.array(lump['value2'])
                     lumps.add_voltage_source_empirical(
-                        Voltage_Source_Empirical(name, bran_name, node1, node2,  resistance, voltages))
+                        Voltage_Source_Empirical(name, bran_name, node1, node2, resistance, voltages))
             case 'Is':
                 type_of_data = lump['data_type']
                 if type_of_data > 0:
@@ -263,13 +264,13 @@ def initial_lump(lump_data, dt, T,measurement):
                     lumps.add_current_source_empirical(
                         Current_Source_Empirical(name, bran_name, node1, node2, currents))
             case 'VCVS':
-                #---mei zhilu，node1, node2电压-》支路电压
+                # ---mei zhilu，node1, node2电压-》支路电压
                 resistance = lump['value1'][0]
                 gain = lump['value1'][1]
                 lumps.add_voltage_control_voltage_source(
                     Voltage_Control_Voltage_Source(name, bran_name, node1, node2, resistance, gain))
                 if lump['probe']:
-                    measurement[lump['name']] = [2, lump['probe'], bran_name, node1, node2,resistance,gain]
+                    measurement[lump['name']] = [2, lump['probe'], bran_name, node1, node2, resistance, gain]
             case 'ICVS':
                 # mei dian
                 resistance = lump['value1'][0]
@@ -370,11 +371,10 @@ def initial_lump(lump_data, dt, T,measurement):
                 lumps.add_switch_disruptive_effect_model(
                     Switch_Disruptive_Effect_Model(name, bran_name, node1, node2, resistance, 0, DE_max, v_initial, k))
             case 'MTCK':
-                dist = np.array(lump['distance'])
-                high = np.array(lump['high'])
+                dist = np.array(lump['node1_pos'][:, 1])
+                high = np.array(lump['node1_pos'][:, 2])
                 radius = np.array(lump['r0'])
-
-
+                lumps.add_MTCK(MTCK(name, bran_name, node1, dist, high, radius))
 
     # 获取器件不重复的支路列表和节点列表
     lumps.brans_nodes_list_initial()
@@ -386,13 +386,14 @@ def initial_lump(lump_data, dt, T,measurement):
     lumps.lump_voltage_source_matrix_initial(T, dt)
     # 初始化Lumps电流矩阵
     lumps.lump_current_source_matrix_initial(T, dt)
-    return lumps,measurement
+    return lumps, measurement
 
-def initial_device(device_data, dt, T,measurement):
+
+def initial_device(device_data, dt, T, measurement):
     devices = Devices()
 
     for device in device_data:
-        lumps,measurement = initial_lump(device['Lump'], dt, T,measurement)
+        lumps, measurement = initial_lump(device['Lump'], dt, T, measurement)
         if device['type'] == 'insulator':
             devices.add_insolator(lumps)
         elif device['type'] == 'arrestor':
@@ -401,17 +402,20 @@ def initial_device(device_data, dt, T,measurement):
             devices.add_transformer(lumps)
     # d = data.shape[0]
 
-    return devices,measurement
+    return devices, measurement
 
-def initial_lightning_source(network, nodes, load_dict,dt):
+
+def initial_lightning_source(network, nodes, load_dict, dt):
     # 0. read json file
     stroke_list = []
     for stroke_dict in load_dict['Stroke']:
-        duration,stroke_type,parameters,parameter_set= stroke_dict['duration'],stroke_dict['type'],stroke_dict['parameters'],stroke_dict['parameter_set']
-        stroke = Stroke(stroke_type, duration=duration, dt=dt, is_calculated=True, parameter_set=parameter_set, parameters=None)
+        duration, stroke_type, parameters, parameter_set = stroke_dict['duration'], stroke_dict['type'], stroke_dict[
+            'parameters'], stroke_dict['parameter_set']
+        stroke = Stroke(stroke_type, duration=duration, dt=dt, is_calculated=True, parameter_set=parameter_set,
+                        parameters=None)
         stroke.calculate()
         stroke_list.append(stroke)
-    lightning =Lightning(id=1, type= load_dict['type'], strokes=stroke_list, channel=Channel(load_dict['position']))
+    lightning = Lightning(id=1, type=load_dict['type'], strokes=stroke_list, channel=Channel(load_dict['position']))
     branches = segment_branch(network.branches)
     start = [list(l[0].values())[0] for l in list(branches.values())]
     end = [list(l[1].values())[0] for l in list(branches.values())]
@@ -424,28 +428,32 @@ def initial_lightning_source(network, nodes, load_dict,dt):
     I_out = pd.DataFrame()
     for i in range(len(stroke_list)):
         U_out = pd.concat([U_out, InducedVoltage_calculate(pt_start, pt_end, branches, lightning,
-                            stroke_sequence=i, constants=constants)], axis=1,ignore_index=True)
-        I_out = pd.concat([I_out, LightningCurrent_calculate(load_dict["area"], load_dict["wire"], load_dict["position"],
-                            network, nodes, lightning, stroke_sequence=i)],axis=1,ignore_index=True)
-   # Source_Matrix = pd.concat([I_out, U_out], axis=0)
+                                                           stroke_sequence=i, constants=constants)], axis=1,
+                          ignore_index=True)
+        I_out = pd.concat(
+            [I_out, LightningCurrent_calculate(load_dict["area"], load_dict["wire"], load_dict["position"],
+                                               network, nodes, lightning, stroke_sequence=i)], axis=1,
+            ignore_index=True)
+    # Source_Matrix = pd.concat([I_out, U_out], axis=0)
     return U_out, I_out
 
-def initialize_cable(cable, max_length,VF):
 
+def initialize_cable(cable, max_length, VF):
     # 0. initialize info
     cable_info = cable['Info']
-    info = CableInfo(cable_info['name'],cable_info['id'],cable_info['type'],cable_info['T_head'],cable_info['T_head_id'],
-    cable_info['T_head_pos'],cable_info['T_tail'], cable_info['T_tail_id'],cable_info['T_tail_pos'],
-    cable_info['core_num'],cable_info['armor_num'],cable_info['delta_L'], cable_info['mode_con'], cable_info['mode_gnd'])
+    info = CableInfo(cable_info['name'], cable_info['id'], cable_info['type'], cable_info['T_head'],
+                     cable_info['T_head_id'],
+                     cable_info['T_head_pos'], cable_info['T_tail'], cable_info['T_tail_id'], cable_info['T_tail_pos'],
+                     cable_info['core_num'], cable_info['armor_num'], cable_info['delta_L'], cable_info['mode_con'],
+                     cable_info['mode_gnd'])
 
     # 1. initialize wires
     wire = cable
     wires = Wires()
-    nodes = []
-    sheath_wire = initialize_wire(wire['TubeWire']['sheath'], nodes,VF)
-    sheath_wire.start_node.x = sheath_wire.start_node.x+ cable['Info']['T_head_pos'][0]
-    sheath_wire.start_node.y = sheath_wire.start_node.y+ cable['Info']['T_head_pos'][1]
-    sheath_wire.start_node.z = sheath_wire.start_node.z+ cable['Info']['T_head_pos'][2]
+    sheath_wire = initialize_wire(wire['TubeWire']['sheath'], VF)
+    sheath_wire.start_node.x = sheath_wire.start_node.x + cable['Info']['T_head_pos'][0]
+    sheath_wire.start_node.y = sheath_wire.start_node.y + cable['Info']['T_head_pos'][1]
+    sheath_wire.start_node.z = sheath_wire.start_node.z + cable['Info']['T_head_pos'][2]
 
     sheath_wire.end_node.x = sheath_wire.end_node.x + cable['Info']['T_tail_pos'][0]
     sheath_wire.end_node.y = sheath_wire.end_node.y + cable['Info']['T_tail_pos'][1]
@@ -453,14 +461,13 @@ def initialize_cable(cable, max_length,VF):
     tube_wire = TubeWire(sheath_wire, wire['TubeWire']['sheath']['rs1'], wire['TubeWire']['sheath']['rs3'],
                          wire['TubeWire']['sheath']['core_num'])
 
-
     for core in wire['TubeWire']['core']:
-        core_wire = initialize_wire(core, nodes,VF)
-        core_wire.start_node.x = core_wire.start_node.x +cable['Info']['T_head_pos'][0]
+        core_wire = initialize_wire(core, VF)
+        core_wire.start_node.x = core_wire.start_node.x + cable['Info']['T_head_pos'][0]
         core_wire.start_node.y = core_wire.start_node.x + cable['Info']['T_head_pos'][1]
         core_wire.start_node.z = core_wire.start_node.x + cable['Info']['T_head_pos'][2]
 
-        core_wire.end_node.x = core_wire.end_node.x +cable['Info']['T_tail_pos'][0]
+        core_wire.end_node.x = core_wire.end_node.x + cable['Info']['T_tail_pos'][0]
         core_wire.end_node.y = core_wire.end_node.x + cable['Info']['T_tail_pos'][1]
         core_wire.end_node.z = core_wire.end_node.x + cable['Info']['T_tail_pos'][2]
 
@@ -468,7 +475,7 @@ def initialize_cable(cable, max_length,VF):
 
     wires.add_tube_wire(tube_wire)
 
-   # wires.display()
+    # wires.display()
     wires.split_long_wires_all(max_length)
 
     # 2. initialize ground
@@ -482,25 +489,25 @@ def initialize_cable(cable, max_length,VF):
     print("Cable loaded.")
     return cable
 
-def print_lumps(lumps):
 
+def print_lumps(lumps):
     matrix_A = lumps.incidence_matrix_A
-    print("incidence_matrix_A",matrix_A)
+    print("incidence_matrix_A", matrix_A)
 
     matrix_B = lumps.incidence_matrix_B
-    print('incidence_matrix_B ?',matrix_B)
+    print('incidence_matrix_B ?', matrix_B)
 
     resistance_matrix = lumps.resistance_matrix
-    print('resistance_matrix ?',resistance_matrix)
+    print('resistance_matrix ?', resistance_matrix)
 
     inductance_matrix = lumps.inductance_matrix
     print('inductance_matrix ', inductance_matrix)
 
     conductance_matrix = lumps.conductance_matrix
-    print('conductance_matrix equals?',conductance_matrix)
+    print('conductance_matrix equals?', conductance_matrix)
 
     capacitance_matrix = lumps.capacitance_matrix
-    print('capacitance_matrix equals?',capacitance_matrix)
+    print('capacitance_matrix equals?', capacitance_matrix)
 
 # if __name__ == '__main__':
 #     file_name = "01_2"

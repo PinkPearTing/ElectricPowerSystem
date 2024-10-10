@@ -873,7 +873,7 @@ class MTCK(Component):
         """
         constants = Constant()
         Vair = constants.Vair
-        Lm = calculate_OHL_mutual_inductance(self.parameters['radius'], self.parameters['high'], self.parameters['offset'], constants)
+        Lm = calculate_OHL_mutual_inductance(self.parameters['radius'], self.parameters['high'], self.parameters['distance'], constants)
         resistance = Lm*Vair
         r.loc[self.bran, self.bran] = resistance
 

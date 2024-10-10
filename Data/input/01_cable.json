@@ -611,8 +611,8 @@
         "core_num": 3,
         "armor_num": 1,
         "delta_L": 10,
-        "mode_con": 0,
-        "mode_gnd": 0
+        "mode_con": 1,
+        "mode_gnd": 2
     },
     "ground": {
       "glb": 1,

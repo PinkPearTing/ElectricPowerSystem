@@ -15,8 +15,8 @@
           0
         ],
         "Theta": 0,
-        "mode_con": 0,
-        "mode_gnd": 0,
+        "mode_con": "1",
+        "mode_gnd": "2",
         "pole_height": 10.5,
         "pole_head": "X01"
       },
@@ -70,7 +70,7 @@
         {
           "type": "air",
           "bran": "Y02_Tower_1",
-           "probe": null,
+          "probe": null,
           "node1": "X02",
           "node2": "X05",
           "pos_1": [
@@ -107,7 +107,7 @@
         {
           "type": "air",
           "bran": "Y03_Tower_1",
-           "probe": null,
+          "probe": null,
           "node1": "X03",
           "node2": "X06",
           "pos_1": [
@@ -144,7 +144,7 @@
         {
           "type": "air",
           "bran": "Y04_Tower_1",
-           "probe": null,
+          "probe": null,
           "node1": "X04",
           "node2": "X07",
           "pos_1": [
@@ -181,7 +181,7 @@
         {
           "type": "air",
           "bran": "Y05_Tower_1",
-           "probe": null,
+          "probe": null,
           "node1": "X08",
           "node2": "X09",
           "pos_1": [
@@ -218,7 +218,7 @@
         {
           "type": "air",
           "bran": "Y06_Tower_1",
-           "probe": null,
+          "probe": null,
           "node1": "X09",
           "node2": "X10",
           "pos_1": [
@@ -255,7 +255,7 @@
         {
           "type": "air",
           "bran": "Y07_Tower_1",
-           "probe": null,
+          "probe": null,
           "node1": "X11",
           "node2": "X10",
           "pos_1": [
@@ -292,7 +292,7 @@
         {
           "type": "air",
           "bran": "Y08_Tower_1",
-           "probe": null,
+          "probe": null,
           "node1": "X09",
           "node2": "X12",
           "pos_1": [
@@ -513,7 +513,7 @@
           ]
         }
       ]
-      },
+    },
     {
       "name": "tower_2",
       "Info": {
@@ -527,8 +527,8 @@
           0
         ],
         "Theta": 0,
-        "mode_con": 0,
-        "mode_gnd": 0,
+        "mode_con": "1",
+        "mode_gnd": "2",
         "pole_height": 10.5,
         "pole_head": "X17"
       },
@@ -1035,8 +1035,8 @@
         "type": "type_01",
         "id": 1,
         "dL": 10,
-        "model1": 0,
-        "model2": 0,
+        "mode1": "1",
+        "mode2": "2",
         "Tower_head": "tower_1",
         "Tower_head_id": 1,
         "Tower_head_pos": [
@@ -1195,7 +1195,7 @@
         "sig": 0.01,
         "mur": 1,
         "epr": 10,
-        "gnd_model": "2",
+        "gnd_model": "Lossy",
         "ionisation_intensity": "",
         "ionisation_model": ""
       }
@@ -1203,27 +1203,26 @@
   ],
   "Source": {
     "Lightning": {
-      "type": "Indirect",
-        "area": "tower_1",
-        "wire": "Y02",
-        "position": [
-          10,
-          10,
-          0
-         ],
-        "model": "MTLE",
-        "stroke_num": 1,
-        "Stroke": [
-          {
-            "type": "Heidler",
-            "duration": 2e-5,
-            "parameters": null,
-            "parameter_set": "2.6/50us"
-          }
-        ]
+      "type": "Direct",
+      "area": "tower_1",
+      "wire": "Y02",
+      "position": [
+        0,
+        -0.4,
+        10
+      ],
+      "model": "MTLE",
+      "stroke_num": 1,
+      "Stroke": [
+        {
+          "type": "Heidler",
+          "duration": 2e-5,
+          "parameters": null,
+          "parameter_set": "2.6/50us"
+        }
+      ]
     }
-  }
-,
+  },
   "Global": {
     "delta_time": 1e-8,
     "time": 2e-5,
@@ -1239,15 +1238,10 @@
       "ionisation_model": ""
     }
   },
-
-  "Sensitivity_analysis":{
+  "Sensitivity_analysis": {
     "Stoke": [],
     "Soil": [],
     "Arrester": [],
     "ROD": []
-
   }
-
-
-
 }

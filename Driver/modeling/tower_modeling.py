@@ -121,13 +121,13 @@ def build_capacitance_matrix(tower, Cin):
     print("------------------------------------------------")
 
 
-def build_impedance_matrix(tower, L, Lin, sheath_inductance_matrix, tube_length, varied_frequency, constants):
+def build_impedance_matrix(tower, Lin, sheath_inductance_matrix, tube_length, varied_frequency, constants):
     # 计算套管和芯线内部的阻抗矩阵
     # Core wires impedance
 
     Nf = varied_frequency.size
 
-    tower.initialize_impedance_matrix(L, varied_frequency, constants)
+    tower.initialize_impedance_matrix(varied_frequency, constants)
 
     if tower.tubeWire != None:
         Zcf, Zsf, Zcsf, Zscf = calculate_impedance_matrix(tower.tubeWire, varied_frequency, constants)
@@ -270,13 +270,58 @@ def tower_building(tower, fixed_frequency, ground):
     print(f"Tower:{tower.name}  building is completed.")
     print("------------------------------------------------")
 
+def build_variant_frequency_matrix(tower, L, Lin, sheath_inductance_matrix, tube_length, varied_frequency, Nfit, dt, constants):
+    if tower.tubeWire is not None:
 
-def tower_building_variant_frequency(tower, frequency, ground, varied_frequency, dt):
+        build_impedance_matrix(tower, Lin, sheath_inductance_matrix, tube_length, varied_frequency, constants)
+
+        SER = matrix_vector_fitting(tower.impedance_matrix, varied_frequency, Nfit)
+
+        A, B = preparing_parameters(SER, dt)
+
+        tower.resistance_matrix = SER['D'] + tower.A.sum(-1)
+
+        tower.inductance_matrix = SER['E'] + L
+
+    else:
+        build_impedance_matrix(tower, Lin, sheath_inductance_matrix, tube_length, varied_frequency, constants)
+
+        Ncon = tower.impedance_matrix.shape[0]
+
+        resistance = np.zeros((Ncon, Ncon))
+        inductance = np.zeros((Ncon, Ncon))
+
+        A = np.zeros((Ncon, Ncon, Nfit))
+        B = np.zeros((Ncon, 1, Nfit))
+
+        for i in range(Ncon):
+            SER = matrix_vector_fitting(tower.impedance_matrix[i, i, :].reshape(1, 1, -1), varied_frequency, Nfit)
+
+            SERA, SERB = preparing_parameters(SER, dt)
+
+            A[i, i, :] = SERA
+            B[i, 0, :] = SERB
+
+            resistance[i, i] = (SER['D'] + SERA.sum(-1)).squeeze()
+            inductance[i, i] = SER['E'].squeeze()
+
+        tower.resistance_matrix = resistance
+
+        tower.inductance_matrix = inductance + L
+
+    tower.phi = np.zeros((len(tower.wires_name), 1, Nfit))
+
+    tower.A = A
+
+    tower.B = B
+
+
+def tower_building_variant_frequency(tower, frequency, ground, varied_frequency, Nfit, dt):
     print("------------------------------------------------")
     print(f"Tower:{tower.name} building...")
     # 0.参数准备
     constants = Constant()
-    if tower.tubeWire != None:
+    if tower.tubeWire is not None:
         Rin, Rx, Lin, Lx, Cin = prepare_building_parameters(tower.tubeWire, frequency, constants)
         tube_length = tower.wires.get_tube_lengths()[0]
         sheath_inductance_matrix = prepare_sheath_inductance(tower)
@@ -298,16 +343,8 @@ def tower_building_variant_frequency(tower, frequency, ground, varied_frequency,
     # 6. 构建G矩阵, node*node
     build_conductance_matrix(tower, P, constants, ground.sig)
 
-
-    build_impedance_matrix(tower, L, Lin, sheath_inductance_matrix, tube_length, varied_frequency, constants)
-
-    SER = matrix_vector_fitting(tower.impedance_matrix, varied_frequency)
-
-    preparing_parameters(tower, SER, dt)
-
-    tower.resistance_matrix = SER['D'] + tower.A.sum(-1)
-
-    tower.inductance_matrix = SER['E']
+    build_variant_frequency_matrix(tower, L, Lin, sheath_inductance_matrix, tube_length, varied_frequency, Nfit, dt,
+                                   constants)
 
     build_current_source_matrix(tower, 0)
 

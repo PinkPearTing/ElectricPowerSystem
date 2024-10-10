@@ -157,12 +157,13 @@ class Tower:
         # self.conductance_matrix = np.zeros((Nnode, Nnode))
         pass
 
-    def initialize_impedance_matrix(self, L, frequency, constants):
+    def initialize_impedance_matrix(self, frequency, constants):
         Nf = frequency.size
         Nbran = self.wires.count_airWires() + self.wires.count_tubeWires() + self.wires.count_gndWires()
         tube_num = self.wires.count_tubeWires()
         length = (self.wires.get_lengths()).flatten()
-        length[-tube_num:] = 0
+        if tube_num != 0:
+            length[-tube_num:] = 0
 
         dz = calculate_OHL_wire_impedance(self.wires.get_radii(), self.wires.get_mur(), self.wires.get_sig(),
                                           self.wires.get_epr(), constants, frequency)
@@ -172,7 +173,8 @@ class Tower:
             Zt = np.copy(dz[:, :, i])
             Zt_diag = np.diag(Zt) * length
             np.fill_diagonal(Zt, Zt_diag)
-            Z0[:, :, i] = Zt + 1j * 2 * np.pi * frequency[i] * L
+            # Z0[:, :, i] = Zt + 1j * 2 * np.pi * frequency[i] * L
+            Z0[:, :, i] = np.copy(Zt)
 
         self.impedance_matrix = Z0
 
@@ -188,7 +190,8 @@ class Tower:
 
         self.impedance_matrix = impedance
 
-    def update_impedance_matrix_by_tubeWires(self, Zcf, Zsf, Zcsf, Zscf, Lin, sheath_inductance_matrix, length, frequency):
+    def update_impedance_matrix_by_tubeWires(self, Zcf, Zsf, Zcsf, Zscf, Lin, sheath_inductance_matrix, length,
+                                             frequency):
         index = self.wires.get_tubeWires_start_index()
         # 获取索引增量，保证下面循环过程中，index+increment就是下一条管状线段的表皮和芯线的索引
         increment = self.wires.get_tubeWires_index_increment()
@@ -202,11 +205,12 @@ class Tower:
         for i in range(len(self.wires.tube_wires)):
             for jk in range(Nf):
                 Zss = Zsf[0, 0, jk] + 1j * 2 * np.pi * frequency[jk] * sheath_inductance_matrix[i, i]
-                Z1 = np.block([[0, Zscf[:, :, jk]], [Zcsf[:, :, jk], Zcf[:, :, jk]]])*length
+                Z1 = np.block([[0, Zscf[:, :, jk]], [Zcsf[:, :, jk], Zcf[:, :, jk]]]) * length
                 Z2 = 1j * 2 * np.pi * frequency[jk] * L0 * length
                 Z3 = np.tile(Zscf[:, :, jk], (Npha, 1)) + np.tile(Zcsf[:, :, jk], (1, Npha))
                 Z3 = np.block([[0, np.zeros((1, Npha))], [np.zeros((Npha, 1)), Z3]]) * length
-                self.impedance_matrix[:, :, jk] = update_matrix(self.impedance_matrix[:, :, jk], index, Z1 + Z2 + Z3 + Zss)
+                self.impedance_matrix[:, :, jk] = update_matrix(self.impedance_matrix[:, :, jk], index,
+                                                                Z1 + Z2 + Z3 + Zss)
             index = [x + y for x, y in zip(index, increment)]  # index+increment就是下一条管状线段的表皮和芯线的索引
 
     def add_inductance_matrix(self, L):
@@ -221,7 +225,7 @@ class Tower:
         Nnags = self.wires.count_distinct_air_gnd_sheathPoints()
         Nnode = self.wires.count_distinct_points()
         max_potential = self.potential_matrix.max()
-        potential_matrix = np.eye(Nnode-Nnags) * max_potential
+        potential_matrix = np.eye(Nnode - Nnags) * max_potential
         self.potential_matrix[Nnags:Nnode, Nnags:Nnode] = potential_matrix
 
     def update_conductance_matrix_by_ground(self, P, ground_sig, constants):
@@ -249,11 +253,11 @@ class Tower:
         sheath_end_index = len(self.wires.air_wires) + len(self.wires.ground_wires) + len(self.wires.tube_wires)
         # 获取空气和地面支路的结束位置
         end_index = len(self.wires.air_wires) + len(self.wires.ground_wires) + len(self.wires.tube_wires)
-        for i in range(sheath_end_index-sheath_start_index):
-            temp = np.tile(self.inductance_matrix[sheath_start_index+i, :end_index], (inner_num, 1))
-            self.inductance_matrix[end_index+i*inner_num:end_index+(i+1)*inner_num, :end_index] = temp
+        for i in range(sheath_end_index - sheath_start_index):
+            temp = np.tile(self.inductance_matrix[sheath_start_index + i, :end_index], (inner_num, 1))
+            self.inductance_matrix[end_index + i * inner_num:end_index + (i + 1) * inner_num, :end_index] = temp
             temp = np.tile(self.inductance_matrix[:end_index, sheath_start_index + i], (inner_num, 1))
-            self.inductance_matrix[:end_index, end_index + i * inner_num:end_index+(i+1)*inner_num] = temp.T
+            self.inductance_matrix[:end_index, end_index + i * inner_num:end_index + (i + 1) * inner_num] = temp.T
 
         for i in range(len(self.wires.tube_wires)):
             for j in range(i + 1, len(self.wires.tube_wires)):
@@ -273,7 +277,8 @@ class Tower:
         for i in range(len(self.wires.tube_wires)):
             Lss = Lin[0, 0] * tube_length + sheath_inductance_matrix[i, i]
             # L0+Lx+Lss的最终结果 更新到表皮和芯线的自感和互感位置上去
-            self.inductance_matrix = update_matrix(self.inductance_matrix, index, L0 * tube_length + Lx * tube_length + Lss)
+            self.inductance_matrix = update_matrix(self.inductance_matrix, index,
+                                                   L0 * tube_length + Lx * tube_length + Lss)
             index = [x + y for x, y in zip(index, increment)]  # index+increment就是下一条管状线段的表皮和芯线的索引
 
         return L0
@@ -294,7 +299,8 @@ class Tower:
         R0[0, 0] = 0
         Rss = Rin[0, 0] * tube_length  # 此处与电感矩阵更新过程不同，此处不需要表皮的单位电阻
         for i in range(len(self.wires.tube_wires)):
-            self.resistance_matrix = update_matrix(self.resistance_matrix, index, R0*tube_length + Rx * tube_length + Rss)
+            self.resistance_matrix = update_matrix(self.resistance_matrix, index,
+                                                   R0 * tube_length + Rx * tube_length + Rss)
             index = [x + y for x, y in zip(index, increment)]
 
     def update_capacitance_matrix_by_tubeWires(self, Cin):
@@ -304,8 +310,9 @@ class Tower:
         indices = self.wires.get_tubeWires_points_index()
         for i in range(len(indices)):
             # 将C矩阵相应位置的点 更新为C0相应位置的数据
-            self.capacitance_matrix = update_matrix(self.capacitance_matrix, indices[i], 0.5 * C0 * dist if i == 0 or i == len(
-                indices) - 1 else C0 * dist)  # 与外界相连接的部分，需要折半
+            self.capacitance_matrix = update_matrix(self.capacitance_matrix, indices[i],
+                                                    0.5 * C0 * dist if i == 0 or i == len(
+                                                        indices) - 1 else C0 * dist)  # 与外界相连接的部分，需要折半
 
     def combine_parameter_matrix(self):
         """
@@ -348,8 +355,10 @@ class Tower:
                                                                           fill_value=0).fillna(0)
                     self.incidence_matrix_B = self.incidence_matrix_B.add(device.incidence_matrix_B,
                                                                           fill_value=0).fillna(0)
-                    self.resistance_matrix = self.resistance_matrix.add(device.resistance_matrix, fill_value=0).fillna(0)
-                    self.inductance_matrix = self.inductance_matrix.add(device.inductance_matrix, fill_value=0).fillna(0)
+                    self.resistance_matrix = self.resistance_matrix.add(device.resistance_matrix, fill_value=0).fillna(
+                        0)
+                    self.inductance_matrix = self.inductance_matrix.add(device.inductance_matrix, fill_value=0).fillna(
+                        0)
                     self.capacitance_matrix = self.capacitance_matrix.add(device.capacitance_matrix,
                                                                           fill_value=0).fillna(0)
                     self.conductance_matrix = self.conductance_matrix.add(device.conductance_matrix,
@@ -410,4 +419,3 @@ class Tower:
                                                                             fill_value=0).fillna(0)
                 self.current_source_matrix = self.current_source_matrix.add(device.current_source_matrix,
                                                                             fill_value=0).fillna(0)
-

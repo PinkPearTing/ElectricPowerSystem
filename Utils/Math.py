@@ -110,7 +110,7 @@ def segment_branch(network_branches):
             for i in range(len(new_nodes_name) - 1):
                 start_node_after_seg_dict = {new_nodes_name[i]: [x[i], y[i], z[i]]}
                 end_node_after_seg_dict = {new_nodes_name[i+1]: [x[i+1], y[i+1], z[i+1]]}
-                branches[f"{key}_splited_{i+1}"] = [start_node_after_seg_dict, end_node_after_seg_dict, value[2], value[3]]
+                branches[f"{key}_Splited_{i+1}"] = [start_node_after_seg_dict, end_node_after_seg_dict, value[2], value[3]]
             del branches[key]
     return branches
 

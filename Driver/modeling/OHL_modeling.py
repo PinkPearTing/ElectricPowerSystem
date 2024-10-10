@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from Function.Calculators.Impedance import calculate_OHL_impedance
+from Function.Calculators.Impedance import calculate_OHL_impedance, calculate_OHL_wire_impedance, calculate_OHL_ground_impedance
 from Function.Calculators.Capacitance import calculate_OHL_capcitance
 from Function.Calculators.Inductance import calculate_OHL_mutual_inductance, calculate_OHL_inductance
 from Function.Calculators.Resistance import calculate_OHL_resistance
@@ -29,12 +29,11 @@ def build_incidence_matrix(OHL, segment_num):
     print("A_OHL matrix is built successfully")
     print("------------------------------------------------")
 # R矩阵
-def build_resistance_matrix(OHL, segment_num, segment_length):
+def build_resistance_matrix(OHL, R, segment_num, segment_length):
     # R矩阵
     print("------------------------------------------------")
     print("R matrix is building...")
     wires_num = OHL.phase_num
-    R = calculate_OHL_resistance(OHL.wires.get_resistance())
     resistance_matrix = np.zeros((len(OHL.wires_name), len(OHL.wires_name)))
 
     for i in range(segment_num):
@@ -46,12 +45,11 @@ def build_resistance_matrix(OHL, segment_num, segment_length):
     print("R_OHL matrix is built successfully")
     print("------------------------------------------------")
 # L矩阵
-def build_inductance_matrix(OHL, Lm, segment_num, segment_length):
+def build_inductance_matrix(OHL, L, segment_num, segment_length):
     # L矩阵
     print("------------------------------------------------")
     print("L_OHL matrix is building...")
     wires_num = OHL.wires.count()
-    L = calculate_OHL_inductance(OHL.wires.get_inductance(), Lm)
 
     inductance_matrix = np.zeros((len(OHL.wires_name), len(OHL.wires_name)))
 
@@ -65,13 +63,12 @@ def build_inductance_matrix(OHL, Lm, segment_num, segment_length):
     print("------------------------------------------------")
 
 # C矩阵
-def build_capacitance_matrix(OHL, Lm, segment_num, segment_length, constant):
+def build_capacitance_matrix(OHL, C, segment_num, segment_length):
     # C矩阵
     print("------------------------------------------------")
     print("C_OHL matrix is building...")
 
     wires_num = OHL.wires.count()
-    C = calculate_OHL_capcitance(Lm, constant)
 
     capacitance_matrix = np.zeros((len(OHL.nodes_name), len(OHL.nodes_name)))
 
@@ -120,11 +117,7 @@ def build_voltage_source_matrix(OHL, V):
     wire_name_list = OHL.wires_name
     OHL.voltage_source_matrix = pd.DataFrame(V, index=wire_name_list, columns=[0])
 
-def OHL_building(OHL,  max_length):
-    print("------------------------------------------------")
-    print(f"OHL:{OHL.info.name} building...")
-    # 0.参数准备
-    constants = Constant()
+def prepare_building_parameters(OHL, max_length, constants):
     OHL_r = OHL.wires.get_radii()
     OHL_height = OHL.wires.get_heights()
     length = distance(OHL.info.HeadTower_pos,OHL.info.TailTower_pos)
@@ -133,20 +126,23 @@ def OHL_building(OHL,  max_length):
     segment_length = length/segment_num
 
     Lm = calculate_OHL_mutual_inductance(OHL_r, OHL_height, OHL.wires.get_offsets(), constants)
+    resistance = calculate_OHL_resistance(OHL.wires.get_resistance())
+    inductance = calculate_OHL_inductance(OHL.wires.get_inductance(), Lm)
+    capcitance = calculate_OHL_capcitance(Lm, constants)
+    return segment_num, segment_length, resistance, capcitance, inductance
 
-    OHL.get_brans_nodes_list(segment_num)
-
+def build_OHL_parameter_matrixs(OHL, segment_num, segment_length, R, C, L):
     # 1. 构建A矩阵
     build_incidence_matrix(OHL, segment_num)
 
     # 2. 构建R矩阵
-    build_resistance_matrix(OHL, segment_num, segment_length)
+    build_resistance_matrix(OHL, R, segment_num, segment_length)
 
     # 3. 构建L矩阵
-    build_inductance_matrix(OHL, Lm, segment_num, segment_length)
+    build_inductance_matrix(OHL, L, segment_num, segment_length)
 
     # 4. 构建C矩阵
-    build_capacitance_matrix(OHL, Lm, segment_num, segment_length, constants)
+    build_capacitance_matrix(OHL, C, segment_num, segment_length)
 
     # 5. 构建G矩阵
     build_conductance_matrix(OHL)
@@ -155,49 +151,22 @@ def OHL_building(OHL,  max_length):
 
     build_voltage_source_matrix(OHL, 0)
 
-    print(f"OHL:{OHL.info.name} building is completed.")
-    print("------------------------------------------------")
-
-
-def build_resistance_matrix_variant_frequency(OHL, segment_num, segment_length, R):
-    # R矩阵
-    print("------------------------------------------------")
-    print("R matrix is building...")
-    wires_num = OHL.phase_num
-    resistance_matrix = np.zeros((len(OHL.wires_name), len(OHL.wires_name)))
-
-    for i in range(segment_num):
-        resistance_matrix[i*wires_num:(i+1)*wires_num, i*wires_num:(i+1)*wires_num] = R * segment_length
-
-    OHL.resistance_matrix = pd.DataFrame(resistance_matrix, index=OHL.wires_name, columns=OHL.wires_name, dtype=float)
-
- #   print(OHL.resistance_matrix)
-    print("R_OHL matrix is built successfully")
-    print("------------------------------------------------")
-# L矩阵
-def build_inductance_matrix_variant_frequency(OHL, L, segment_num, segment_length):
-    # L矩阵
-    print("------------------------------------------------")
-    print("L_OHL matrix is building...")
-    wires_num = OHL.wires.count()
-
-    inductance_matrix = np.zeros((len(OHL.wires_name), len(OHL.wires_name)))
-
-    for i in range(segment_num):
-        inductance_matrix[i * wires_num:(i + 1) * wires_num, i * wires_num:(i + 1) * wires_num] = L * segment_length
-
-    OHL.inductance_matrix = pd.DataFrame(inductance_matrix, index=OHL.wires_name, columns=OHL.wires_name, dtype=float)
-
-   # print(OHL.inductance_matrix)
-    print("L_OHL matrix is built successfully")
-    print("------------------------------------------------")
-
-
-def OHL_building_variant_frequency(OHL, max_length, varied_frequency, ground, dt):
+def OHL_building(OHL,  max_length):
     print("------------------------------------------------")
     print(f"OHL:{OHL.info.name} building...")
     # 0.参数准备
     constants = Constant()
+    segment_num, segment_length, R, C, L = prepare_building_parameters(OHL, max_length, constants)
+
+    OHL.get_brans_nodes_list(segment_num)
+
+    build_OHL_parameter_matrixs(OHL, segment_num, segment_length, R, C, L)
+
+    print(f"OHL:{OHL.info.name} building is completed.")
+    print("------------------------------------------------")
+
+
+def prepare_variant_frequency_parameters(OHL, max_length, varied_frequency, Nfit, ground, dt, constants):
     OHL_r = OHL.wires.get_radii()
     OHL_height = OHL.wires.get_heights()
     length = distance(OHL.info.HeadTower_pos,OHL.info.TailTower_pos)
@@ -206,36 +175,89 @@ def OHL_building_variant_frequency(OHL, max_length, varied_frequency, ground, dt
     segment_length = length/segment_num
 
     Lm = calculate_OHL_mutual_inductance(OHL_r, OHL_height, OHL.wires.get_offsets(), constants)
+    capacitance = calculate_OHL_capcitance(Lm, constants)
+
+    if OHL.info.model1 == 1 and OHL.info.model2 == 2:
+        Zc = calculate_OHL_wire_impedance(OHL.wires.get_radii(), OHL.wires.get_mur(), OHL.wires.get_sig(),
+                                          OHL.wires.get_epr(), constants, varied_frequency)
+
+        Zg = calculate_OHL_ground_impedance(ground.sig, ground.mur, ground.epr, OHL.wires.get_radii(),
+                                            OHL.wires.get_offsets(), OHL.wires.get_heights(), constants,
+                                            varied_frequency)
+
+        Z = Zc + Zg
+
+        SER = matrix_vector_fitting(Z, varied_frequency, Nfit)
+
+        A, B = preparing_parameters(SER, dt)
+
+        resistance = SER['D'] + OHL.A.sum(-1)
+
+        inductance = SER['E'] + Lm
+
+    elif OHL.info.model1 == 1:
+        Zc = calculate_OHL_wire_impedance(OHL.wires.get_radii(), OHL.wires.get_mur(), OHL.wires.get_sig(),
+                                          OHL.wires.get_epr(), constants, varied_frequency)
+
+        Ncon = OHL.impedance_matrix.shape[0]
+
+        resistance = np.zeros((Ncon, Ncon))
+        inductance = np.zeros((Ncon, Ncon))
+
+        A = np.zeros((Ncon, Ncon, Nfit))
+        B = np.zeros((Ncon, 1, Nfit))
+
+        for i in range(Ncon):
+            SER = matrix_vector_fitting(Zc[i, i, :].reshape(1, 1, -1), varied_frequency, Nfit)
+
+            SERA, SERB = preparing_parameters(SER, dt)
+
+            A[i, i, :] = SERA
+            B[i, 0, :] = SERB
+
+            resistance[i, i] = SER['D'] + SERA.sum(-1)
+            inductance[i, i] = SER['E']
+
+        inductance += Lm
+
+    elif OHL.info.model2 == 2:
+        Zg = calculate_OHL_ground_impedance(ground.sig, ground.mur, ground.epr, OHL.wires.get_radii(),
+                                            OHL.wires.get_offsets(), OHL.wires.get_heights(), constants,
+                                            varied_frequency)
+
+        SER = matrix_vector_fitting(Zg, varied_frequency, Nfit)
+
+        A, B = preparing_parameters(SER, dt)
+
+        R = calculate_OHL_resistance(OHL.wires.get_resistance())
+
+        L = calculate_OHL_inductance(OHL.wires.get_inductance(), Lm)
+
+        resistance = SER['D'] + OHL.A.sum(-1) + R
+
+        inductance = SER['E'] + L
+    else:
+        raise Exception('Conductor model and ground model of OHL are not variant frequency, since variant frequency model have used.')
+
+    OHL.phi = np.zeros((len(OHL.wires_name), 1, Nfit))
+
+    OHL.A = A * segment_length
+
+    OHL.B = B
+
+    return segment_num, segment_length, resistance, capacitance, inductance
+
+
+def OHL_building_variant_frequency(OHL, max_length, ground, varied_frequency, Nfit, dt):
+    print("------------------------------------------------")
+    print(f"OHL:{OHL.info.name} building...")
+    # 0.参数准备
+    constants = Constant()
+    segment_num, segment_length, R, C, L = prepare_variant_frequency_parameters(OHL, max_length, varied_frequency, Nfit, ground, dt, constants)
 
     OHL.get_brans_nodes_list(segment_num)
 
-    # 1. 构建A矩阵
-    build_incidence_matrix(OHL, segment_num)
-
-    # 4. 构建C矩阵
-    build_capacitance_matrix(OHL, Lm, segment_num, segment_length, constants)
-
-    # 5. 构建G矩阵
-    build_conductance_matrix(OHL)
-
-    # 6. 构建Z矩阵
-    build_impedance_matrix(OHL, Lm, constants, varied_frequency, ground)
-
-    SER = matrix_vector_fitting(OHL.impedance_matrix, varied_frequency)
-
-    preparing_parameters(OHL, SER, dt)
-
-    OHL.A *= segment_length
-
-    # 2. 构建R矩阵
-    build_resistance_matrix_variant_frequency(OHL, segment_num, segment_length, SER['D'] + OHL.A.sum(-1))
-
-    # 3. 构建L矩阵
-    build_inductance_matrix_variant_frequency(OHL, SER['E'], segment_num, segment_length)
-
-    build_voltage_source_matrix(OHL, (OHL.B * OHL.phi).sum(-1))
-
-    build_current_source_matrix(OHL, 0)
+    build_OHL_parameter_matrixs(OHL, segment_num, segment_length, R, C, L)
 
     print(f"OHL:{OHL.info.name} building is completed.")
     print("------------------------------------------------")

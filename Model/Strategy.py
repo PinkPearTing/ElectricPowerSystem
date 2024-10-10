@@ -1,13 +1,15 @@
 from abc import ABC, abstractmethod
 import numpy as np
 import pandas as pd
+
+
 class Strategy(ABC):
 
     def __init__(self):
         self.capacitance_matrix = None
 
     @abstractmethod
-    def apply(self,netwotk,dt,Nt):
+    def apply(self, netwotk, dt, Nt):
         C = np.array(netwotk.capacitance_matrix)  # 点点
         G = np.array(netwotk.conductance_matrix)
         L = np.array(netwotk.inductance_matrix)  # 线线
@@ -15,8 +17,9 @@ class Strategy(ABC):
         ima = np.array(netwotk.incidence_matrix_A)  # 线点
         imb = np.array(netwotk.incidence_matrix_B.T)  # 点线
 
+
 class Linear(Strategy):
-    def apply(self,network,dt):
+    def apply(self, network, dt):
         print("linear calculation is used")
         C = np.array(network.capacitance_matrix)  # 点点
         G = np.array(network.conductance_matrix)
@@ -44,8 +47,9 @@ class Linear(Strategy):
         network.solution = pd.DataFrame(out,
                                         index=network.capacitance_matrix.columns.tolist() + network.inductance_matrix.columns.tolist())
 
+
 class NonLinear(Strategy):
-    def apply(self,network,dt):
+    def apply(self, network, dt):
         print("Nonlinear calculation is used")
         branches, nodes = network.incidence_matrix_A.shape
         source = np.array(network.sources)
@@ -107,14 +111,14 @@ class variant_frequency(Strategy):
             temp_result = pd.DataFrame(temp_result,
                                        index=network.capacitance_matrix.columns.tolist() + network.inductance_matrix.columns.tolist())
 
-            network.update_source_variant_frequency(temp_result, i+2)
+            network.update_source_variant_frequency(temp_result, i + 2)
 
         network.solution = pd.DataFrame(out,
                                         index=network.capacitance_matrix.columns.tolist() + network.inductance_matrix.columns.tolist())
 
 
 class Change_DE_max(Strategy):
-    def apply(self,network,dt):
+    def apply(self, network, dt):
         network.reverse_H()
         for lump in network.switch_disruptive_effect_models.parameters:
             lump['DE_max'] = 100
@@ -122,11 +126,12 @@ class Change_DE_max(Strategy):
 
 
 class Change_Source(Strategy):
-    def apply(self,network,dt):
+    def apply(self, network, dt):
         network.s
 
+
 class Measurement(Strategy):
-    def apply(self,measurement,solution,dt):
+    def apply(self, measurement, solution, dt):
         results = {}
         for key, value in measurement.items():
             data_type = value[0]  # 0:'branch',1: 'normal lump'
@@ -141,45 +146,45 @@ class Measurement(Strategy):
                 p = [a * b for a, b in zip(current, voltage)] if current and voltage else None
                 E = sum([i * dt for i in p]) if p else None
                 if measurement_type == 1:
-                    results[(key,value[3],value[4])] = {"current":current}
+                    results[(key, value[3], value[4])] = {"current": current}
                 elif measurement_type == 2:
-                    results[(key,value[3],value[4])] = {"voltage":voltage}
+                    results[(key, value[3], value[4])] = {"voltage": voltage}
                 elif measurement_type == 3:
-                    results[(key,value[3],value[4])] = {"P":p}
+                    results[(key, value[3], value[4])] = {"P": p}
                 elif measurement_type == 4:
-                    results[(key,value[3],value[4])] = {"E":E}
+                    results[(key, value[3], value[4])] = {"E": E}
                 elif measurement_type == 11:
-                    results[(key,value[3],value[4])] = {"current":current,
-                                                        "voltage":voltage,
-                                                        "E":E,"P":p}
+                    results[(key, value[3], value[4])] = {"current": current,
+                                                          "voltage": voltage,
+                                                          "E": E, "P": p}
             elif data_type == 1:
                 lump_name = key
                 # 处理支路名可能是列表的情况
                 branches = value[3]
                 dict_result = {}
-                for bran,n1,n2 in zip(value[2],value[3],value[4]):
+                for bran, n1, n2 in zip(value[2], value[3], value[4]):
                     current = solution.loc[bran].tolist() if bran in solution.index else None
                     node1 = solution.loc[n1].tolist() if n1 in solution.index else None
                     node2 = solution.loc[n2].tolist() if n2 in solution.index else None
-                    voltage = [abs(a - b) for a, b in zip(node1, node2)] if (node1 and node2)  else None
-                    p = [a * b for a, b in zip(current, voltage)] if (current and voltage)  else None
-                    E = sum([i*dt for i in p ]) if p else None
+                    voltage = [abs(a - b) for a, b in zip(node1, node2)] if (node1 and node2) else None
+                    p = [a * b for a, b in zip(current, voltage)] if (current and voltage) else None
+                    E = sum([i * dt for i in p]) if p else None
 
                     if measurement_type == 1:
-                        dict_result[bran] = {"current":current}
+                        dict_result[bran] = {"current": current}
                     elif measurement_type == 2:
-                        dict_result[(n1,n2)] = {"voltage":voltage}
+                        dict_result[(n1, n2)] = {"voltage": voltage}
                     elif measurement_type == 3:
-                        dict_result[(bran,n1,n2)] = {"P": p}
+                        dict_result[(bran, n1, n2)] = {"P": p}
                     elif measurement_type == 4:
-                        dict_result[(bran,n1,n2)] ={"current":current,"voltage":voltage,"P":p,"E":E}
+                        dict_result[(bran, n1, n2)] = {"current": current, "voltage": voltage, "P": p, "E": E}
                     elif measurement_type == 11:
-                        dict_result[(bran,n1,n2)] ={"E":E}
+                        dict_result[(bran, n1, n2)] = {"E": E}
 
                 results[lump_name] = dict_result
         return results
 
+
 class Monteclarlo(Strategy):
     def apply(self, network):
         print("montecarlo")
-
