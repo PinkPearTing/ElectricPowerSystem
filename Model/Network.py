@@ -25,6 +25,7 @@ class Network:
         self.towers = kwargs.get('towers', [])
         self.cables = kwargs.get('cables', [])
         self.OHLs = kwargs.get('OHLs', [])
+        self.lumps = kwargs.get('lumps', [])
         self.sources = pd.DataFrame()
         self.branches = {}
         self.starts = []
@@ -100,7 +101,11 @@ class Network:
             self.OHLs = [initialize_OHL(ohl, max_length=self.max_length) for ohl in load_dict['OHL']]
         if 'Cable' in load_dict:
             self.cables = [initialize_cable(cable, max_length=self.max_length, VF=VF) for cable in load_dict['Cable']]
-
+        if 'Lump' in load_dict:
+            self.lumps = []
+            for lump_dict in load_dict['Lump']:
+                lump, measurement = initial_lump(lump_dict, self.dt, self.T, {})
+                self.lumps.append(lump)
         # 2. build dedicated matrix for all elements
         # segment_num = int(3)  # 正常情况下，segment_num由segment_length和线长反算，但matlab中线长参数位于Tower中，在python中如何修改？
         # segment_length = 50  # 预设的参数
@@ -174,6 +179,15 @@ class Network:
                 self.conductance_matrix = self.conductance_matrix.add(model.conductance_matrix, fill_value=0).fillna(0)
             #   self.voltage_source_matrix.add(model.voltage_source_matrix, fill_value=0).fillna(0)
             #   self.current_source_matrix.add(model.current_source_matrix, fill_value=0).fillna(0)
+
+        for lump in self.lumps:
+            self.incidence_matrix_A = self.incidence_matrix_A.add(lump.incidence_matrix_A, fill_value=0).fillna(0)
+            self.incidence_matrix_B = self.incidence_matrix_B.add(lump.incidence_matrix_B, fill_value=0).fillna(0)
+            self.resistance_matrix = self.resistance_matrix.add(lump.resistance_matrix, fill_value=0).fillna(0)
+            self.inductance_matrix = self.inductance_matrix.add(lump.inductance_matrix, fill_value=0).fillna(0)
+            self.capacitance_matrix = self.capacitance_matrix.add(lump.capacitance_matrix, fill_value=0).fillna(0)
+            self.conductance_matrix = self.conductance_matrix.add(lump.conductance_matrix, fill_value=0).fillna(0)
+
         self.H["incidence_matrix_A"] = self.incidence_matrix_A
         self.H["incidence_matrix_B"] = self.incidence_matrix_B
         self.H["resistance_matrix"] = self.resistance_matrix
@@ -211,27 +225,36 @@ class Network:
     def update_source_variant_frequency(self, current_result, next_point):
         for tower in self.towers:
             I = current_result.loc[tower.wires_name, 0].to_numpy()
-            tower.phi = tower.A.dot(I) + tower.B * tower.phi
+            phi_temp = []
+            for i in range(tower.A.shape[-1]):
+                phi_temp.append(tower.A[:, :, i].dot(I))
+            phi = np.expand_dims(np.array(phi_temp), axis=2).transpose(1, 2, 0)
+            tower.phi = phi + tower.B * tower.phi
             phi_hist = (tower.B * tower.phi).sum(-1)
-            self.sources.loc[tower.wires_name, next_point] += phi_hist
+            self.sources.loc[tower.wires_name, next_point] += phi_hist.reshape(-1)
 
         for model_list in [self.OHLs, self.cables]:
             for model in model_list:
                 I = current_result.loc[model.wires_name, 0].to_numpy()
                 n = int(I.shape[0] / model.A.shape[0])
-                A = np.array([])
-                for i in range(n):
+                A = np.copy(model.A)
+                for i in range(n-1):
                     A = block_diag(A, model.A)
-                model.phi = A.dot(I) + model.B * model.phi
+                phi_temp = []
+                for i in range(model.A.shape[-1]):
+                    phi_temp.append(model.A[:, :, i].dot(I))
+                phi = np.expand_dims(np.array(phi_temp), axis=2).transpose(1, 2, 0)
+                model.phi = phi + model.B * model.phi
                 phi_hist = (model.B * model.phi).sum(-1)
-                self.sources.loc[model.wires_name, next_point] += phi_hist
+                self.sources.loc[model.wires_name, next_point] += phi_hist.reshape(-1)
 
     # 执行不同的算法
     def calculate(self, dt):
-        if not self.switch_disruptive_effect_models and not self.voltage_controled_switchs and not self.time_controled_switchs and not self.nolinear_resistors:
-            strategy = Strategy.Linear()
-        else:
-            strategy = Strategy.NonLinear()
+        # if not self.switch_disruptive_effect_models and not self.voltage_controled_switchs and not self.time_controled_switchs and not self.nolinear_resistors:
+        #     strategy = Strategy.Linear()
+        # else:
+        #     strategy = Strategy.NonLinear()
+        strategy = Strategy.variant_frequency()
         strategy.apply(self, dt)
 
         if self.measurement:

@@ -18,7 +18,7 @@ class Node:
         self.x = x
         self.y = y
         self.z = z
-        self.id = int(re.findall(r'\d+', self.name)[-1])
+        # self.id = int(re.findall(r'\d+', self.name)[-1])
 
 
     def __repr__(self):

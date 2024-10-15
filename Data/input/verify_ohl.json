@@ -1,0 +1,297 @@
+{
+  "user_id": "01",
+  "case_id": 2,
+  "Lump": [
+        {
+          "Type": "Vs",
+          "name": "Vs",
+          "probe": null,
+          "bran_name": "YVs",
+          "node1": "X02",
+          "node2": "ref",
+          "data_type": 1,
+          "value1": 0,
+          "value2": 220,
+          "value3": 50,
+          "value4": null,
+          "value5": 0,
+          "pointer": null,
+          "comments": null
+        },
+        {
+          "Type": "RL",
+          "name": "B1",
+          "probe": null,
+          "bran_name": "YB1",
+          "node1": "X03",
+          "node2": "ref",
+          "data_type": null,
+          "value1": 1000,
+          "value2": 0,
+          "value3": null,
+          "value4": null,
+          "value5": null,
+          "pointer": null,
+          "comments": null
+        },
+        {
+          "Type": "RL",
+          "name": "C1",
+          "probe": null,
+          "bran_name": "YC1",
+          "node1": "X04",
+          "node2": "ref",
+          "data_type": null,
+          "value1": 1000,
+          "value2": 0,
+          "value3": null,
+          "value4": null,
+          "value5": null,
+          "pointer": null,
+          "comments": null
+        },
+        {
+          "Type": "RL",
+          "name": "A2",
+          "probe": null,
+          "bran_name": "YA2",
+          "node1": "X06",
+          "node2": "ref",
+          "data_type": null,
+          "value1": 1000,
+          "value2": 0,
+          "value3": null,
+          "value4": null,
+          "value5": null,
+          "pointer": null,
+          "comments": null
+        },
+        {
+          "Type": "RL",
+          "name": "B2",
+          "probe": null,
+          "bran_name": "YB2",
+          "node1": "X07",
+          "node2": "ref",
+          "data_type": null,
+          "value1": 1000,
+          "value2": 0,
+          "value3": null,
+          "value4": null,
+          "value5": null,
+          "pointer": null,
+          "comments": null
+        },
+        {
+          "Type": "RL",
+          "name": "C2",
+          "probe": null,
+          "bran_name": "YC2",
+          "node1": "X08",
+          "node2": "ref",
+          "data_type": null,
+          "value1": 1000,
+          "value2": 0,
+          "value3": null,
+          "value4": null,
+          "value5": null,
+          "pointer": null,
+          "comments": null
+      }
+      ],
+  "OHL": [
+    {
+      "name": "OHL_1",
+      "Info": {
+        "name": "OHL_1",
+        "type": "type_01",
+        "id": 1,
+        "dL": 10,
+        "model1": "1",
+        "model2": "2",
+        "Tower_head": "tower_1",
+        "Tower_head_id": 1,
+        "Tower_head_pos": [
+          0,
+          0,
+          0
+        ],
+        "Tower_tail": "tower_2",
+        "Tower_tail_id": 2,
+        "Tower_tail_pos": [
+          1000,
+          0,
+          0
+        ]
+      },
+      "Wire": [
+        {
+          "type": "SW",
+          "bran": "",
+          "node1": "ref",
+          "node2": "ref",
+          "node1_pos": [
+            0,
+            0,
+            10.5
+          ],
+          "node2_pos": [
+            0,
+            0,
+            10.5
+          ],
+          "offset": 0,
+          "r0": 0.005,
+          "r": 1,
+          "l": 0,
+          "sig": 5.8e7,
+          "mur": 1,
+          "epr": 1,
+          "vfid_d": 0,
+          "vfid_h": 0,
+          "vfid_r": 0,
+          "vfid_a": 0,
+          "num": 1,
+          "cir_id": 1001,
+          "phase": "A",
+          "phase_num": 1,
+          "mode1": 0,
+          "mode2": 2,
+          "comments": "长线-SW"
+        },
+        {
+          "type": "CIRO",
+          "bran": "",
+          "node1": "X02",
+          "node2": "X06",
+          "node1_pos": [
+            0,
+            -0.4,
+            10
+          ],
+          "node2_pos": [
+            0,
+            -0.4,
+            10
+          ],
+          "offset": -0.4,
+          "r0": 0.005,
+          "r": 1,
+          "l": 0,
+          "sig": 5.8e7,
+          "mur": 1,
+          "epr": 1,
+          "vfid_d": 0,
+          "vfid_h": 0,
+          "vfid_r": 0,
+          "vfid_a": 0,
+          "num": 3,
+          "cir_id": 3001,
+          "phase": "A",
+          "phase_num": 3,
+          "mode1": 0,
+          "mode2": 2,
+          "comments": "长线-PhaseA"
+        },
+        {
+          "type": "CIRO",
+          "bran": "",
+          "node1": "X03",
+          "node2": "X07",
+          "node1_pos": [
+            0,
+            0.1,
+            10
+          ],
+          "node2_pos": [
+            0,
+            0.1,
+            10
+          ],
+          "offset": 0.1,
+          "r0": 0.005,
+          "r": 1,
+          "l": 0,
+          "sig": 5.8e7,
+          "mur": 1,
+          "epr": 1,
+          "vfid_d": 0,
+          "vfid_h": 0,
+          "vfid_r": 0,
+          "vfid_a": 0,
+          "num": 3,
+          "cir_id": 3001,
+          "phase": "B",
+          "phase_num": 3,
+          "mode1": 0,
+          "mode2": 2,
+          "comments": "长线-PhaseB"
+        },
+        {
+          "type": "CIRO",
+          "bran": "",
+          "node1": "X04",
+          "node2": "X08",
+          "node1_pos": [
+            0,
+            0.6,
+            10
+          ],
+          "node2_pos": [
+            0,
+            0.6,
+            10
+          ],
+          "offset": 0.6,
+          "r0": 0.005,
+          "r": 1,
+          "l": 0,
+          "sig": 5.8E7,
+          "mur": 1,
+          "epr": 1,
+          "vfid_d": 0,
+          "vfid_h": 0,
+          "vfid_r": 0,
+          "vfid_a": 0,
+          "num": 3,
+          "cir_id": 3001,
+          "phase": "C",
+          "phase_num": 3,
+          "mode1": 0,
+          "mode2": 2,
+          "comments": "长线-PhaseC"
+        }
+      ],
+      "ground": {
+        "glb": 1,
+        "sig": 0.01,
+        "mur": 1,
+        "epr": 10,
+        "gnd_model": "Lossy",
+        "ionisation_intensity": "",
+        "ionisation_model": ""
+      }
+    }
+  ],
+  "Global": {
+    "delta_time": 1e-6,
+    "time": 0.001,
+    "constant_frequency": 2e4,
+    "max_length": 20,
+    "ground": {
+      "glb": 0,
+      "sig": 0.01,
+      "mur": 1,
+      "epr": 10,
+      "gnd_model": "Perfect",
+      "ionisation_intensity": "",
+      "ionisation_model": ""
+    }
+  },
+  "Sensitivity_analysis": {
+    "Stoke": [],
+    "Soil": [],
+    "Arrester": [],
+    "ROD": []
+  }
+}

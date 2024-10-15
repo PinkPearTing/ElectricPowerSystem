@@ -5,6 +5,7 @@ from Function.Calculators.Impedance import calculate_coreWires_impedance, calcul
 from Model.Contant import Constant
 from Vector_Fitting.Drivers.MatrixFitting import matrix_vector_fitting
 from Driver.modeling_varient_freqency.recursive_convolution import preparing_parameters
+from Vector_Fitting.Calculators.plots import plot_figure_11
 
 from scipy.linalg import block_diag
 import pandas as pd
@@ -298,7 +299,6 @@ def build_variant_frequency_matrix(tower, L, Lin, sheath_inductance_matrix, tube
             SER = matrix_vector_fitting(tower.impedance_matrix[i, i, :].reshape(1, 1, -1), varied_frequency, Nfit)
 
             SERA, SERB = preparing_parameters(SER, dt)
-
             A[i, i, :] = SERA
             B[i, 0, :] = SERB
 

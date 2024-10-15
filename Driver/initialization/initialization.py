@@ -484,7 +484,7 @@ def initialize_cable(cable, max_length, VF):
 
     # 3. initalize cable
     cable = Cable(cable['name'], info, wires, ground)
-    cable.wires_name = cable.wires.get_all_wires()
+    cable.wires_name = list(cable.wires.get_all_wires().keys())
     cable.nodes_name = cable.wires.get_all_nodes()
     print("Cable loaded.")
     return cable

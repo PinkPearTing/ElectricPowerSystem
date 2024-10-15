@@ -85,7 +85,7 @@ class NonLinear(Strategy):
 
 class variant_frequency(Strategy):
     def apply(self, network, dt):
-        print("Nonlinear calculation is used")
+        print("Variant_frequency calculation is used")
         branches, nodes = network.incidence_matrix_A.shape
         time_length = len(network.sources.columns.tolist())
         out = np.zeros((branches + nodes, time_length))
@@ -96,25 +96,25 @@ class variant_frequency(Strategy):
         ima = network.incidence_matrix_A.to_numpy()  # 线点
         imb = network.incidence_matrix_B.T.to_numpy()  # 点线
         # source = np.array(sources)
+        result_index = network.capacitance_matrix.columns.tolist() + network.inductance_matrix.columns.tolist()
         for i in range(time_length - 1):
-            source = np.array(network.sources)
             Vnode = out[:nodes, i].reshape((-1, 1))
             Ibran = out[nodes:, i].reshape((-1, 1))
-            Isource = source[:, i + 1].reshape((-1, 1))
+            pre_result = pd.DataFrame(np.vstack((Vnode, Ibran)), index=result_index)
+            network.update_source_variant_frequency(pre_result, i + 1)
+            source = network.sources.to_numpy()[:, i + 1].reshape((-1, 1))
             LEFT = np.block([[-ima, -R - L / dt], [G + C / dt, -imb]])
             inv_LEFT = np.linalg.inv(LEFT)
             RIGHT = np.block([[(-L / dt).dot(Ibran)], [(C / dt).dot(Vnode)]])
 
-            temp_result = inv_LEFT.dot(Isource + RIGHT)
+            temp_result = inv_LEFT.dot(source + RIGHT)
             # temp_result = inv_LEFT.dot(RIGHT)
             out[:, i + 1] = np.copy(temp_result)[:, 0]
-            temp_result = pd.DataFrame(temp_result,
-                                       index=network.capacitance_matrix.columns.tolist() + network.inductance_matrix.columns.tolist())
+            # temp_result = pd.DataFrame(temp_result, index=result_index)
+            # print(i)
+            # network.update_source_variant_frequency(temp_result, i + 2)
 
-            network.update_source_variant_frequency(temp_result, i + 2)
-
-        network.solution = pd.DataFrame(out,
-                                        index=network.capacitance_matrix.columns.tolist() + network.inductance_matrix.columns.tolist())
+        network.solution = pd.DataFrame(out, index=result_index)
 
 
 class Change_DE_max(Strategy):
