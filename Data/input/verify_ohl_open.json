@@ -17,87 +17,7 @@
           "value5": 0,
           "pointer": null,
           "comments": null
-        },
-        {
-          "Type": "RL",
-          "name": "B1",
-          "probe": null,
-          "bran_name": "YB1",
-          "node1": "X03",
-          "node2": "ref",
-          "data_type": null,
-          "value1": 1000,
-          "value2": 0,
-          "value3": null,
-          "value4": null,
-          "value5": null,
-          "pointer": null,
-          "comments": null
-        },
-        {
-          "Type": "RL",
-          "name": "C1",
-          "probe": null,
-          "bran_name": "YC1",
-          "node1": "X04",
-          "node2": "ref",
-          "data_type": null,
-          "value1": 1000,
-          "value2": 0,
-          "value3": null,
-          "value4": null,
-          "value5": null,
-          "pointer": null,
-          "comments": null
-        },
-        {
-          "Type": "RL",
-          "name": "A2",
-          "probe": null,
-          "bran_name": "YA2",
-          "node1": "X06",
-          "node2": "ref",
-          "data_type": null,
-          "value1": 1000,
-          "value2": 0,
-          "value3": null,
-          "value4": null,
-          "value5": null,
-          "pointer": null,
-          "comments": null
-        },
-        {
-          "Type": "RL",
-          "name": "B2",
-          "probe": null,
-          "bran_name": "YB2",
-          "node1": "X07",
-          "node2": "ref",
-          "data_type": null,
-          "value1": 1000,
-          "value2": 0,
-          "value3": null,
-          "value4": null,
-          "value5": null,
-          "pointer": null,
-          "comments": null
-        },
-        {
-          "Type": "RL",
-          "name": "C2",
-          "probe": null,
-          "bran_name": "YC2",
-          "node1": "X08",
-          "node2": "ref",
-          "data_type": null,
-          "value1": 1000,
-          "value2": 0,
-          "value3": null,
-          "value4": null,
-          "value5": null,
-          "pointer": null,
-          "comments": null
-      }
+        }
       ],
   "OHL": [
     {
@@ -129,7 +49,7 @@
           "type": "SW",
           "bran": "",
           "node1": "ref",
-          "node2": "ref",
+          "node2": "X05",
           "node1_pos": [
             0,
             0,
@@ -196,7 +116,7 @@
         {
           "type": "CIRO",
           "bran": "",
-          "node1": "X03",
+          "node1": "ref",
           "node2": "X07",
           "node1_pos": [
             0,
@@ -230,7 +150,7 @@
         {
           "type": "CIRO",
           "bran": "",
-          "node1": "X04",
+          "node1": "ref",
           "node2": "X08",
           "node1_pos": [
             0,
@@ -275,9 +195,9 @@
   ],
   "Global": {
     "delta_time": 1e-6,
-    "time": 0.001,
+    "time": 0.01,
     "constant_frequency": 20000,
-    "max_length": 20,
+    "max_length": 200,
     "ground": {
       "glb": 1,
       "sig": 0.001,

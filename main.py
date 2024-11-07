@@ -4,18 +4,37 @@ from Model import Strategy
 from Model.Network import Network
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.io import loadmat
 
 if __name__ == '__main__':
     # 1. 接收到创建新电网指令
-    file_name = "01_cable"
-    varied_frequency = np.logspace(0, 37, 9)
+    file_name = ("verify_cable_paper")
+    flist = pd.DataFrame(loadmat('C:\\Users\\User\\Desktop\\SEMP_ohl_JMarti.mat')['python']).to_numpy()
+    varied_frequency = flist[:, 0]
+
+    # varied_frequency = np.logspace(0, 37, 9)
 
     strategy = Strategy.variant_frequency()
     # strategy = Strategy.NonLinear()
 
     network = Network()
+    network.varied_frequency = varied_frequency
     network.run(file_name, strategy)
+    fig, ax = plt.subplots()
+    X06 = [i for i in network.solution.loc["X06"].tolist()]
+    x = np.arange(0, network.Nt, 1)
+    ax.plot(x, X06, label='X06')
+    source = [abs(i) for i in network.sources.loc["YVs"].tolist()]
+    ax.plot(x, source, label='YVs')
+    plt.show()
+
+    CVs = [i for i in network.solution.loc["YVs"].tolist()]
+    plt.plot(x, CVs, label='CVs')
+    plt.show()
+
+
     print(network.solution)
+    network.solution.to_excel('C:\\Users\\User\\Desktop\\SEMP_ohl_python.xlsx')
     Y13_Tower_1 = [abs(i) for i in network.solution.loc["Y13_Tower_1"].tolist()]
     Y02_Tower_1 = [abs(i) for i in network.solution.loc["Y02_Tower_1"].tolist()]
 
@@ -51,7 +70,7 @@ if __name__ == '__main__':
     from scipy.io import loadmat
     import pandas as pd
 
-    file_path = "C:\\Users\\demo\\Desktop\\PolyU\\电路参数生成矩阵\\VTS\\03Caculate for Large System\\Tower_V9c_yeung\\Tower_V9c_ding2\\集中参数接地\\"
+    file_path = "C:\\Users\\demo\\Desktop\\python验证\\OHL验证\\ohl.mat\\"
     bran_index_t1 = ['Y0' + str(i + 1) + '_Tower_1' for i in range(8)]
     bran_index_t1.extend(['Y13_Tower_1', 'Y14_Tower_1', 'Y15_Tower_1', 'Y09_Tower_1'])
     bran_index_t2 = ['Y0' + str(i + 1) + '_Tower_2' for i in range(8)]

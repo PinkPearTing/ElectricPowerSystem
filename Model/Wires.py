@@ -1073,9 +1073,9 @@ class Wires:
                 core_wires_middle_nodes = collections.deque()
                 for i in range(num_segments):
                     middle_node = Node(name=f"{sheath.name}_MiddleNode_{i+1}",
-                                       x = sheath_start_point.x + (i+1)*dx,
-                                       y = sheath_start_point.y + (i+1)*dy,
-                                       z = sheath_start_point.z + (i+1)*dz)
+                                       x = sheath_start_point.x + dx,
+                                       y = sheath_start_point.y + dy,
+                                       z = sheath_start_point.z + dz)
 
                     new_sheath = Wire(
                         name=f"{sheath.name}_Splited_{i+1}",
@@ -1101,9 +1101,9 @@ class Wires:
                             name=f"{core_wire.name}_Splited_{i+1}",
                             start_node=start_point if i == 0 else core_wires_middle_nodes.popleft(),
                             end_node=end_point if i == num_segments-1 else Node(name=f"{core_wire.name}_MiddleNode_{i+1}",
-                                                                                x = start_point.x+ (i+1)*dx,
-                                                                                y = start_point.y+ (i+1)*dy,
-                                                                                z = start_point.z+ (i+1)*dz),
+                                                                                x = start_point.x+ dx,
+                                                                                y = start_point.y+ dy,
+                                                                                z = start_point.z+ dz),
                             offset=core_wire.offset,
                             r=core_wire.r,
                             R=core_wire.R,

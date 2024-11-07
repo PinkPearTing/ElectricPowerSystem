@@ -1,6 +1,7 @@
 import numpy as np
 import numpy.matlib
 from Utils.Math import calculate_direction_cosines, calculate_distances
+from scipy.special import ber, bei, berp, beip
 
 
 def calculate_coreWires_inductance(core_wires_r, core_wires_offset, core_wires_angle, sheath_inner_radius, constants):
@@ -598,7 +599,7 @@ def calculate_OHL_mutual_inductance(radius, height, offset, constants):
     Lm = km * Lm
     return Lm
 
-def calculate_OHL_inductance(inductance, Lm):
+def calculate_OHL_inductance(inductance, Lm, sig, mur, radius, frequency, constants):
     """
     【函数功能】架空线电感矩阵参数计算
     【入参】
@@ -608,5 +609,12 @@ def calculate_OHL_inductance(inductance, Lm):
     【出参】
     L(numpy.ndarray:n*n)：n条线的电感矩阵
     """
-    L = Lm + np.diag(inductance.reshape((-1)))
+    mu0 = constants.mu0
+    mu = mur * mu0
+    Ld = mu / (8 * np.pi)
+    m = np.sqrt(2 * np.pi * frequency * mu * sig)
+    mr = m * radius
+    aL = 4 / mr * (ber(mr) * berp(mr) + bei(mr) * beip(mr)) / (berp(mr) ** 2 + beip(mr) ** 2)
+    Lc = aL * Ld
+    L = Lm + np.diag(inductance.reshape((-1)) + Lc.reshape((-1)))
     return L

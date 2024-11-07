@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
+import cupy as cp
 
 
 class Strategy(ABC):
@@ -27,6 +29,8 @@ class Linear(Strategy):
         R = np.array(network.resistance_matrix)
         ima = np.array(network.incidence_matrix_A)  # 线点
         imb = np.array(network.incidence_matrix_B.T)  # 点线
+        # network.sources.loc['YVs'] = 0
+        # network.sources.loc['YVs', 1:499] = 100
         source = np.array(network.sources)
         nodes = len(network.capacitance_matrix.columns.tolist())
         branches = len(network.inductance_matrix.columns.tolist())
@@ -34,16 +38,31 @@ class Linear(Strategy):
 
         out = np.zeros((branches + nodes, time_length))
         branches, nodes = ima.shape
-        for i in range(time_length - 1):
+
+        Isource = source[:, 0].reshape((-1, 1))
+        LEFT = np.block([[-ima, -R - 2 * L / dt], [G + 2 * C / dt, -imb]])
+        # LEFT = np.block([[-ima, -R - L / dt], [G + C / dt, -imb]])
+        temp_result = np.linalg.solve(LEFT, Isource)
+        out[:, 0] = np.copy(temp_result)[:, 0]
+        Ic = (2 * C / dt).dot(temp_result[:nodes])
+        LEFT = np.block([[-ima, -R - 2 * L / dt], [G + 2 * C / dt, -imb]])
+        inv_LEFT = np.linalg.inv(LEFT)
+        for i in tqdm(range(time_length - 1)):
             Vnode = out[:nodes, i].reshape((-1, 1))
             Ibran = out[nodes:, i].reshape((-1, 1))
-            Isource = source[:, i + 1].reshape((-1, 1))
-            LEFT = np.block([[-ima, -R - L / dt], [G + C / dt, -imb]])
-            inv_LEFT = np.linalg.inv(LEFT)
-            RIGHT = np.block([[(-L / dt).dot(Ibran)], [(C / dt).dot(Vnode)]])
-            # temp_result = inv_LEFT.dot(RIGHT)
+            Isource = np.array(source[:, i + 1].reshape((-1, 1)))
+            vhist = source[:, i].reshape((-1, 1))[:branches]
+            # LEFT = np.block([[-ima, -R - 2 * L / dt], [G + 2 * C / dt, -imb]])
+
+            # LEFT = np.block([[-ima, -R - L / dt], [G + C / dt, -imb]])
+            # RIGHT = np.block([[(R-2*L / dt).dot(Ibran) + ima.dot(Vnode) + vhist], [(2*C / dt).dot(Vnode)+Ic]])
+            RIGHT = np.block([[(R - 2 * L / dt).dot(Ibran) + ima.dot(Vnode) + vhist], [(2 * C / dt).dot(Vnode) + Ic]])
+            # RIGHT = np.block([[(-L / dt).dot(Ibran)], [(C / dt).dot(Vnode)]])
+
             temp_result = inv_LEFT.dot(Isource + RIGHT)
+            # temp_result = np.asnumpy(temp_result)
             out[:, i + 1] = np.copy(temp_result)[:, 0]
+            Ic = (2*C/dt).dot(temp_result[:nodes]-Vnode) - Ic
         network.solution = pd.DataFrame(out,
                                         index=network.capacitance_matrix.columns.tolist() + network.inductance_matrix.columns.tolist())
 
@@ -96,18 +115,21 @@ class variant_frequency(Strategy):
         ima = network.incidence_matrix_A.to_numpy()  # 线点
         imb = network.incidence_matrix_B.T.to_numpy()  # 点线
         # source = np.array(sources)
+        # network.sources.loc['YVs'] = 0
+        # network.sources.loc['YVs', 1:4999] = 100
         result_index = network.capacitance_matrix.columns.tolist() + network.inductance_matrix.columns.tolist()
-        for i in range(time_length - 1):
+        for i in tqdm(range(time_length - 1)):
             Vnode = out[:nodes, i].reshape((-1, 1))
             Ibran = out[nodes:, i].reshape((-1, 1))
             pre_result = pd.DataFrame(np.vstack((Vnode, Ibran)), index=result_index)
-            network.update_source_variant_frequency(pre_result, i + 1)
-            source = network.sources.to_numpy()[:, i + 1].reshape((-1, 1))
+            network.update_source_variant_frequency(pre_result, i)
+            source = network.sources.to_numpy()[:, i].reshape((-1, 1))
             LEFT = np.block([[-ima, -R - L / dt], [G + C / dt, -imb]])
-            inv_LEFT = np.linalg.inv(LEFT)
+            # inv_LEFT = np.linalg.inv(LEFT)
             RIGHT = np.block([[(-L / dt).dot(Ibran)], [(C / dt).dot(Vnode)]])
 
-            temp_result = inv_LEFT.dot(source + RIGHT)
+            # temp_result = inv_LEFT.dot(source + RIGHT)
+            temp_result = np.linalg.solve(LEFT, source + RIGHT)
             # temp_result = inv_LEFT.dot(RIGHT)
             out[:, i + 1] = np.copy(temp_result)[:, 0]
             # temp_result = pd.DataFrame(temp_result, index=result_index)

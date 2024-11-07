@@ -48,8 +48,12 @@ class Network:
         }
 
         self.f0 = 2e4
-        self.max_length = 20
-        self.varied_frequency = np.logspace(0, 9, 37)
+        self.max_length = 200
+        # self.varied_frequency = np.logspace(0, 9, 37)
+        self.varied_frequency = np.array([])
+        for i in range(6):
+            temp = np.linspace(5e-2*10**i, 5e-1*10**i, 10)
+            self.varied_frequency = np.hstack((self.varied_frequency, temp))
         self.global_ground = 0
         self.ground = None
         self.dt = None
@@ -102,16 +106,14 @@ class Network:
         if 'Cable' in load_dict:
             self.cables = [initialize_cable(cable, max_length=self.max_length, VF=VF) for cable in load_dict['Cable']]
         if 'Lump' in load_dict:
-            self.lumps = []
-            for lump_dict in load_dict['Lump']:
-                lump, measurement = initial_lump(lump_dict, self.dt, self.T, {})
-                self.lumps.append(lump)
+            self.lumps, measurement = initial_lump(load_dict['Lump'], self.dt, self.T, {})
         # 2. build dedicated matrix for all elements
         # segment_num = int(3)  # 正常情况下，segment_num由segment_length和线长反算，但matlab中线长参数位于Tower中，在python中如何修改？
         # segment_length = 50  # 预设的参数
         for tower in self.towers:
             gnd = self.ground if self.global_ground == 1 else tower.ground
-            tower_building_variant_frequency(tower, self.f0, gnd, varied_frequency, Nfit, dt)
+            # tower_building_variant_frequency(tower, self.f0, gnd, varied_frequency, Nfit, dt)
+            tower_building(tower, self.f0, gnd)
             self.switch_disruptive_effect_models.extend(tower.lump.switch_disruptive_effect_models)
             self.voltage_controled_switchs.extend(tower.lump.voltage_controled_switchs)
             self.time_controled_switchs.extend(tower.lump.time_controled_switchs)
@@ -124,10 +126,12 @@ class Network:
                     self.nolinear_resistors.extend(device.nolinear_resistors)
         for ohl in self.OHLs:
             gnd = self.ground if self.global_ground == 1 else ohl.ground
-            OHL_building_variant_frequency(ohl, self.max_length, gnd, varied_frequency, Nfit, dt)
+            # OHL_building_variant_frequency(ohl, self.max_length, gnd, varied_frequency, Nfit, dt)
+            OHL_building(ohl, self.max_length, gnd, self.f0)
         for cable in self.cables:
             gnd = self.ground if self.global_ground == 1 else cable.ground
-            cable_building_variant_frequency(cable, gnd, varied_frequency, dt)
+            # cable_building_variant_frequency(cable, gnd, varied_frequency, dt)
+            cable_building(cable, gnd, self.f0)
 
         # 3. combine matrix
         self.combine_parameter_matrix()
@@ -147,6 +151,10 @@ class Network:
             lgt_U_source, lgt_I_ource = initial_lightning_source(self, nodes, light, dt=dt)
             U_out = U_out.add(lgt_U_source, fill_value=0).fillna(0)
             I_out = I_out.add(lgt_I_ource, fill_value=0).fillna(0)
+
+        if "Lump" in load_dict:
+            U_out = U_out.add(self.lumps.voltage_source_matrix, fill_value=0).fillna(0)
+            I_out = I_out.add(self.lumps.current_source_matrix, fill_value=0).fillna(0)
 
         Source_Matrix = pd.concat([U_out, I_out], axis=0)
         self.sources = Source_Matrix
@@ -180,13 +188,12 @@ class Network:
             #   self.voltage_source_matrix.add(model.voltage_source_matrix, fill_value=0).fillna(0)
             #   self.current_source_matrix.add(model.current_source_matrix, fill_value=0).fillna(0)
 
-        for lump in self.lumps:
-            self.incidence_matrix_A = self.incidence_matrix_A.add(lump.incidence_matrix_A, fill_value=0).fillna(0)
-            self.incidence_matrix_B = self.incidence_matrix_B.add(lump.incidence_matrix_B, fill_value=0).fillna(0)
-            self.resistance_matrix = self.resistance_matrix.add(lump.resistance_matrix, fill_value=0).fillna(0)
-            self.inductance_matrix = self.inductance_matrix.add(lump.inductance_matrix, fill_value=0).fillna(0)
-            self.capacitance_matrix = self.capacitance_matrix.add(lump.capacitance_matrix, fill_value=0).fillna(0)
-            self.conductance_matrix = self.conductance_matrix.add(lump.conductance_matrix, fill_value=0).fillna(0)
+        self.incidence_matrix_A = self.incidence_matrix_A.add(self.lumps.incidence_matrix_A, fill_value=0).fillna(0)
+        self.incidence_matrix_B = self.incidence_matrix_B.add(self.lumps.incidence_matrix_B, fill_value=0).fillna(0)
+        self.resistance_matrix = self.resistance_matrix.add(self.lumps.resistance_matrix, fill_value=0).fillna(0)
+        self.inductance_matrix = self.inductance_matrix.add(self.lumps.inductance_matrix, fill_value=0).fillna(0)
+        self.capacitance_matrix = self.capacitance_matrix.add(self.lumps.capacitance_matrix, fill_value=0).fillna(0)
+        self.conductance_matrix = self.conductance_matrix.add(self.lumps.conductance_matrix, fill_value=0).fillna(0)
 
         self.H["incidence_matrix_A"] = self.incidence_matrix_A
         self.H["incidence_matrix_B"] = self.incidence_matrix_B
@@ -237,16 +244,17 @@ class Network:
             for model in model_list:
                 I = current_result.loc[model.wires_name, 0].to_numpy()
                 n = int(I.shape[0] / model.A.shape[0])
-                A = np.copy(model.A)
-                for i in range(n-1):
-                    A = block_diag(A, model.A)
                 phi_temp = []
-                for i in range(model.A.shape[-1]):
-                    phi_temp.append(model.A[:, :, i].dot(I))
+                for i_fit in range(model.A.shape[-1]):
+                    A = np.copy(model.A[:, :, i_fit])
+                    for i in range(n-1):
+                        A = block_diag(A, model.A[:, :, i_fit])
+                    phi_temp.append(A.dot(I))
                 phi = np.expand_dims(np.array(phi_temp), axis=2).transpose(1, 2, 0)
-                model.phi = phi + model.B * model.phi
-                phi_hist = (model.B * model.phi).sum(-1)
-                self.sources.loc[model.wires_name, next_point] += phi_hist.reshape(-1)
+                B = np.tile(model.B, (int(model.phi.shape[0]/model.B.shape[0]), 1, 1))
+                model.phi = phi + B * model.phi
+                phi_hist = (B * model.phi).sum(-1)
+                self.sources.loc[model.wires_name, next_point] = self.sources.loc[model.wires_name, next_point].values + phi_hist.reshape(-1)
 
     # 执行不同的算法
     def calculate(self, dt):
@@ -254,7 +262,8 @@ class Network:
         #     strategy = Strategy.Linear()
         # else:
         #     strategy = Strategy.NonLinear()
-        strategy = Strategy.variant_frequency()
+        # strategy = Strategy.variant_frequency()
+        strategy = Strategy.Linear()
         strategy.apply(self, dt)
 
         if self.measurement:
@@ -278,10 +287,10 @@ class Network:
         if 'Global' in load_dict:
             self.dt = load_dict['Global']['delta_time']
             self.T = load_dict['Global']['time']
-            f0 = load_dict['Global']['constant_frequency']
-            max_length = load_dict['Global']['max_length']
-            global_ground = load_dict['Global']['ground']['glb']
-            ground = initialize_ground(load_dict['Global']['ground']) if 'ground' in load_dict['Global'] else None
+            self.f0 = load_dict['Global']['constant_frequency']
+            self.max_length = load_dict['Global']['max_length']
+            self.global_ground = load_dict['Global']['ground']['glb']
+            self.ground = initialize_ground(load_dict['Global']['ground']) if 'ground' in load_dict['Global'] else None
         # 2. 初始化电网，根据电网信息计算源
         self.initialize_network(load_dict, self.varied_frequency, VF, self.dt, self.T)
         self.Nt = int(np.ceil(self.T / self.dt))

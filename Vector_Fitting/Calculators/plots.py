@@ -41,7 +41,7 @@ def plot_figure_11(s, bigYfit, bigYfit_passive, SER):
             plt.xlabel('Frequency [Hz]')
             plt.ylabel('Admittance')
             plt.title("Model Comparison")
-            plt.legend()
+            # plt.legend()
             plt.yscale('log')
             plt.tight_layout()
             plt.savefig(f'model_comparison_{row},{col}')

@@ -60,8 +60,13 @@ class OHL:
         nodes_name(list,wires_num*segment_num+1):节点名称列表
         """
         brans_name = list(self.wires.get_all_wires().keys())
-        start_nodes_name = self.wires.get_all_start_nodes()
-        end_nodes_name = self.wires.get_all_end_nodes()
+        start_nodes_name = []
+        end_nodes_name = []
+        for wire_list in [self.wires.air_wires, self.wires.ground_wires, self.wires.a2g_wires, self.wires.short_wires]:
+            for wire in wire_list:
+                start_nodes_name.append(wire.start_node.name)
+                end_nodes_name.append(wire.end_node.name)
+
         if segment_num == 1:
             self.wires_name = brans_name
             self.nodes_name = start_nodes_name
@@ -77,6 +82,7 @@ class OHL:
 
             # 最后一个分段，则将终止节点加入列表
             self.nodes_name.extend(end_nodes_name)
+
 
 
 

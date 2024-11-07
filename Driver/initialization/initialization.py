@@ -464,12 +464,12 @@ def initialize_cable(cable, max_length, VF):
     for core in wire['TubeWire']['core']:
         core_wire = initialize_wire(core, VF)
         core_wire.start_node.x = core_wire.start_node.x + cable['Info']['T_head_pos'][0]
-        core_wire.start_node.y = core_wire.start_node.x + cable['Info']['T_head_pos'][1]
-        core_wire.start_node.z = core_wire.start_node.x + cable['Info']['T_head_pos'][2]
+        core_wire.start_node.y = core_wire.start_node.y + cable['Info']['T_head_pos'][1]
+        core_wire.start_node.z = core_wire.start_node.z + cable['Info']['T_head_pos'][2]
 
         core_wire.end_node.x = core_wire.end_node.x + cable['Info']['T_tail_pos'][0]
-        core_wire.end_node.y = core_wire.end_node.x + cable['Info']['T_tail_pos'][1]
-        core_wire.end_node.z = core_wire.end_node.x + cable['Info']['T_tail_pos'][2]
+        core_wire.end_node.y = core_wire.end_node.y + cable['Info']['T_tail_pos'][1]
+        core_wire.end_node.z = core_wire.end_node.z + cable['Info']['T_tail_pos'][2]
 
         tube_wire.add_core_wire(core_wire)
 
@@ -485,7 +485,8 @@ def initialize_cable(cable, max_length, VF):
     # 3. initalize cable
     cable = Cable(cable['name'], info, wires, ground)
     cable.wires_name = list(cable.wires.get_all_wires().keys())
-    cable.nodes_name = cable.wires.get_all_nodes()
+    cable.nodes_name = cable.get_cable_nodes_list()
+
     print("Cable loaded.")
     return cable
 

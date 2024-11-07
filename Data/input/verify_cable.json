@@ -1,0 +1,259 @@
+{
+  "user_id": "01",
+  "case_id": 2,
+  "Lump": [
+        {
+          "Type": "Vs",
+          "name": "Vs",
+          "probe": null,
+          "bran_name": "YVs",
+          "node1": "X02",
+          "node2": "ref",
+          "data_type": 1,
+          "value1": 0,
+          "value2": 220,
+          "value3": 50,
+          "value4": null,
+          "value5": 0,
+          "pointer": null,
+          "comments": null
+        },
+        {
+          "Type": "RL",
+          "name": "B1",
+          "probe": null,
+          "bran_name": "YB1",
+          "node1": "X03",
+          "node2": "ref",
+          "data_type": null,
+          "value1": 1000,
+          "value2": 0,
+          "value3": null,
+          "value4": null,
+          "value5": null,
+          "pointer": null,
+          "comments": null
+        },
+        {
+          "Type": "RL",
+          "name": "C1",
+          "probe": null,
+          "bran_name": "YC1",
+          "node1": "X04",
+          "node2": "ref",
+          "data_type": null,
+          "value1": 1000,
+          "value2": 0,
+          "value3": null,
+          "value4": null,
+          "value5": null,
+          "pointer": null,
+          "comments": null
+        },
+        {
+          "Type": "RL",
+          "name": "A2",
+          "probe": null,
+          "bran_name": "YA2",
+          "node1": "X06",
+          "node2": "ref",
+          "data_type": null,
+          "value1": 1000,
+          "value2": 0,
+          "value3": null,
+          "value4": null,
+          "value5": null,
+          "pointer": null,
+          "comments": null
+        },
+        {
+          "Type": "RL",
+          "name": "B2",
+          "probe": null,
+          "bran_name": "YB2",
+          "node1": "X07",
+          "node2": "ref",
+          "data_type": null,
+          "value1": 1000,
+          "value2": 0,
+          "value3": null,
+          "value4": null,
+          "value5": null,
+          "pointer": null,
+          "comments": null
+        },
+        {
+          "Type": "RL",
+          "name": "C2",
+          "probe": null,
+          "bran_name": "YC2",
+          "node1": "X08",
+          "node2": "ref",
+          "data_type": null,
+          "value1": 1000,
+          "value2": 0,
+          "value3": null,
+          "value4": null,
+          "value5": null,
+          "pointer": null,
+          "comments": null
+      }
+      ],
+  "Cable":[
+    {
+      "name": "cable_1",
+      "Info": {
+        "name": "cable_1",
+        "id": "1",
+        "type": "01",
+        "T_head": "tower_1",
+        "T_head_id": 1,
+        "T_head_pos": [0,0,0],
+        "T_tail": "tower_2",
+        "T_tail_id": 2,
+        "T_tail_pos": [10000,0,0],
+        "core_num": 3,
+        "armor_num": 1,
+        "delta_L": 200,
+        "mode_con": 1,
+        "mode_gnd": 2
+    },
+    "ground": {
+      "glb": 1,
+      "sig": 1e-2,
+      "mur": 1,
+      "epr": 1,
+      "gnd_model": "Lossy",
+      "ionisation_intensity": "weak",
+      "ionisation_model": "isolational"
+    },
+    "TubeWire": {
+        "sheath":  {
+          "type": "sheath",
+          "prob": null,
+          "bran": "Y01_sheath",
+          "node1": "ref",
+          "node2": "ref",
+          "pos_1": [
+            0,
+            0,
+            -1
+          ],
+          "pos_2": [
+            0,
+            0,
+            -1
+          ],
+          "oft": 0,
+          "r0": 0.0425,
+          "r": 0,
+          "l": 0,
+          "sig": 1e5,
+          "mur": 1,
+          "epr": 0,
+          "rs1": 0.04,
+          "rs3": 0.045,
+          "core_num": 3
+        },
+        "core":[
+            {
+              "type": "core",
+              "bran": "Y01_core",
+              "node1": "X02",
+              "node2": "X06",
+              "pos_1": [
+                0,
+                0,
+                -1
+              ],
+              "pos_2": [
+                0,
+                0,
+                -1
+              ],
+              "oft": 0.02,
+              "rc": 0.01,
+              "r": 0,
+              "l": 0,
+              "rs2": null,
+              "rs3": null,
+              "sig": 1e5,
+              "mur": 1,
+              "epr": 0,
+              "cita": -120
+          },
+            {
+              "type": "core",
+              "bran": "Y02_core",
+              "node1": "X03",
+              "node2": "X07",
+              "pos_1": [
+                0,
+                0,
+                -1
+              ],
+              "pos_2": [
+                0,
+                0,
+                -1
+              ],
+              "oft": 0.02,
+              "rc": 0.01,
+              "r": 0,
+              "l": 0,
+              "sig": 1e5,
+              "mur": 1,
+              "epr": 0,
+              "cita": 0
+            },
+            {
+              "type": "core",
+              "bran": "Y03_core",
+              "node1": "X04",
+              "node2": "X08",
+              "pos_1": [
+                0,
+                0,
+                -1
+              ],
+              "pos_2": [
+                0,
+                0,
+                -1
+              ],
+              "oft": 0.02,
+              "rc": 0.01,
+              "r": 0,
+              "l": 0,
+              "sig": 1e5,
+              "mur": 1,
+              "epr": 0,
+              "cita": 120
+            }
+        ]
+
+      }
+    }
+  ],
+  "Global": {
+    "delta_time": 1e-6,
+    "time": 0.001,
+    "constant_frequency": 50,
+    "max_length": 200,
+    "ground": {
+      "glb": 1,
+      "sig": 0.01,
+      "mur": 1,
+      "epr": 0,
+      "gnd_model": "Lossy",
+      "ionisation_intensity": "",
+      "ionisation_model": ""
+    }
+  },
+  "Sensitivity_analysis": {
+    "Stoke": [],
+    "Soil": [],
+    "Arrester": [],
+    "ROD": []
+  }
+}
