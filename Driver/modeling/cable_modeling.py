@@ -2,7 +2,9 @@ import numpy as np
 import pandas as pd
 import scipy as sp
 
-from Function.Calculators.Impedance import calculate_coreWires_impedance, calculate_sheath_impedance, calculate_multual_impedance, calculate_ground_impedance
+from Function.Calculators.Impedance import calculate_coreWires_impedance, calculate_sheath_impedance, \
+    calculate_multual_impedance, calculate_ground_impedance, calculate_sheath_internal_impedance, \
+    calculate_inductance_of_round_wires_inside_sheath, calculate_round_wires_internal_impedance
 from Function.Calculators.Capacitance import calculate_coreWires_capacitance, calculate_sheath_capacitance
 from Function.Calculators.Inductance import calculate_coreWires_inductance, calculate_sheath_inductance
 from Model.Contant import Constant
@@ -172,10 +174,25 @@ def build_impedance_matrix(cable, constants, varied_frequency, ground):
 def build_core_sheath_merged_impedance_matrix(tubeWire, frequency, constants):
     # 计算套管和芯线内部的阻抗矩阵,和tower_modeling中的building_impedance_matrix()内容相同
     # Core wires impedance
-    Zc = calculate_coreWires_impedance(tubeWire.get_coreWires_radii(), tubeWire.get_coreWires_innerOffset(),
-                                       tubeWire.get_coreWires_innerAngle(), tubeWire.get_coreWires_mur(),
-                                       tubeWire.get_coreWires_sig(), tubeWire.get_coreWires_epr(), tubeWire.sheath.mur, tubeWire.sheath.sig, tubeWire.sheath.epr,
-                                       tubeWire.inner_radius, frequency, constants)
+    # Zc = calculate_coreWires_impedance(tubeWire.get_coreWires_radii(), tubeWire.get_coreWires_innerOffset(),
+    #                                    tubeWire.get_coreWires_innerAngle(), tubeWire.get_coreWires_mur(),
+    #                                    tubeWire.get_coreWires_sig(), tubeWire.get_coreWires_epr(), tubeWire.sheath.mur, tubeWire.sheath.sig, tubeWire.sheath.epr,
+    #                                    tubeWire.inner_radius, frequency, constants)
+    omega = 2 * np.pi * frequency
+    Nf = frequency.size
+    sheath_inner_radius = tubeWire.inner_radius
+    core_wires_r = tubeWire.get_coreWires_radii()
+
+    Zcore_diag = calculate_round_wires_internal_impedance(core_wires_r, tubeWire.get_coreWires_mur(), tubeWire.get_coreWires_sig(), tubeWire.get_coreWires_epr(), frequency, constants)
+
+    Lcs = calculate_inductance_of_round_wires_inside_sheath(core_wires_r, tubeWire.get_coreWires_innerOffset(), tubeWire.get_coreWires_innerAngle(), sheath_inner_radius, constants)
+
+    Zsi = calculate_sheath_internal_impedance(tubeWire.sheath.mur, tubeWire.sheath.sig, tubeWire.sheath.epr, sheath_inner_radius, tubeWire.sheath.r, frequency, constants)
+
+    Nc = core_wires_r.shape[0]
+    Zc = np.zeros((Nc, Nc, Nf), dtype='complex')
+    for ik in range(Nf):
+        Zc[:, :, ik] = np.diag(Zcore_diag[:, ik]) + 1j * omega[ik] * Lcs + Zsi[ik]
 
     # Sheath impedance
     Zs = calculate_sheath_impedance(tubeWire.sheath.mur, tubeWire.sheath.sig, tubeWire.inner_radius, tubeWire.sheath.r, tubeWire.outer_radius,
@@ -258,14 +275,15 @@ def calculate_cable_capcitance(core_wires_r, core_wires_offset, core_wires_angle
     Npha = core_wires_r.shape[0]
     tmat = np.tile(core_wires_angle, (1, Npha))
     angle = (tmat - tmat.T) * np.pi / 180
-    didk = core_wires_offset * core_wires_offset.T
+    didk = core_wires_offset @ core_wires_offset.T
+    k = 2 * np.pi * ep0
 
     dj = np.tile(core_wires_offset, (1, Npha))
-    P = np.log(sheath_inner_radius/np.sqrt(dj**2+dj.T**2-2*didk*np.cos(angle)))/2/np.pi/ep0
-    P_diag = np.log(sheath_inner_radius/core_wires_r*(1-(core_wires_offset/sheath_inner_radius)**2))/2/np.pi/ep0
+    P = np.log(dj.T/sheath_inner_radius*np.sqrt((didk**2+sheath_inner_radius**4-2*didk*sheath_inner_radius**2*np.cos(angle))/(didk**2+dj.T**4-2*didk*dj.T**2*np.cos(angle))))/k
+    P_diag = np.log(sheath_inner_radius/core_wires_r*(1-(core_wires_offset/sheath_inner_radius)**2))/k
     np.fill_diagonal(P, P_diag)
 
-    Ppip_ins = np.log(sheath_outer_radius/sheath_r)/2/np.pi/ep0
+    Ppip_ins = np.log(sheath_outer_radius/sheath_r)/k
     P = sp.linalg.block_diag([0], P) + Ppip_ins
 
     return np.linalg.inv(P)
@@ -278,10 +296,10 @@ def cable_building(cable, ground, frequency):
     constants = Constant()
     tube_wire = cable.wires.tube_wires[0]
 
-    Lc = calculate_coreWires_inductance(tube_wire.get_coreWires_radii(),
-                                        tube_wire.get_coreWires_innerOffset(),
-                                        tube_wire.get_coreWires_innerAngle(),
-                                        tube_wire.inner_radius, constants)
+    Lc = calculate_inductance_of_round_wires_inside_sheath(tube_wire.get_coreWires_radii(),
+                                                           tube_wire.get_coreWires_innerOffset(),
+                                                           tube_wire.get_coreWires_innerAngle(),
+                                                           tube_wire.inner_radius, constants)
 
     Ls = calculate_sheath_inductance(tube_wire.get_coreWires_endNodeZ(), tube_wire.sheath.r,
                                      tube_wire.outer_radius, constants)
@@ -380,10 +398,10 @@ def cable_building_variant_frequency(cable, ground, varied_frequency, dt, Nfit=9
     constants = Constant()
     tube_wire = cable.wires.tube_wires[0]
 
-    Lc = calculate_coreWires_inductance(tube_wire.get_coreWires_radii(),
-                                        tube_wire.get_coreWires_innerOffset(),
-                                        tube_wire.get_coreWires_innerAngle(),
-                                        tube_wire.inner_radius, constants)
+    Lc = calculate_inductance_of_round_wires_inside_sheath(tube_wire.get_coreWires_radii(),
+                                                           tube_wire.get_coreWires_innerOffset(),
+                                                           tube_wire.get_coreWires_innerAngle(),
+                                                           tube_wire.inner_radius, constants)
 
     Ls = calculate_sheath_inductance(tube_wire.get_coreWires_endNodeZ(), tube_wire.sheath.r,
                                      tube_wire.outer_radius, constants)

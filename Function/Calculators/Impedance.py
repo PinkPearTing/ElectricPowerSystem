@@ -28,7 +28,7 @@ def calculate_coreWires_impedance(core_wires_r, core_wires_offset, core_wires_an
     Frq(numpy.ndarray,1*Nf):Nf个频率组成的频率矩阵
 
     【出参】
-    Zc(numpy.ndarray:n*n*Nf): n条芯线在Nf个频率下的阻抗矩阵
+    Zc(numpy.ndarray:1*n*Nf): n条芯线在Nf个频率下的阻抗矩阵
     """
     mu0, ep0 = constants.mu0, constants.ep0
     Besl_Max = 200
@@ -49,35 +49,117 @@ def calculate_coreWires_impedance(core_wires_r, core_wires_offset, core_wires_an
     # Zc_diag[low] = kc[low] * besseli(0, Rc[low]) / besseli(1, Rc[low])
 
 ###################################
-    Mu_s = mu0 * sheath_mur
-    gamma_s = np.sqrt(1j * Mu_s * omega * (sheath_sig + 1j * omega * ep0* sheath_epr))
-    Rsa = sheath_inner_radius * gamma_s
+    # Mu_s = mu0 * sheath_mur
+    # gamma_s = np.sqrt(1j * Mu_s * omega * (sheath_sig + 1j * omega * ep0* sheath_epr))
+    # Rsa = sheath_inner_radius * gamma_s
+    # tmat = np.tile(core_wires_angle, (1, Npha))
+    # angle = (tmat - tmat.T) * np.pi / 180
+    # didk = core_wires_offset * core_wires_offset.T
+    # ks = 1j * omega * mu0 / (2 * np.pi)
+    #
+    # dj = np.tile(core_wires_offset, (1, Npha))
+    # jwL = ks * np.log(dj.T/sheath_inner_radius*np.sqrt((didk**2+sheath_inner_radius**4-2*didk*sheath_inner_radius**2*np.cos(angle))/(didk**2+dj.T**4-2*didk*dj.T**2*np.cos(angle))))
+    # jwL_diag = ks * np.log(sheath_inner_radius/core_wires_r*(1-(core_wires_offset/sheath_inner_radius)**2))
+    # np.fill_diagonal(jwL, jwL_diag)
+    #
+    # temp_Zsi = 0
+    # temp_Lcs = 0
+    # for ik in range(1, Nbesl+1):
+    #     temp_Zsi += sheath_mur * (didk / sheath_inner_radius**2) ** ik * np.cos(ik*angle) * 2 / (ik * sheath_mur - Rsa * besselkp(ik, Rsa, 1) / besselk(ik, Rsa))
+    #     temp_Lcs += (didk / sheath_inner_radius**2) ** ik * np.cos(ik*angle)/ik
+    # np.fill_diagonal(temp_Lcs, 0)
+    #
+    # # Zaa = gamma_s / 2 / np.pi / sheath_sig / sheath_inner_radius * (
+    # #             besseli(0, Rsa) * besselk(1, Rsb) + besseli(1, Rsb) * besselk(0, Rsa)) / (
+    # #                   besseli(1, Rsb) * besselk(1, Rsa) - besseli(1, Rsa) * besselk(1, Rsb))
+    #
+    # dj = np.tile(core_wires_offset, (1, Npha))
+    # tempL = np.log(sheath_inner_radius/np.sqrt(dj**2+dj.T**2-2*didk*np.cos(angle)))
+    # tempL_diag = np.log(sheath_inner_radius/core_wires_r*(1-(core_wires_offset/sheath_inner_radius)**2))
+    # np.fill_diagonal(tempL, tempL_diag)
+    # tempL -= temp_Lcs
+    #
+    # Nc = core_wires_r.shape[0]
+    # Zc = np.zeros((Nc, Nc, Nf), dtype='complex')
+    #
+    # for ik in range(Nf):
+    #     Zc[:, :, ik] = np.diag(Zc_diag[:, ik]) + ks[ik] * (sheath_mur * besselk(0, Rsa) / Rsa / besselk(1, Rsa) + temp_Zsi + tempL)
+
+    return Zc_diag
+
+def calculate_round_wires_internal_impedance(core_wires_r, core_wires_mur, core_wires_sig, core_wires_epr, frq, constants):
+    """
+    【函数功能】圆线内阻抗计算
+    【入参】
+    core_wires_r (numpy.ndarray, n*1): n条圆线的半径
+    core_wires_mur (numpy.ndarray, n*1): n条圆线的磁导率
+    core_wires_sig (numpy.ndarray, n*1): n条圆线的电导率
+    core_wires_epr (numpy.ndarray, n*1): n条圆线的介电常数
+    Frq(numpy.ndarray,1*Nf):Nf个频率组成的频率矩阵
+
+    【出参】
+    Zc(numpy.ndarray:n*n*Nf): n条芯线在Nf个频率下的阻抗矩阵
+    """
+    mu0, ep0 = constants.mu0, constants.ep0
+    omega = 2 * np.pi * frq
+
+    Mu_c = mu0 * core_wires_mur[0]
+    gamma_c = np.sqrt(1j * Mu_c * omega * (core_wires_sig[0] + 1j * omega * ep0 * core_wires_epr))
+    Rc = core_wires_r * gamma_c
+    Zc_diag = 1j * omega * Mu_c / (2 * np.pi * Rc) * besseli(0, Rc) / besseli(1, Rc)
+    return Zc_diag
+
+def calculate_inductance_of_round_wires_inside_sheath(core_wires_r, core_wires_offset, core_wires_angle, sheath_inner_radius, constants):
+    """
+    【函数功能】套管内的圆线电感计算
+    【入参】
+    core_wires_r (numpy.ndarray, n*1): n条圆线的半径
+    core_wires_offset (numpy.ndarray, n*1): n条圆线距中心距离
+    core_wires_angle (numpy.ndarray, n*1): n条圆线的角度，单位°
+    sheath_inner_radius (float): 套管的内径
+
+    【出参】
+    L(numpy.ndarray:n*n): n条圆线的电感矩阵
+    """
+    mu0, ep0 = constants.mu0, constants.ep0
+    Npha = core_wires_r.shape[0]
     tmat = np.tile(core_wires_angle, (1, Npha))
     angle = (tmat - tmat.T) * np.pi / 180
     didk = core_wires_offset * core_wires_offset.T
-    ks = 1j * omega * mu0 / (2 * np.pi)
-
-    temp_Zsi = 0
-    temp_Lcs = 0
-    for ik in range(1, Nbesl+1):
-        temp_Zsi += sheath_mur * (didk / sheath_inner_radius**2) ** ik * np.cos(ik*angle) * 2 / (ik * sheath_mur - Rsa * besselkp(ik, Rsa, 1) / besselk(ik, Rsa))
-        temp_Lcs += (didk / sheath_inner_radius**2) ** ik * np.cos(ik*angle)/ik
-    np.fill_diagonal(temp_Lcs, 0)
+    ks = mu0 / (2 * np.pi)
 
     dj = np.tile(core_wires_offset, (1, Npha))
-    tempL = np.log(sheath_inner_radius/np.sqrt(dj**2+dj.T**2-2*didk*np.cos(angle)))
-    tempL_diag = np.log(sheath_inner_radius/core_wires_r*(1-(core_wires_offset/sheath_inner_radius)**2))
-    np.fill_diagonal(tempL, tempL_diag)
-    tempL -= temp_Lcs
+    L = ks * np.log(dj.T/sheath_inner_radius*np.sqrt((didk**2+sheath_inner_radius**4-2*didk*sheath_inner_radius**2*np.cos(angle))/(didk**2+dj.T**4-2*didk*dj.T**2*np.cos(angle))))
+    L_diag = ks * np.log(sheath_inner_radius/core_wires_r*(1-(core_wires_offset/sheath_inner_radius)**2))
+    np.fill_diagonal(L, L_diag)
+    return L
 
-    Nc = core_wires_r.shape[0]
-    Zc = np.zeros((Nc, Nc, Nf), dtype='complex')
+def calculate_sheath_internal_impedance(sheath_mur, sheath_sig, sheath_epr, sheath_inner_radius, sheath_r, frq, constants):
+    """
+    【函数功能】套管内的圆线电感计算
+    【入参】
+    sheath_mur(float): 套管的磁导率
+    sheath_sig(float): 套管的电导率
+    sheath_epr(float): 套管的介电常数
+    sheath_inner_radius (float): 套管的内径
+    sheath_r (float): 套管的半径，不包括绝缘层
+    Frq(numpy.ndarray,1*Nf):Nf个频率组成的频率矩阵
 
-    for ik in range(Nf):
-        Zc[:, :, ik] = np.diag(Zc_diag[:, ik]) + ks[ik] * (sheath_mur * besselk(0, Rsa) / Rsa / besselk(1, Rsa) + temp_Zsi + tempL)
+    【出参】
+    Zc(numpy.ndarray:1*Nf): 套管在Nf个频率下的内阻抗矩阵
+    """
+    mu0, ep0 = constants.mu0, constants.ep0
+    omega = 2 * np.pi * frq
 
-    return Zc
+    Mu_s = mu0 * sheath_mur
+    gamma_s = np.sqrt(1j * Mu_s * omega * (sheath_sig + 1j * omega * ep0* sheath_epr))
+    Rsa = sheath_inner_radius * gamma_s
+    Rsb = sheath_r * gamma_s
 
+    Zinternal = gamma_s / 2 / np.pi / sheath_sig / sheath_inner_radius * (
+                besseli(0, Rsa) * besselk(1, Rsb) + besseli(1, Rsb) * besselk(0, Rsa)) / (
+                      besseli(1, Rsb) * besselk(1, Rsa) - besseli(1, Rsa) * besselk(1, Rsb))
+    return Zinternal
 
 def calculate_sheath_impedance(sheath_mur, sheath_sig, sheath_inner_radius, sheath_r, outer_radius, Frq,constants):
     """
@@ -119,7 +201,7 @@ def calculate_sheath_impedance(sheath_mur, sheath_sig, sheath_inner_radius, shea
     Ns = np.array([sheath_sig]).reshape(-1).shape[0]
     Zs = np.zeros((Ns, 1, Nf), dtype='complex')
     for ik in range(Nf):
-        Zs[:, 0, ik] = Zs_diag[ik] + ks[ik] * Rsb * np.log(outer_radius/sheath_inner_radius)
+        Zs[:, 0, ik] = Zs_diag[ik] + ks[ik] * Rsb * np.log(outer_radius/sheath_r)
     # process the data, because the Z matrix is 3-dimensional matrix, but when fre is a float, we need Z is a 2-dimensional array
     # if isinstance(Frq, float):
     #     Zs = np.squeeze(Zs)

@@ -287,7 +287,8 @@ class Network:
         if 'Global' in load_dict:
             self.dt = load_dict['Global']['delta_time']
             self.T = load_dict['Global']['time']
-            self.f0 = load_dict['Global']['constant_frequency']
+            f0 = load_dict['Global']['constant_frequency']
+            self.f0 = np.array([f0]).reshape(-1)
             self.max_length = load_dict['Global']['max_length']
             self.global_ground = load_dict['Global']['ground']['glb']
             self.ground = initialize_ground(load_dict['Global']['ground']) if 'ground' in load_dict['Global'] else None
