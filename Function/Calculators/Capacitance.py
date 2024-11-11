@@ -49,7 +49,7 @@ def calculate_sheath_capacitance(tubeposition, sheath_epr, Ls, constants):
     return Cs
 
 
-def calculate_OHL_capcitance(Lm, constants):
+def calculate_OHL_capcitance(Lm, mu0, ep0):
     """
     【函数功能】电感矩阵参数计算
     【入参】
@@ -59,6 +59,5 @@ def calculate_OHL_capcitance(Lm, constants):
     【出参】
     C(numpy.ndarray:n*n)：n条线电容矩阵
     """
-    Vair = constants.Vair
-    C = np.linalg.inv(Lm) / Vair ** 2
+    C = np.linalg.inv(Lm / mu0 / ep0)
     return C

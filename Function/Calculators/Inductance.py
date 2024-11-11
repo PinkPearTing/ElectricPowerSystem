@@ -572,7 +572,7 @@ def calculate_wires_inductance_potential_with_ground(wires, ground, constants):
     return L0, P0
 
 
-def calculate_OHL_mutual_inductance(radius, height, offset, constants):
+def calculate_OHL_mutual_inductance(radius, height, offset, mu0):
     """
     【函数功能】架空线电感电容矩阵参数计算
     【入参】
@@ -584,19 +584,27 @@ def calculate_OHL_mutual_inductance(radius, height, offset, constants):
     【出参】
     Lm(numpy.ndarray:n*n)：n条线互感矩阵
     """
-    mu0 = constants.mu0
     km = mu0 / (2 * np.pi)
-    Ncon = np.array([radius]).reshape(-1).shape[0]
-    out = np.log(2 * height / radius)
-    Lm = np.diag(out.reshape(-1))
-    for i in range(Ncon - 1):
-        for j in range(i + 1, Ncon):
-            d = abs(offset[i] - offset[j])
-            h1 = height[i]
-            h2 = height[j]
-            Lm[i, j] = 0.5 * np.log((d ** 2 + (h1 + h2) ** 2) / (d ** 2 + (h1 - h2) ** 2))
-            Lm[j, i] = np.copy(Lm[i, j])
-    Lm = km * Lm
+    Npha = radius.shape[0]
+    d = np.tile(offset, (1, Npha))
+    dij = d - d.T
+    h_matrix = np.tile(height, (1, Npha))
+
+    Lm_diag = km * np.log(2*height/radius)
+    Lm = km/2*np.log((dij**2+(h_matrix+h_matrix.T)**2)/(dij**2+(h_matrix-h_matrix.T)**2))
+    np.fill_diagonal(Lm, Lm_diag)
+
+    # Ncon = np.array([radius]).reshape(-1).shape[0]
+    # out = np.log(2 * height / radius)
+    # Lm = np.diag(out.reshape(-1))
+    # for i in range(Ncon - 1):
+    #     for j in range(i + 1, Ncon):
+    #         d = abs(offset[i] - offset[j])
+    #         h1 = height[i]
+    #         h2 = height[j]
+    #         Lm[i, j] = 0.5 * np.log((d ** 2 + (h1 + h2) ** 2) / (d ** 2 + (h1 - h2) ** 2))
+    #         Lm[j, i] = np.copy(Lm[i, j])
+    # Lm = km * Lm
     return Lm
 
 def calculate_OHL_inductance(inductance, Lm, sig, mur, radius, frequency, constants):

@@ -264,7 +264,7 @@
       ],
       "ground": {
         "glb": 1,
-        "sig": 0.001,
+        "sig": 0.01,
         "mur": 1,
         "epr": 1,
         "gnd_model": "Lossy",
@@ -276,11 +276,11 @@
   "Global": {
     "delta_time": 1e-6,
     "time": 0.001,
-    "constant_frequency": 20000,
+    "constant_frequency": 50,
     "max_length": 20,
     "ground": {
       "glb": 1,
-      "sig": 0.001,
+      "sig": 0.01,
       "mur": 1,
       "epr": 1,
       "gnd_model": "Lossy",

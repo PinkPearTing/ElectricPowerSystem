@@ -139,7 +139,7 @@ def prepare_building_parameters(OHL, max_length, ground, frequency, constants):
     segment_num = int(np.ceil(length / max_length))
     segment_length = length/segment_num
 
-    Lm = calculate_OHL_mutual_inductance(OHL_r, OHL_height, OHL.wires.get_offsets(), constants)
+    Lm = calculate_OHL_mutual_inductance(OHL_r, OHL_height, OHL.wires.get_offsets(), constants.mu0)
 
     Zg = calculate_OHL_ground_impedance(ground.sig, ground.mur, ground.epr, OHL.wires.get_radii(),
                                         OHL.wires.get_offsets(), OHL.wires.get_heights(), constants,
@@ -149,7 +149,7 @@ def prepare_building_parameters(OHL, max_length, ground, frequency, constants):
 
     resistance = calculate_OHL_resistance(OHL.wires.get_resistance(), OHL.wires.get_sig(), OHL.wires.get_mur(), OHL.wires.get_radii(), frequency, constants) + np.real(Zg)
     inductance = calculate_OHL_inductance(OHL.wires.get_inductance(), Lm, OHL.wires.get_sig(), OHL.wires.get_mur(), OHL.wires.get_radii(), frequency, constants) + Lg
-    capcitance = calculate_OHL_capcitance(Lm, constants)
+    capcitance = calculate_OHL_capcitance(Lm, constants.mu0, constants.ep0)
     # R = pd.DataFrame(resistance)
     # R.to_excel('C:\\Users\\User\\Desktop\\SEMP_ohl_python_R_dis_{}Hz.xlsx'.format(frequency))
     # L = pd.DataFrame(inductance*(2 * np.pi * frequency))

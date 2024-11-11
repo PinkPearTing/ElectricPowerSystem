@@ -8,7 +8,7 @@ from scipy.io import loadmat
 
 if __name__ == '__main__':
     # 1. 接收到创建新电网指令
-    file_name = ("verify_cable_paper")
+    file_name = ("verify_ohl")
     flist = pd.DataFrame(loadmat('C:\\Users\\User\\Desktop\\SEMP_ohl_JMarti.mat')['python']).to_numpy()
     varied_frequency = flist[:, 0]
 
